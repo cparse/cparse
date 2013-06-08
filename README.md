@@ -23,5 +23,6 @@ int main() {
 ```
 
 ## TODO
+ + Option to input a map of variables.
  + Unary operators.
  + Suggestions from post.
