@@ -4,7 +4,7 @@ with Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm).
 
 Original version by
-[Jessee Brown](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm)
+[Jessee Brown](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
 
 Improvements and additions.
  + Split into header and cpp files.
