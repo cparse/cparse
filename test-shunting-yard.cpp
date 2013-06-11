@@ -1,5 +1,8 @@
-#include <string>
+#include <iostream>
 #include <limits>
+#include <map>
+#include <string>
+
 #include "shunting-yard.h"
 
 void assert(std::string expr, double expected, 

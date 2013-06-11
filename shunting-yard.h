@@ -5,13 +5,10 @@
 #ifndef _SHUNTING_YARD_H
 #define _SHUNTING_YARD_H
 
-#include <iostream>
-#include <stack>
-#include <vector>
-#include <string>
-#include <cstdlib>
 #include <map>
-#include <stdexcept>
+#include <stack>
+#include <string>
+#include <vector>
 
 struct TokenBase { 
   virtual ~TokenBase() {}

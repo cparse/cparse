@@ -2,7 +2,11 @@
 // Author: Jesse Brown
 // Modifications: Brandon Amos
 
+#include <cstdlib>
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
+
 #include "shunting-yard.h"
 
 void RPNExpression::push(TokenBase *t) {
