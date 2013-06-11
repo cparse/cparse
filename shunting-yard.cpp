@@ -6,12 +6,12 @@
 #include "shunting-yard.h"
 
 void RPNExpression::push(TokenBase *t) {
-  stack_.push_back (t);
+  stack_.push_back(t);
 }
 
 TokenBase* RPNExpression::pop() {
   TokenBase *t = stack_.front();
-  stack_.erase (stack_.begin());
+  stack_.erase(stack_.begin());
   return t;
 }
 
@@ -44,7 +44,7 @@ void ShuntingYard::handle_right_paren() {
 void ShuntingYard::handle_op(std::string op) {
   while (! op_stack_.empty() &&
       precedence (op) <= stack_precedence()) {
-    rpn_.push (new Token< std::string >(op_stack_.top()));
+    rpn_.push(new Token< std::string >(op_stack_.top()));
     op_stack_.pop();
   }
   op_stack_.push(op);
@@ -63,11 +63,11 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
       char op = *token;
       switch (op) {
         case '(':
-          handle_left_paren ();
+          handle_left_paren();
           ++token;
           break;
         case ')':
-          handle_right_paren ();
+          handle_right_paren();
           ++token;
           break;
         default:
@@ -85,87 +85,77 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
     }
   }
   while (!op_stack_.empty()) {
-    rpn_.push (new Token< std::string >(op_stack_.top()));
+    rpn_.push(new Token< std::string >(op_stack_.top()));
     op_stack_.pop();
   }
   return rpn_;
 }
 
+RPNExpression ShuntingYard::to_rpn() {
+  return convert(expr_);
+}
+
 ShuntingYard::ShuntingYard (const std::string& infix) : expr_(infix) {
   op_precedence_["("] = -1;
-  op_precedence_["*"] = 5; op_precedence_["/"] = 5;
-  op_precedence_["+"] = 6; op_precedence_["-"] = 6;
-  op_precedence_["<<"] = 7; op_precedence_[">>"] = 7;
+  op_precedence_["<<"] = 1; op_precedence_[">>"] = 1;
+  op_precedence_["+"]  = 2; op_precedence_["-"]  = 2;
+  op_precedence_["*"]  = 3; op_precedence_["/"]  = 3;
 }
 
-RPNExpression ShuntingYard::to_rpn() {
-  return convert (expr_);
+
+void calculator::consume(double value, std::stack<double>* operands) {
+  operands->push(value);
 }
 
-double calculator::pop() { 
-  double d = operands_.top();
-  operands_.pop();
-  return d; 
-}
-
-void calculator::push (double d) {
-  operands_.push (d);
-}
-
-double calculator::result() const {
-  return operands_.top();
-}
-
-void calculator::flush() { 
-  while (! operands_.empty()) { operands_.pop(); }
-}
-
-void calculator::consume(double value) {
-  push(value);
-}
-
-void calculator::consume(std::string op) { 
+void calculator::consume(std::string op, std::stack<double>* operands) { 
+  double right = operands->top(); operands->pop();
+  double left  = operands->top(); operands->pop();
   if (!op.compare("+")) {
-    push (pop() + pop());
+    operands->push(left + right);
   } else if (!op.compare("*")) {
-    push (pop() * pop());
+    operands->push(left * right);
   } else if (!op.compare("-")) {
-    double right = pop();
-    push (pop() - right);
+    operands->push(left - right);
   } else if (!op.compare("/")) {
-    double right = pop();
-    push (pop() / right);
+    operands->push(left / right);
   } else if (!op.compare("<<")) {
-    int right = (int) pop();
-    push ((int) pop() << right);
+    operands->push((int) left << (int) right);
   } else if (!op.compare(">>")) {
-    int right = (int) pop();
-    push ((int) pop() >> right);
+    operands->push((int) left >> (int) right);
   } else {
-    throw std::domain_error("Unknown Operator");
+    throw std::domain_error("Unknown operator.");
   }
 } 
 
 double calculator::calculate(const std::string& expr) { 
+  std::stack<double> operands;
   ShuntingYard shunting(expr);
   RPNExpression rpn = shunting.to_rpn();
-  flush();
-  while (!rpn.empty()) { 
-    TokenBase * token = rpn.pop();
-    token->evaluate(this);
-    delete token;
+  while (!operands.empty()) { operands.pop(); }
+  while (!rpn.empty()) {
+    TokenBase* base = rpn.pop();
+    Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
+    if (strTok) {
+      consume(strTok->val, &operands);
+      delete base;
+      continue;
+    }
+
+    Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
+    if (doubleTok) {
+      consume(doubleTok->val, &operands);
+      delete base;
+      continue;
+    }
+
+    std::cerr << "Invalid token." << std::endl;
+    exit(42);
   }
-  return result();
+  return operands.top();
 }
 
-template< class T > void Token< T >::evaluate(calculator * c) {
-  c->consume(token_);
-}
-
-// TODO: Delete.
 // int main() {
-//   calculator c;
-//   std::cout << c.calculate ("(20+10)*3/2-3") << std::endl;
-//   std::cout << c.calculate ("1 << 4") << std::endl;
+//   std::cout << calculator::calculate ("(20+10)*3/2-3") << std::endl;
+//   std::cout << calculator::calculate ("1 << 4") << std::endl;
 //   return 0;
 // }
