@@ -51,7 +51,7 @@ void ShuntingYard::handle_op(std::string op) {
 }
 
 RPNExpression ShuntingYard::convert(const std::string &infix) {
-  const char * token = infix.c_str();
+  const char* token = infix.c_str();
   while (token && *token) {
     while (*token && isspace(*token)) { ++token; }
     if (!*token) { break; }
@@ -60,6 +60,12 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
       rpn_.push(new Token<double>(strtod(token, &next_token)));
       token = next_token;
     } if (isalpha(*token)) {
+      if (!vars_) {
+        std::cerr << "Error: Detected variable, " <<
+          "but the variable map is null." << std::endl;
+        exit(42);
+      }
+
       std::stringstream ss;
       ss << *token;
       ++token;
@@ -78,6 +84,7 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
       rpn_.push(new Token<double>(val));;
     } else {
       char op = *token;
+      if (op == '\0') break;
       switch (op) {
         case '(':
           handle_left_paren();
@@ -176,13 +183,3 @@ double calculator::calculate(const std::string& expr,
   }
   return operands.top();
 }
-
-// int main() {
-//   std::cout << calculator::calculate ("(20+10)*3/2-3") << std::endl;
-//   std::cout << calculator::calculate ("1 << 4") << std::endl;
-// 
-//   std::map<std::string, double> vars;
-//   vars["pi"] = 3.14d;
-//   std::cout << calculator::calculate ("pi+1", &vars) << std::endl;
-//   return 0;
-// }
