@@ -36,13 +36,16 @@ private:
 
 class ShuntingYard {
 public:
-  ShuntingYard (const std::string& infix);
+  ShuntingYard (const std::string& infix,
+      std::map<std::string, double>* vars = 0);
   RPNExpression to_rpn();
 private:
   const std::string expr_;
+  std::map<std::string, double>* vars_;
   RPNExpression rpn_;
   std::stack< std::string > op_stack_;
   mutable std::map< std::string, int > op_precedence_;
+
   int precedence (std::string op) const;
   int stack_precedence() const;
   void handle_left_paren();
@@ -53,7 +56,8 @@ private:
 
 class calculator {
 public:
-  static double calculate (const std::string& expr);
+  static double calculate(const std::string& expr,
+      std::map<std::string, double>* vars = 0);
 private:
   static void consume(double value, std::stack<double>* operands);
   static void consume(std::string op, std::stack<double>* operands);

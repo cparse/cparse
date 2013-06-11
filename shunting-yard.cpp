@@ -57,8 +57,25 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
     if (!*token) { break; }
     if (isdigit(*token)) {
       char* next_token = 0;
-      rpn_.push (new Token< double >( strtod(token, &next_token)));
+      rpn_.push(new Token<double>(strtod(token, &next_token)));
       token = next_token;
+    } if (isalpha(*token)) {
+      std::stringstream ss;
+      ss << *token;
+      ++token;
+      while (isalpha(*token) || *token == '_') {
+        ss << *token;
+        ++token;
+      }
+      std::string key = ss.str();
+      std::map<std::string, double>::iterator it = vars_->find(key);
+      if (it == vars_->end()) {
+        std::cerr << "Error: Unable to find the variable '" <<
+          key << "'." << std::endl;
+        exit(42);
+      }
+      double val = vars_->find(key)->second;
+      rpn_.push(new Token<double>(val));;
     } else {
       char op = *token;
       switch (op) {
@@ -75,11 +92,16 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
             std::stringstream ss;
             ss << op;
             ++token;
-            while (!isspace(*token) && !isdigit(*token)) {
+            while (*token && !isspace(*token) && !isdigit(*token)) {
               ss << *token;
               ++token;
             }
-            handle_op(ss.str());
+            ss.clear();
+            std::string str;
+            ss >> str;
+            if (str[0] != '\0') {
+              handle_op(str);
+            }
           }
       }
     }
@@ -95,13 +117,13 @@ RPNExpression ShuntingYard::to_rpn() {
   return convert(expr_);
 }
 
-ShuntingYard::ShuntingYard (const std::string& infix) : expr_(infix) {
+ShuntingYard::ShuntingYard (const std::string& infix,
+    std::map<std::string, double>* vars) : expr_(infix), vars_(vars) {
   op_precedence_["("] = -1;
   op_precedence_["<<"] = 1; op_precedence_[">>"] = 1;
   op_precedence_["+"]  = 2; op_precedence_["-"]  = 2;
   op_precedence_["*"]  = 3; op_precedence_["/"]  = 3;
 }
-
 
 void calculator::consume(double value, std::stack<double>* operands) {
   operands->push(value);
@@ -123,13 +145,14 @@ void calculator::consume(std::string op, std::stack<double>* operands) {
   } else if (!op.compare(">>")) {
     operands->push((int) left >> (int) right);
   } else {
-    throw std::domain_error("Unknown operator.");
+    throw std::domain_error("Unknown operator: '" + op + "'.");
   }
 } 
 
-double calculator::calculate(const std::string& expr) { 
+double calculator::calculate(const std::string& expr,
+    std::map<std::string, double>* vars) { 
   std::stack<double> operands;
-  ShuntingYard shunting(expr);
+  ShuntingYard shunting(expr, vars);
   RPNExpression rpn = shunting.to_rpn();
   while (!operands.empty()) { operands.pop(); }
   while (!rpn.empty()) {
@@ -157,5 +180,9 @@ double calculator::calculate(const std::string& expr) {
 // int main() {
 //   std::cout << calculator::calculate ("(20+10)*3/2-3") << std::endl;
 //   std::cout << calculator::calculate ("1 << 4") << std::endl;
+// 
+//   std::map<std::string, double> vars;
+//   vars["pi"] = 3.14d;
+//   std::cout << calculator::calculate ("pi+1", &vars) << std::endl;
 //   return 0;
 // }
