@@ -34,36 +34,28 @@ int ShuntingYard::stack_precedence() const {
   return precedence(op_stack_.top());
 }
 
-void ShuntingYard::handle_left_paren() {
-  op_stack_.push("(");
-}
-
-void ShuntingYard::handle_right_paren() {
-  while (op_stack_.top().compare("(")) {
-    rpn_.push (new Token< std::string >(op_stack_.top()));
-    op_stack_.pop();
-  }
-  op_stack_.pop();
-}
-void ShuntingYard::handle_op(std::string op) {
-  while (! op_stack_.empty() &&
-      precedence (op) <= stack_precedence()) {
-    rpn_.push(new Token< std::string >(op_stack_.top()));
-    op_stack_.pop();
-  }
-  op_stack_.push(op);
+bool isVariableChar(const char c) {
+  return isalpha(c) || c == '_';
 }
 
 RPNExpression ShuntingYard::convert(const std::string &infix) {
   const char* token = infix.c_str();
-  while (token && *token) {
-    while (*token && isspace(*token)) { ++token; }
-    if (!*token) { break; }
+  while (*token) {
+    while (*token && isspace(*token)) ++token;
+    if (!*token) break;
+
     if (isdigit(*token)) {
-      char* next_token = 0;
-      rpn_.push(new Token<double>(strtod(token, &next_token)));
-      token = next_token;
-    } if (isalpha(*token)) {
+      // If the token is a number, add it to the output queue.
+      char* nextToken = 0;
+      double digit = strtod(token, &nextToken);
+#     ifdef DEBUG
+        std::cout << digit << std::endl;
+#     endif
+      rpn_.push(new Token<double>(digit));
+      token = nextToken;
+    } else if (isVariableChar(*token)) {
+      // If the function is a variable, resolve it and
+      // add the parsed number to the output queue.
       if (!vars_) {
         std::cerr << "Error: Detected variable, " <<
           "but the variable map is null." << std::endl;
@@ -73,7 +65,7 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
       std::stringstream ss;
       ss << *token;
       ++token;
-      while (isalpha(*token) || *token == '_') {
+      while (isVariableChar(*token)) {
         ss << *token;
         ++token;
       }
@@ -85,40 +77,61 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
         exit(42);
       }
       double val = vars_->find(key)->second;
+#     ifdef DEBUG
+        std::cout << val << std::endl;
+#     endif
       rpn_.push(new Token<double>(val));;
     } else {
-      char op = *token;
-      if (op == '\0') break;
-      switch (op) {
+      // Otherwise, the variable is an operator or paranthesis.
+      switch (*token) {
         case '(':
-          handle_left_paren();
+          op_stack_.push("(");
           ++token;
           break;
         case ')':
-          handle_right_paren();
+          while (op_stack_.top().compare("(")) {
+            rpn_.push(new Token<std::string>(op_stack_.top()));
+            op_stack_.pop();
+          }
+          op_stack_.pop();
           ++token;
           break;
         default:
           {
+            // Let p(o) denote the precedence of an operator o.
+            //
+            // If the token is an operator, o1, then
+            //   While there is an operator token, o2, at the top
+            //       and p(o1) <= p(o2), then
+            //     pop o2 off the stack onto the output queue.
+            //   Push o1 on the stack.
             std::stringstream ss;
-            ss << op;
+            ss << *token;
             ++token;
-            while (*token && !isspace(*token) && !isdigit(*token)) {
+            while (*token && !isspace(*token) && !isdigit(*token)
+                && *token != '(' && *token != ')') {
               ss << *token;
               ++token;
             }
             ss.clear();
             std::string str;
             ss >> str;
-            if (str[0] != '\0') {
-              handle_op(str);
+#           ifdef DEBUG
+              std::cout << str << std::endl;
+#           endif
+
+            while (!op_stack_.empty() &&
+                precedence(str) <= stack_precedence()) {
+              rpn_.push(new Token<std::string>(op_stack_.top()));
+              op_stack_.pop();
             }
+            op_stack_.push(str);
           }
       }
     }
   }
   while (!op_stack_.empty()) {
-    rpn_.push(new Token< std::string >(op_stack_.top()));
+    rpn_.push(new Token<std::string>(op_stack_.top()));
     op_stack_.pop();
   }
   return rpn_;
@@ -134,10 +147,6 @@ ShuntingYard::ShuntingYard (const std::string& infix,
   op_precedence_["<<"] = 1; op_precedence_[">>"] = 1;
   op_precedence_["+"]  = 2; op_precedence_["-"]  = 2;
   op_precedence_["*"]  = 3; op_precedence_["/"]  = 3;
-}
-
-void calculator::consume(double value, std::stack<double>* operands) {
-  operands->push(value);
 }
 
 void calculator::consume(std::string op, std::stack<double>* operands) { 
@@ -162,12 +171,13 @@ void calculator::consume(std::string op, std::stack<double>* operands) {
 
 double calculator::calculate(const std::string& expr,
     std::map<std::string, double>* vars) { 
-  std::stack<double> operands;
   ShuntingYard shunting(expr, vars);
   RPNExpression rpn = shunting.to_rpn();
-  while (!operands.empty()) { operands.pop(); }
+
+  std::stack<double> operands;
   while (!rpn.empty()) {
     TokenBase* base = rpn.pop();
+
     Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
     if (strTok) {
       consume(strTok->val, &operands);
@@ -177,7 +187,7 @@ double calculator::calculate(const std::string& expr,
 
     Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
     if (doubleTok) {
-      consume(doubleTok->val, &operands);
+      operands.push(doubleTok->val);
       delete base;
       continue;
     }

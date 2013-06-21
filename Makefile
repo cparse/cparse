@@ -3,7 +3,7 @@ SRC=$(EXE).cpp shunting-yard.cpp
 OBJ=$(SRC:.cpp=.o)
 
 CXX=g++
-CFLAGS=-g -Wall -pedantic
+CFLAGS=-g -Wall -pedantic #-DDEBUG
 all: $(EXE)
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)

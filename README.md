@@ -18,7 +18,7 @@ int main() {
 ```
 
 ## More examples.
- + See `test-shunting-yard.cpp` for more conditions.
+ + See `test-shunting-yard.cpp`.
 
 ## Features.
  + Operators: +, -, /, +, <<, >>
@@ -28,4 +28,3 @@ int main() {
  + Unary operators.
  + Make a PersistentCalculator object to store data
    to make chains of calculations possible.
- + Suggestions from post.

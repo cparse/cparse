@@ -45,9 +45,6 @@ private:
 
   int precedence (std::string op) const;
   int stack_precedence() const;
-  void handle_left_paren();
-  void handle_right_paren();
-  void handle_op (std::string op);
   RPNExpression convert(const std::string &infix);
 };
 
@@ -56,7 +53,6 @@ public:
   static double calculate(const std::string& expr,
       std::map<std::string, double>* vars = 0);
 private:
-  static void consume(double value, std::stack<double>* operands);
   static void consume(std::string op, std::stack<double>* operands);
 };
 

@@ -31,5 +31,7 @@ int main(int argc, char** argv) {
   vars["pi"] = 3.14;
   assert("pi+1", 4.14, &vars);
 
+  assert("1+(-2*3)", -5);
+
   return 0;
 }
