@@ -21,17 +21,13 @@ void assert(const char* expr, double expected,
 
 int main(int argc, char** argv) {
   assert("(20+10)*3/2-3", 42.0);
-  assert("(20 +10)* 3/2- 3", 42.0);
-  assert("(20+10)*3/2-   3", 42.0);
-
   assert("1 << 4", 16.0);
-  assert("  1<< 4 ", 16.0);
 
   std::map<std::string, double> vars;
   vars["pi"] = 3.14;
   assert("pi+1", 4.14, &vars);
 
-  //assert("1+(-2*3)", -5);
+  assert("1+(-2*3)", -5);
 
   return 0;
 }

@@ -14,10 +14,11 @@ TokenQueue_t calculator::toRPN(const char* expr,
     std::map<std::string, double>* vars,
     std::map<std::string, int> opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
+  bool lastTokenWasOp = false;
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && isspace(*expr )) ++expr ;
+  while (*expr && isspace(*expr )) ++expr;
   while (*expr ) {
     if (isdigit(*expr )) {
       // If the token is a number, add it to the output queue.
@@ -28,6 +29,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 #     endif
       rpnQueue.push(new Token<double>(digit));
       expr = nextChar;
+      lastTokenWasOp = false;
     } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
@@ -37,11 +39,11 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       std::stringstream ss;
-      ss << *expr ;
-      ++expr ;
+      ss << *expr;
+      ++expr;
       while (isvariablechar(*expr )) {
-        ss << *expr ;
-        ++expr ;
+        ss << *expr;
+        ++expr;
       }
       std::string key = ss.str();
       std::map<std::string, double>::iterator it = vars->find(key);
@@ -54,12 +56,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
         std::cout << val << std::endl;
 #     endif
       rpnQueue.push(new Token<double>(val));;
+      lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      switch (*expr ) {
+      switch (*expr) {
         case '(':
           operatorStack.push("(");
-          ++expr ;
+          ++expr;
           break;
         case ')':
           while (operatorStack.top().compare("(")) {
@@ -67,10 +70,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
             operatorStack.pop();
           }
           operatorStack.pop();
-          ++expr ;
+          ++expr;
           break;
         default:
           {
+            // The token is an operator.
+            //
             // Let p(o) denote the precedence of an operator o.
             //
             // If the token is an operator, o1, then
@@ -79,12 +84,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
             //     pop o2 off the stack onto the output queue.
             //   Push o1 on the stack.
             std::stringstream ss;
-            ss << *expr ;
-            ++expr ;
+            ss << *expr;
+            ++expr;
             while (*expr && !isspace(*expr ) && !isdigit(*expr )
                 && *expr != '(' && *expr != ')') {
-              ss << *expr ;
-              ++expr ;
+              ss << *expr;
+              ++expr;
             }
             ss.clear();
             std::string str;
@@ -93,16 +98,27 @@ TokenQueue_t calculator::toRPN(const char* expr,
               std::cout << str << std::endl;
 #           endif
 
+            if (lastTokenWasOp) {
+              // Convert unary operators to binary in the RPN.
+              if (!str.compare("-") || !str.compare("+")) {
+                rpnQueue.push(new Token<double>(0));
+              } else {
+                throw std::domain_error(
+                    "Unrecognized unary operator: '" + str + "'.");
+              }
+            }
+
             while (!operatorStack.empty() &&
                 opPrecedence[str] <= opPrecedence[operatorStack.top()]) {
               rpnQueue.push(new Token<std::string>(operatorStack.top()));
               operatorStack.pop();
             }
             operatorStack.push(str);
+            lastTokenWasOp = true;
           }
       }
     }
-    while (*expr && isspace(*expr )) ++expr ;
+    while (*expr && isspace(*expr )) ++expr;
   }
   while (!operatorStack.empty()) {
     rpnQueue.push(new Token<std::string>(operatorStack.top()));
