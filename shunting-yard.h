@@ -20,23 +20,23 @@ public:
   T val;
 };
 
-typedef std::queue<TokenBase*> tokenQueue_t;
+typedef std::queue<TokenBase*> TokenQueue_t;
 
 class ShuntingYard {
 public:
   ShuntingYard (const std::string& infix,
       std::map<std::string, double>* vars = 0);
-  tokenQueue_t to_rpn();
+  TokenQueue_t to_rpn();
 private:
-  int precedence (std::string op) const;
+  int precedence(std::string op) const;
   int stack_precedence() const;
-  tokenQueue_t convert(const std::string &infix);
+  TokenQueue_t convert(const std::string &infix);
 
   const std::string expr_;
   std::map<std::string, double>* vars_;
-  tokenQueue_t rpn_;
-  std::stack< std::string > op_stack_;
-  mutable std::map< std::string, int > op_precedence_;
+  TokenQueue_t rpn_;
+  std::stack<std::string> op_stack_;
+  mutable std::map<std::string, int> op_precedence_;
 };
 
 class calculator {

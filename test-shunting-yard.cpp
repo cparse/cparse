@@ -11,7 +11,7 @@ void assert(std::string expr, double expected,
   double diff = actual - expected;
   if (diff < 0) diff *= -1;
   if (diff < 1e-15) {
-    std::cout << "        '" << expr << "' indeed evaluated to " <<
+    std::cout << "'" << expr << "' indeed evaluated to " <<
       expected << "." << std::endl;
   } else {
     std::cout << "FAILURE '" << expr << "' evaluated to " <<

@@ -20,16 +20,13 @@ int ShuntingYard::stack_precedence() const {
   return precedence(op_stack_.top());
 }
 
-bool isVariableChar(const char c) {
-  return isalpha(c) || c == '_';
-}
 
-tokenQueue_t ShuntingYard::convert(const std::string &infix) {
+#define isvariablechar(c) (isalpha(c) || c == '_')
+
+TokenQueue_t ShuntingYard::convert(const std::string &infix) {
   const char* token = infix.c_str();
+  while (*token && isspace(*token)) ++token;
   while (*token) {
-    while (*token && isspace(*token)) ++token;
-    if (!*token) break;
-
     if (isdigit(*token)) {
       // If the token is a number, add it to the output queue.
       char* nextToken = 0;
@@ -39,7 +36,7 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
 #     endif
       rpn_.push(new Token<double>(digit));
       token = nextToken;
-    } else if (isVariableChar(*token)) {
+    } else if (isvariablechar(*token)) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
       if (!vars_) {
@@ -50,7 +47,7 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
       std::stringstream ss;
       ss << *token;
       ++token;
-      while (isVariableChar(*token)) {
+      while (isvariablechar(*token)) {
         ss << *token;
         ++token;
       }
@@ -113,6 +110,7 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
           }
       }
     }
+    while (*token && isspace(*token)) ++token;
   }
   while (!op_stack_.empty()) {
     rpn_.push(new Token<std::string>(op_stack_.top()));
@@ -121,7 +119,7 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
   return rpn_;
 }
 
-tokenQueue_t ShuntingYard::to_rpn() {
+TokenQueue_t ShuntingYard::to_rpn() {
   return convert(expr_);
 }
 
@@ -159,7 +157,7 @@ void calculator::consume(std::string op, std::stack<double>* operands) {
 double calculator::calculate(const std::string& expr,
     std::map<std::string, double>* vars) { 
   ShuntingYard shunting(expr, vars);
-  tokenQueue_t rpn = shunting.to_rpn();
+  TokenQueue_t rpn = shunting.to_rpn();
 
   std::stack<double> operands;
   while (!rpn.empty()) {
