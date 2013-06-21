@@ -13,7 +13,7 @@
 int main() {
   std::map<std::string, double> vars;
   vars["pi"] = 3.14;
-  std::cout << calculator::calculate("pi+1", &vars) << std::endl;
+  std::cout << calculator::calculate("-pi+1", &vars) << std::endl;
   return 0;
 }
 ```
@@ -22,16 +22,12 @@ int main() {
  + See `test-shunting-yard.cpp`.
 
 ## Features.
- + Operators: +, -, /, +, <<, >>
- + Map of variable names to be replaced in string.
+ + Unary operators. +, -
+ + Binary operators. +, -, /, +, <<, >>
+ + Map of variable names.
 
 ## Adding a binary operator.
 To add a binary operator,
 
  1. Update the operator precedence map in `calculator::calculate`.
  2. Add the computation to `calculator::consume`.
-
-## TODO
- + Unary operators.
- + Make a PersistentCalculator object to store data
-   to make chains of calculations possible.

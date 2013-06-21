@@ -14,7 +14,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
     std::map<std::string, double>* vars,
     std::map<std::string, int> opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
-  bool lastTokenWasOp = false;
+  bool lastTokenWasOp = true;
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
@@ -87,7 +87,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             ss << *expr;
             ++expr;
             while (*expr && !isspace(*expr ) && !isdigit(*expr )
-                && *expr != '(' && *expr != ')') {
+                && !isvariablechar(*expr) && *expr != '(' && *expr != ')') {
               ss << *expr;
               ++expr;
             }
