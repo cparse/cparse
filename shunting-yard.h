@@ -14,7 +14,7 @@ struct TokenBase {
   virtual ~TokenBase() {}
 };
 
-template< class T > class Token : public TokenBase {
+template<class T> class Token : public TokenBase {
 public:
   Token (T t) : val(t) {}
   T val;
@@ -22,29 +22,14 @@ public:
 
 typedef std::queue<TokenBase*> TokenQueue_t;
 
-class ShuntingYard {
-public:
-  ShuntingYard (const std::string& infix,
-      std::map<std::string, double>* vars = 0);
-  TokenQueue_t to_rpn();
-private:
-  int precedence(std::string op) const;
-  int stack_precedence() const;
-  TokenQueue_t convert(const std::string &infix);
-
-  const std::string expr_;
-  std::map<std::string, double>* vars_;
-  TokenQueue_t rpn_;
-  std::stack<std::string> op_stack_;
-  mutable std::map<std::string, int> op_precedence_;
-};
-
 class calculator {
 public:
-  static double calculate(const std::string& expr,
+  static double calculate(const char* expr,
       std::map<std::string, double>* vars = 0);
 private:
-  static void consume(std::string op, std::stack<double>* operands);
+  static TokenQueue_t toRPN(const char* expr,
+      std::map<std::string, double>* vars,
+      std::map<std::string, int> opPrecedence);
 };
 
 #endif // _SHUNTING_YARD_H

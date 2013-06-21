@@ -9,73 +9,65 @@
 
 #include "shunting-yard.h"
 
-int ShuntingYard::precedence(std::string op) const {
-  return op_precedence_[op];
-}
-
-int ShuntingYard::stack_precedence() const { 
-  if (op_stack_.empty()) {
-    return -1;
-  }
-  return precedence(op_stack_.top());
-}
-
-
 #define isvariablechar(c) (isalpha(c) || c == '_')
+TokenQueue_t calculator::toRPN(const char* expr,
+    std::map<std::string, double>* vars,
+    std::map<std::string, int> opPrecedence) {
+  TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
 
-TokenQueue_t ShuntingYard::convert(const std::string &infix) {
-  const char* token = infix.c_str();
-  while (*token && isspace(*token)) ++token;
-  while (*token) {
-    if (isdigit(*token)) {
+  // In one pass, ignore whitespace and parse the expression into RPN
+  // using Dijkstra's Shunting-yard algorithm.
+  while (*expr && isspace(*expr )) ++expr ;
+  while (*expr ) {
+    if (isdigit(*expr )) {
       // If the token is a number, add it to the output queue.
-      char* nextToken = 0;
-      double digit = strtod(token, &nextToken);
+      char* nextChar = 0;
+      double digit = strtod(expr , &nextChar);
 #     ifdef DEBUG
         std::cout << digit << std::endl;
 #     endif
-      rpn_.push(new Token<double>(digit));
-      token = nextToken;
-    } else if (isvariablechar(*token)) {
+      rpnQueue.push(new Token<double>(digit));
+      expr = nextChar;
+    } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
-      if (!vars_) {
+      if (!vars) {
         throw std::domain_error(
             "Detected variable, but the variable map is null.");
       }
 
       std::stringstream ss;
-      ss << *token;
-      ++token;
-      while (isvariablechar(*token)) {
-        ss << *token;
-        ++token;
+      ss << *expr ;
+      ++expr ;
+      while (isvariablechar(*expr )) {
+        ss << *expr ;
+        ++expr ;
       }
       std::string key = ss.str();
-      std::map<std::string, double>::iterator it = vars_->find(key);
-      if (it == vars_->end()) {
+      std::map<std::string, double>::iterator it = vars->find(key);
+      if (it == vars->end()) {
         throw std::domain_error(
             "Unable to find the variable '" + key + "'.");
       }
-      double val = vars_->find(key)->second;
+      double val = vars->find(key)->second;
 #     ifdef DEBUG
         std::cout << val << std::endl;
 #     endif
-      rpn_.push(new Token<double>(val));;
+      rpnQueue.push(new Token<double>(val));;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      switch (*token) {
+      switch (*expr ) {
         case '(':
-          op_stack_.push("(");
-          ++token;
+          operatorStack.push("(");
+          ++expr ;
           break;
         case ')':
-          while (op_stack_.top().compare("(")) {
-            rpn_.push(new Token<std::string>(op_stack_.top()));
-            op_stack_.pop();
+          while (operatorStack.top().compare("(")) {
+            rpnQueue.push(new Token<std::string>(operatorStack.top()));
+            operatorStack.pop();
           }
-          op_stack_.pop();
-          ++token;
+          operatorStack.pop();
+          ++expr ;
           break;
         default:
           {
@@ -87,12 +79,12 @@ TokenQueue_t ShuntingYard::convert(const std::string &infix) {
             //     pop o2 off the stack onto the output queue.
             //   Push o1 on the stack.
             std::stringstream ss;
-            ss << *token;
-            ++token;
-            while (*token && !isspace(*token) && !isdigit(*token)
-                && *token != '(' && *token != ')') {
-              ss << *token;
-              ++token;
+            ss << *expr ;
+            ++expr ;
+            while (*expr && !isspace(*expr ) && !isdigit(*expr )
+                && *expr != '(' && *expr != ')') {
+              ss << *expr ;
+              ++expr ;
             }
             ss.clear();
             std::string str;
@@ -101,84 +93,72 @@ TokenQueue_t ShuntingYard::convert(const std::string &infix) {
               std::cout << str << std::endl;
 #           endif
 
-            while (!op_stack_.empty() &&
-                precedence(str) <= stack_precedence()) {
-              rpn_.push(new Token<std::string>(op_stack_.top()));
-              op_stack_.pop();
+            while (!operatorStack.empty() &&
+                opPrecedence[str] <= opPrecedence[operatorStack.top()]) {
+              rpnQueue.push(new Token<std::string>(operatorStack.top()));
+              operatorStack.pop();
             }
-            op_stack_.push(str);
+            operatorStack.push(str);
           }
       }
     }
-    while (*token && isspace(*token)) ++token;
+    while (*expr && isspace(*expr )) ++expr ;
   }
-  while (!op_stack_.empty()) {
-    rpn_.push(new Token<std::string>(op_stack_.top()));
-    op_stack_.pop();
+  while (!operatorStack.empty()) {
+    rpnQueue.push(new Token<std::string>(operatorStack.top()));
+    operatorStack.pop();
   }
-  return rpn_;
+  return rpnQueue;
 }
 
-TokenQueue_t ShuntingYard::to_rpn() {
-  return convert(expr_);
-}
+double calculator::calculate(const char* expr,
+    std::map<std::string, double>* vars) {
+  // 1. Create the operator precedence map.
+  std::map<std::string, int> opPrecedence;
+  opPrecedence["("] = -1;
+  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
+  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
+  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3;
 
-ShuntingYard::ShuntingYard (const std::string& infix,
-    std::map<std::string, double>* vars) : expr_(infix), vars_(vars) {
-  op_precedence_["("] = -1;
-  op_precedence_["<<"] = 1; op_precedence_[">>"] = 1;
-  op_precedence_["+"]  = 2; op_precedence_["-"]  = 2;
-  op_precedence_["*"]  = 3; op_precedence_["/"]  = 3;
-}
+  // 2. Convert to RPN with Dijkstra's Shunting-yard algorithm.
+  TokenQueue_t rpn = toRPN(expr, vars, opPrecedence);
 
-void calculator::consume(std::string op, std::stack<double>* operands) { 
-  if (operands->size() < 2) {
-    throw std::domain_error("Invalid equation.");
-  }
-  double right = operands->top(); operands->pop();
-  double left  = operands->top(); operands->pop();
-  if (!op.compare("+")) {
-    operands->push(left + right);
-  } else if (!op.compare("*")) {
-    operands->push(left * right);
-  } else if (!op.compare("-")) {
-    operands->push(left - right);
-  } else if (!op.compare("/")) {
-    operands->push(left / right);
-  } else if (!op.compare("<<")) {
-    operands->push((int) left << (int) right);
-  } else if (!op.compare(">>")) {
-    operands->push((int) left >> (int) right);
-  } else {
-    throw std::domain_error("Unknown operator: '" + op + "'.");
-  }
-} 
-
-double calculator::calculate(const std::string& expr,
-    std::map<std::string, double>* vars) { 
-  ShuntingYard shunting(expr, vars);
-  TokenQueue_t rpn = shunting.to_rpn();
-
-  std::stack<double> operands;
+  // 3. Evaluate the expression in RPN form.
+  std::stack<double> evaluation;
   while (!rpn.empty()) {
     TokenBase* base = rpn.front();
     rpn.pop();
 
     Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
-    if (strTok) {
-      consume(strTok->val, &operands);
-      delete base;
-      continue;
-    }
-
     Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-    if (doubleTok) {
-      operands.push(doubleTok->val);
-      delete base;
-      continue;
+    if (strTok) {
+      std::string str = strTok->val;
+      if (evaluation.size() < 2) {
+        throw std::domain_error("Invalid equation.");
+      }
+      double right = evaluation.top(); evaluation.pop();
+      double left  = evaluation.top(); evaluation.pop();
+      if (!str.compare("+")) {
+        evaluation.push(left + right);
+      } else if (!str.compare("*")) {
+        evaluation.push(left * right);
+      } else if (!str.compare("-")) {
+        evaluation.push(left - right);
+      } else if (!str.compare("/")) {
+        evaluation.push(left / right);
+      } else if (!str.compare("<<")) {
+        evaluation.push((int) left << (int) right);
+      } else if (!str.compare(">>")) {
+        evaluation.push((int) left >> (int) right);
+      } else {
+        throw std::domain_error("Unknown operator: '" + str + "'.");
+      }
+    } else if (doubleTok) {
+      evaluation.push(doubleTok->val);
+    } else {
+      throw std::domain_error("Invalid token.");
     }
-
-    throw std::domain_error("Invalid token.");
+    delete base;
   }
-  return operands.top();
+  return evaluation.top();
 }

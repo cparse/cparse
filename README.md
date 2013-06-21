@@ -5,6 +5,7 @@
    [Jessee Brown](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
 
 ## Minimal example.
+
 ```C
 #include <iostream>
 #include "shunting-yard.h"
@@ -23,6 +24,12 @@ int main() {
 ## Features.
  + Operators: +, -, /, +, <<, >>
  + Map of variable names to be replaced in string.
+
+## Adding a binary operator.
+To add a binary operator,
+
+ 1. Update the operator precedence map in `calculator::calculate`.
+ 2. Add the computation to `calculator::consume`.
 
 ## TODO
  + Unary operators.
