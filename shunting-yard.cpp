@@ -9,20 +9,6 @@
 
 #include "shunting-yard.h"
 
-void RPNExpression::push(TokenBase *t) {
-  stack_.push_back(t);
-}
-
-TokenBase* RPNExpression::pop() {
-  TokenBase *t = stack_.front();
-  stack_.erase(stack_.begin());
-  return t;
-}
-
-bool RPNExpression::empty() const {
-  return stack_.empty();
-}
-
 int ShuntingYard::precedence(std::string op) const {
   return op_precedence_[op];
 }
@@ -38,7 +24,7 @@ bool isVariableChar(const char c) {
   return isalpha(c) || c == '_';
 }
 
-RPNExpression ShuntingYard::convert(const std::string &infix) {
+tokenQueue_t ShuntingYard::convert(const std::string &infix) {
   const char* token = infix.c_str();
   while (*token) {
     while (*token && isspace(*token)) ++token;
@@ -137,7 +123,7 @@ RPNExpression ShuntingYard::convert(const std::string &infix) {
   return rpn_;
 }
 
-RPNExpression ShuntingYard::to_rpn() {
+tokenQueue_t ShuntingYard::to_rpn() {
   return convert(expr_);
 }
 
@@ -172,11 +158,12 @@ void calculator::consume(std::string op, std::stack<double>* operands) {
 double calculator::calculate(const std::string& expr,
     std::map<std::string, double>* vars) { 
   ShuntingYard shunting(expr, vars);
-  RPNExpression rpn = shunting.to_rpn();
+  tokenQueue_t rpn = shunting.to_rpn();
 
   std::stack<double> operands;
   while (!rpn.empty()) {
-    TokenBase* base = rpn.pop();
+    TokenBase* base = rpn.front();
+    rpn.pop();
 
     Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
     if (strTok) {

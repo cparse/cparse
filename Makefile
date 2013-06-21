@@ -7,6 +7,6 @@ CFLAGS=-g -Wall -pedantic #-DDEBUG
 all: $(EXE)
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)
-%.o: %.cpp; $(CXX) $(CFLAGS) -c $< -o $@ $(DEBUG)
+%.o: %.cpp %.h; $(CXX) $(CFLAGS) -c $< -o $@ $(DEBUG)
 
 clean: ; rm -f $(EXE) $(OBJ)

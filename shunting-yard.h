@@ -8,7 +8,7 @@
 #include <map>
 #include <stack>
 #include <string>
-#include <vector>
+#include <queue>
 
 struct TokenBase { 
   virtual ~TokenBase() {}
@@ -18,34 +18,25 @@ template< class T > class Token : public TokenBase {
 public:
   Token (T t) : val(t) {}
   T val;
-private:
 };
 
-class RPNExpression {
-public:
-  void push(TokenBase *t);
-  TokenBase* pop();
-  bool empty() const;
-private:
-  std::vector< TokenBase* > stack_;
-};
-
+typedef std::queue<TokenBase*> tokenQueue_t;
 
 class ShuntingYard {
 public:
   ShuntingYard (const std::string& infix,
       std::map<std::string, double>* vars = 0);
-  RPNExpression to_rpn();
+  tokenQueue_t to_rpn();
 private:
-  const std::string expr_;
-  std::map<std::string, double>* vars_;
-  RPNExpression rpn_;
-  std::stack< std::string > op_stack_;
-  mutable std::map< std::string, int > op_precedence_;
-
   int precedence (std::string op) const;
   int stack_precedence() const;
-  RPNExpression convert(const std::string &infix);
+  tokenQueue_t convert(const std::string &infix);
+
+  const std::string expr_;
+  std::map<std::string, double>* vars_;
+  tokenQueue_t rpn_;
+  std::stack< std::string > op_stack_;
+  mutable std::map< std::string, int > op_precedence_;
 };
 
 class calculator {
