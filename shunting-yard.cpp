@@ -43,9 +43,8 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
       if (!vars_) {
-        std::cerr << "Error: Detected variable, " <<
-          "but the variable map is null." << std::endl;
-        exit(42);
+        throw std::domain_error(
+            "Detected variable, but the variable map is null.");
       }
 
       std::stringstream ss;
@@ -58,9 +57,8 @@ tokenQueue_t ShuntingYard::convert(const std::string &infix) {
       std::string key = ss.str();
       std::map<std::string, double>::iterator it = vars_->find(key);
       if (it == vars_->end()) {
-        std::cerr << "Error: Unable to find the variable '" <<
-          key << "'." << std::endl;
-        exit(42);
+        throw std::domain_error(
+            "Unable to find the variable '" + key + "'.");
       }
       double val = vars_->find(key)->second;
 #     ifdef DEBUG
@@ -136,6 +134,9 @@ ShuntingYard::ShuntingYard (const std::string& infix,
 }
 
 void calculator::consume(std::string op, std::stack<double>* operands) { 
+  if (operands->size() < 2) {
+    throw std::domain_error("Invalid equation.");
+  }
   double right = operands->top(); operands->pop();
   double left  = operands->top(); operands->pop();
   if (!op.compare("+")) {
@@ -179,8 +180,7 @@ double calculator::calculate(const std::string& expr,
       continue;
     }
 
-    std::cerr << "Invalid token." << std::endl;
-    exit(42);
+    throw std::domain_error("Invalid token.");
   }
   return operands.top();
 }
