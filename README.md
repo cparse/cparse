@@ -1,4 +1,5 @@
 # C++ expression parsing.
+ + See the [blog post](http://bamos.github.io/2013/06/26/expression-parsing-shunting-yard/).
  + Expression parsing in C++ with Dijkstra's
    [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm).
  + Original version by
