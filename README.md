@@ -53,7 +53,7 @@ Please see the
 for implementation-specific details,
 and refer to the pruned code below for a summary.
 
-{% highlight cpp %}
+```C++
 TokenQueue_t calculator::toRPN(const char* expr,
     std::map<std::string, double>* vars,
     std::map<std::string, int> opPrecedence) {
@@ -101,7 +101,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   }
   return rpnQueue;
 }
-{% endhighlight %}
+```
 
 
 ## Evaluating RPN form.
@@ -110,7 +110,7 @@ To evaluate this, pop all of the elements off and handle
 operations when encountered.
 
 
-{% highlight cpp %}
+```C++
 std::stack<double> evaluation;
 while (!rpn.empty()) {
   TokenBase* base = rpn.front();
@@ -147,7 +147,7 @@ while (!rpn.empty()) {
   }
   delete base;
 }
-{% endhighlight %}
+```
 
 The evaluated value resides in `evaluation.top` of type double.
 
