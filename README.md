@@ -66,7 +66,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
     } else {
-      // Otherwise, the variable is an operator or paranthesis.
+      // Otherwise, the variable is an operator or parenthesis.
       switch (*expr) {
         case '(':
           operatorStack.push("(");
