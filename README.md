@@ -6,8 +6,7 @@ as an expression using Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
 [Jesse Brown's code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
-The library is available in open source from
-[bamos/cpp-expression-parser](https://github.com/bamos/cpp-expression-parser).
+The library is available on [biicode](http://www.biicode.com/amalulla/amalulla/cpp-expression-parser/master).
 
 # Minimal example.
 
