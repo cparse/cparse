@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <math.h>
 
 #include "shunting-yard.h"
 
@@ -165,9 +166,9 @@ double calculator::calculate(const char* expr,
         evaluation.push(left / right);
       } else if (!str.compare("<<")) {
         evaluation.push((int) left << (int) right);
-      } else if (!str.compare("^")){
-		evaluation.push(pow(left, right));
-	  }else if (!str.compare(">>")) {
+      } else if (!str.compare("^")) {
+        evaluation.push(pow(left, right));
+      } else if (!str.compare(">>")) {
         evaluation.push((int) left >> (int) right);
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
