@@ -171,7 +171,7 @@ double calculator::calculate(const char* expr,
       } else if (!str.compare(">>")) {
         evaluation.push((int) left >> (int) right);
       } else if (!str.compare("%")) {
-        evaluation.push(left % right);
+        evaluation.push((int) left % (int) right);
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
