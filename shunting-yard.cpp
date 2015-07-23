@@ -1,6 +1,6 @@
 // Source: http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm#
 // Author: Jesse Brown
-// Modifications: Brandon Amos
+// Modifications: Brandon Amos, redpois0n
 
 #include <cstdlib>
 #include <iostream>
@@ -135,7 +135,7 @@ double calculator::calculate(const char* expr,
   opPrecedence["("] = -1;
   opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
   opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
-  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3;
+  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
   opPrecedence["^"] = 4;
 
   // 2. Convert to RPN with Dijkstra's Shunting-yard algorithm.
@@ -170,6 +170,8 @@ double calculator::calculate(const char* expr,
         evaluation.push(pow(left, right));
       } else if (!str.compare(">>")) {
         evaluation.push((int) left >> (int) right);
+      } else if (!str.compare("%")) {
+        evaluation.push((int) left % (int) right);
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
