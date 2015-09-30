@@ -1,4 +1,6 @@
 # C++ expression parsing.
+[![Build Status](https://webapi.biicode.com/v1/badges/amalulla/amalulla/cpp-expression-parser/master)](https://www.biicode.com/amalulla/cpp-expression-parser)
+
 A simple form of mathematical expression parsing can take a string such
 as `-pi+1` on input and output `-2.14`.
 This post presents a C++ library to parse a character sequence
@@ -7,7 +9,6 @@ as an expression using Dijkstra's
 which modifies
 [Jesse Brown's code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
 The library is available on [biicode](http://www.biicode.com/amalulla/amalulla/cpp-expression-parser/master).
-[![Build Status](https://webapi.biicode.com/v1/badges/amalulla/amalulla/cpp-expression-parser/master)](https://www.biicode.com/amalulla/cpp-expression-parser) 
 
 #Build Status
 
