@@ -1,5 +1,4 @@
 # C++ expression parsing.
-[![Build Status](https://webapi.biicode.com/v1/badges/amalulla/amalulla/cpp-expression-parser/master)](https://www.biicode.com/amalulla/cpp-expression-parser)
 
 A simple form of mathematical expression parsing can take a string such
 as `-pi+1` on input and output `-2.14`.
@@ -8,13 +7,6 @@ as an expression using Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
 [Jesse Brown's code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
-The library is available on [biicode](http://www.biicode.com/amalulla/amalulla/cpp-expression-parser/master).
-
-#Build Status
-
-- Win Visual Studio 12: [![Build status](https://ci.appveyor.com/api/projects/status/rx9nqxur2goe1ny9/branch/biicodizer?svg=true)](https://ci.appveyor.com/project/MariadeAnton/cpp-expression-parser/branch/biicodizer)
-- Linux gcc: [![Build Status](https://travis-ci.org/MariadeAnton/cpp-expression-parser.svg?branch=biicodizer)](https://travis-ci.org/MariadeAnton/cpp-expression-parser)
-
 
 # Minimal example.
 
