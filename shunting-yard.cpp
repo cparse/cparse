@@ -10,6 +10,21 @@
 
 #include "shunting-yard.h"
 
+std::map<std::string, int> calculator::buildOpPrecedence() {
+  std::map<std::string, int> opPrecedence;
+
+  // Create the operator precedence map.
+  opPrecedence["("] = -1;
+  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
+  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
+  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
+  opPrecedence["^"] = 4;
+
+  return opPrecedence;
+}
+// Builds the opPrecedence map only once:
+std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
+
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
     std::map<std::string, double>* vars,
@@ -130,18 +145,11 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
 double calculator::calculate(const char* expr,
     std::map<std::string, double>* vars) {
-  // 1. Create the operator precedence map.
-  std::map<std::string, int> opPrecedence;
-  opPrecedence["("] = -1;
-  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
-  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
-  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
-  opPrecedence["^"] = 4;
 
-  // 2. Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = toRPN(expr, vars, opPrecedence);
+  // 1. Convert to RPN with Dijkstra's Shunting-yard algorithm.
+  TokenQueue_t rpn = toRPN(expr, vars);
 
-  // 3. Evaluate the expression in RPN form.
+  // 2. Evaluate the expression in RPN form.
   std::stack<double> evaluation;
   while (!rpn.empty()) {
     TokenBase* base = rpn.front();

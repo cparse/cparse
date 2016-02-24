@@ -24,12 +24,15 @@ typedef std::queue<TokenBase*> TokenQueue_t;
 
 class calculator {
 public:
+  static std::map<std::string, int> opPrecedence;
+  static std::map<std::string, int> buildOpPrecedence();
+public:
   static double calculate(const char* expr,
       std::map<std::string, double>* vars = 0);
 private:
   static TokenQueue_t toRPN(const char* expr,
       std::map<std::string, double>* vars,
-      std::map<std::string, int> opPrecedence);
+      std::map<std::string, int> opPrecedence=opPrecedence);
 };
 
 #endif // _SHUNTING_YARD_H
