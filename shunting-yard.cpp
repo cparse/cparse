@@ -52,7 +52,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       std::stringstream ss;
       ss << *expr;
       ++expr;
-      while (isvariablechar(*expr )) {
+      while( isvariablechar(*expr ) || isdigit(*expr) ) {
         ss << *expr;
         ++expr;
       }

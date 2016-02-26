@@ -36,10 +36,12 @@ void assert(const char* expr, double expected,
 int main(int argc, char** argv) {
   std::map<std::string, double> vars;
   vars["pi"] = 3.14;
+  vars["b1"] = 0;
 
   std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
 
   assert("-pi+1", -2.14, &vars);
+  assert("-pi+1 + b1", -2.14, &vars);
 
   assert("(20+10)*3/2-3", 42.0);
   assert("1 << 4", 16.0);
@@ -55,27 +57,36 @@ int main(int argc, char** argv) {
   assert(c2.eval(), 7.14);
   assert(c2.eval(), 7.14);
 
-  calculator c3("pi+b", &vars);
+  calculator c3("pi+b1+b2", &vars);
 
-  vars["b"] = 0;
-  assert(c3.eval(&vars), 3.14);
+  vars["b2"] = 1;
+  assert(c3.eval(&vars), 4.14);
 
-  vars["b"] = 4-3.14;
+  vars["b2"] = .86;
   assert(c3.eval(&vars), 4);
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
   try {
-    assert(c3.eval(), 4);
+    c3.eval();
   } catch(std::domain_error err) {
     std::cout << "  THROWS as expected" << std::endl;
   }
 
   try {
-    vars.erase("b");
-    assert(c3.eval(&vars), 4);
+    vars.erase("b2");
+    c3.eval(&vars);
   } catch(std::domain_error err) {
     std::cout << "  THROWS as expected" << std::endl;
+  }
+
+  try {
+    vars.erase("b1");
+    vars["b2"] = 0;
+    c3.eval(&vars);
+    std::cout << "  Do not THROW as expected" << std::endl;
+  } catch(std::domain_error err) {
+    std::cout << "  If it THROWS it's a problem!" << std::endl;
   }
 
   std::cout << "\nEnd testing" << std::endl;
