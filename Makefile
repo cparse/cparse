@@ -11,6 +11,6 @@ $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)
 
 again: clean all
 
-run: $(EXE); ./$(EXE)
+test: $(EXE); ./$(EXE)
 
 clean: ; rm -f $(EXE) $(OBJ)
