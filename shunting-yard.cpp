@@ -49,11 +49,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
     } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
-      if (!vars) {
-        throw std::domain_error(
-            "Detected variable, but the variable map is null.");
-      }
-
       std::stringstream ss;
       ss << *expr;
       ++expr;
@@ -61,17 +56,30 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ss << *expr;
         ++expr;
       }
+
+      double* val = NULL;
       std::string key = ss.str();
-      std::map<std::string, double>::iterator it = vars->find(key);
-      if (it == vars->end()) {
-        throw std::domain_error(
-            "Unable to find the variable '" + key + "'.");
+
+      if(vars) {
+        std::map<std::string, double>::iterator it = vars->find(key);
+        if(it != vars->end())
+          val = &(it->second);
       }
-      double val = vars->find(key)->second;
-#     ifdef DEBUG
-        std::cout << val << std::endl;
-#     endif
-      rpnQueue.push(new Token<double>(val));;
+
+      if (val) {
+        // Save the number
+  #     ifdef DEBUG
+          std::cout << val << std::endl;
+  #     endif
+        rpnQueue.push(new Token<double>(*val));;
+      } else {
+        // Save the variable name:
+  #     ifdef DEBUG
+          std::cout << key << std::endl;
+  #     endif
+        rpnQueue.push(new Token<std::string>(key));
+      }
+
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
@@ -156,7 +164,8 @@ double calculator::calculate(const char* expr,
   return ret;
 }
 
-double calculator::calculate(TokenQueue_t rpn) {
+double calculator::calculate(TokenQueue_t rpn,
+    std::map<std::string, double>* vars) {
 
   // Evaluate the expression in RPN form.
   std::stack<double> evaluation;
@@ -166,7 +175,9 @@ double calculator::calculate(TokenQueue_t rpn) {
 
     Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
     Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-    if (strTok) {
+
+    // Operator:
+    if (strTok && !isvariablechar(strTok->val[0])) {
       std::string str = strTok->val;
       if (evaluation.size() < 2) {
         throw std::domain_error("Invalid equation.");
@@ -192,8 +203,22 @@ double calculator::calculate(TokenQueue_t rpn) {
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
-    } else if (doubleTok) {
+    } else if (doubleTok) { // Number
       evaluation.push(doubleTok->val);
+    } else if (strTok) { // Variable
+      if (!vars) {
+        throw std::domain_error(
+            "Detected variable, but the variable map is null.");
+      }
+
+      std::string key = strTok->val;
+      std::map<std::string, double>::iterator it = vars->find(key);
+
+      if (it == vars->end()) {
+        throw std::domain_error(
+            "Unable to find the variable '" + key + "'.");
+      }
+      evaluation.push(it->second);
     } else {
       throw std::domain_error("Invalid token.");
     }
@@ -229,9 +254,9 @@ void calculator::compile(const char* expr,
 
   this->RPN = calculator::toRPN(expr, vars, opPrecedence);
 }
-
-double calculator::eval() {
-  return calculate(this->RPN);
+  
+double calculator::eval(std::map<std::string, double>* vars) {
+  return calculate(this->RPN, vars);
 }
 
 /* * * * * For Debug Only * * * * */
@@ -259,7 +284,6 @@ std::string calculator::str() {
   ss << " ] }";
   return ss.str();
 }
-
 
 
 

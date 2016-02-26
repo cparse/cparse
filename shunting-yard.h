@@ -32,7 +32,8 @@ public:
       std::map<std::string, double>* vars = 0);
 
 private:
-  static double calculate(TokenQueue_t RPN);
+  static double calculate(TokenQueue_t RPN,
+      std::map<std::string, double>* vars = 0);
   static void cleanRPN(TokenQueue_t& rpn);
   static TokenQueue_t toRPN(const char* expr,
       std::map<std::string, double>* vars,
@@ -49,7 +50,7 @@ public:
   void compile(const char* expr,
       std::map<std::string, double>* vars = 0,
       std::map<std::string, int> opPrecedence=opPrecedence);
-  double eval();
+  double eval(std::map<std::string, double>* vars = 0);
   std::string str();
 };
 

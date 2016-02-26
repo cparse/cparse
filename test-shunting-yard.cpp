@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   assert("1 << 4", 16.0);
   assert("1+(-2*3)", -5);
 
-  std::cout << "\nTest with calculate::compile() & calculate::eval()\n" << std::endl;
+  std::cout << "\nTests with calculate::compile() & calculate::eval()\n" << std::endl;
 
   calculator c1;
   c1.compile("-pi+1", &vars);
@@ -54,7 +54,30 @@ int main(int argc, char** argv) {
   calculator c2("pi+4", &vars);
   assert(c2.eval(), 7.14);
   assert(c2.eval(), 7.14);
-  
+
+  calculator c3("pi+b", &vars);
+
+  vars["b"] = 0;
+  assert(c3.eval(&vars), 3.14);
+
+  vars["b"] = 4-3.14;
+  assert(c3.eval(&vars), 4);
+
+  std::cout << "\nTesting exception management\n" << std::endl;
+
+  try {
+    assert(c3.eval(), 4);
+  } catch(std::domain_error err) {
+    std::cout << "  THROWS as expected" << std::endl;
+  }
+
+  try {
+    vars.erase("b");
+    assert(c3.eval(&vars), 4);
+  } catch(std::domain_error err) {
+    std::cout << "  THROWS as expected" << std::endl;
+  }
+
   std::cout << "\nEnd testing" << std::endl;
 
   return 0;
