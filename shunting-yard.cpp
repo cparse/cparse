@@ -10,6 +10,21 @@
 
 #include "shunting-yard.h"
 
+std::map<std::string, int> calculator::buildOpPrecedence() {
+  std::map<std::string, int> opPrecedence;
+
+  // Create the operator precedence map.
+  opPrecedence["("] = -1;
+  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
+  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
+  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
+  opPrecedence["^"] = 4;
+
+  return opPrecedence;
+}
+// Builds the opPrecedence map only once:
+std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
+
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
     std::map<std::string, double>* vars,
@@ -34,29 +49,37 @@ TokenQueue_t calculator::toRPN(const char* expr,
     } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
       // add the parsed number to the output queue.
-      if (!vars) {
-        throw std::domain_error(
-            "Detected variable, but the variable map is null.");
-      }
-
       std::stringstream ss;
       ss << *expr;
       ++expr;
-      while (isvariablechar(*expr )) {
+      while( isvariablechar(*expr ) || isdigit(*expr) ) {
         ss << *expr;
         ++expr;
       }
+
+      double* val = NULL;
       std::string key = ss.str();
-      std::map<std::string, double>::iterator it = vars->find(key);
-      if (it == vars->end()) {
-        throw std::domain_error(
-            "Unable to find the variable '" + key + "'.");
+
+      if(vars) {
+        std::map<std::string, double>::iterator it = vars->find(key);
+        if(it != vars->end())
+          val = &(it->second);
       }
-      double val = vars->find(key)->second;
-#     ifdef DEBUG
-        std::cout << val << std::endl;
-#     endif
-      rpnQueue.push(new Token<double>(val));;
+
+      if (val) {
+        // Save the number
+  #     ifdef DEBUG
+          std::cout << val << std::endl;
+  #     endif
+        rpnQueue.push(new Token<double>(*val));;
+      } else {
+        // Save the variable name:
+  #     ifdef DEBUG
+          std::cout << key << std::endl;
+  #     endif
+        rpnQueue.push(new Token<std::string>(key));
+      }
+
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
@@ -130,18 +153,21 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
 double calculator::calculate(const char* expr,
     std::map<std::string, double>* vars) {
-  // 1. Create the operator precedence map.
-  std::map<std::string, int> opPrecedence;
-  opPrecedence["("] = -1;
-  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
-  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
-  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
-  opPrecedence["^"] = 4;
 
-  // 2. Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = toRPN(expr, vars, opPrecedence);
+  // Convert to RPN with Dijkstra's Shunting-yard algorithm.
+  TokenQueue_t rpn = toRPN(expr, vars);
 
-  // 3. Evaluate the expression in RPN form.
+  double ret = calculate(rpn);
+
+  cleanRPN(rpn);
+
+  return ret;
+}
+
+double calculator::calculate(TokenQueue_t rpn,
+    std::map<std::string, double>* vars) {
+
+  // Evaluate the expression in RPN form.
   std::stack<double> evaluation;
   while (!rpn.empty()) {
     TokenBase* base = rpn.front();
@@ -149,7 +175,9 @@ double calculator::calculate(const char* expr,
 
     Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
     Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-    if (strTok) {
+
+    // Operator:
+    if (strTok && !isvariablechar(strTok->val[0])) {
       std::string str = strTok->val;
       if (evaluation.size() < 2) {
         throw std::domain_error("Invalid equation.");
@@ -175,12 +203,92 @@ double calculator::calculate(const char* expr,
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
-    } else if (doubleTok) {
+    } else if (doubleTok) { // Number
       evaluation.push(doubleTok->val);
+    } else if (strTok) { // Variable
+      if (!vars) {
+        throw std::domain_error(
+            "Detected variable, but the variable map is null.");
+      }
+
+      std::string key = strTok->val;
+      std::map<std::string, double>::iterator it = vars->find(key);
+
+      if (it == vars->end()) {
+        throw std::domain_error(
+            "Unable to find the variable '" + key + "'.");
+      }
+      evaluation.push(it->second);
     } else {
       throw std::domain_error("Invalid token.");
     }
-    delete base;
   }
   return evaluation.top();
 }
+
+void calculator::cleanRPN(TokenQueue_t& rpn) {
+  while( rpn.size() ) {
+    delete rpn.front();
+    rpn.pop();
+  }
+}
+
+/* * * * * Non Static Functions * * * * */
+
+calculator::~calculator() {
+  cleanRPN(this->RPN);
+}
+
+calculator::calculator(const char* expr,
+    std::map<std::string, double>* vars,
+    std::map<std::string, int> opPrecedence) {
+  compile(expr, vars, opPrecedence);
+}
+
+void calculator::compile(const char* expr,
+    std::map<std::string, double>* vars,
+    std::map<std::string, int> opPrecedence) {
+
+  // Make sure it is empty:
+  cleanRPN(this->RPN);
+
+  this->RPN = calculator::toRPN(expr, vars, opPrecedence);
+}
+  
+double calculator::eval(std::map<std::string, double>* vars) {
+  return calculate(this->RPN, vars);
+}
+
+/* * * * * For Debug Only * * * * */
+
+std::string calculator::str() {
+  std::stringstream ss;
+  TokenQueue_t rpn = this->RPN;
+
+  ss << "calculator { RPN: [ ";
+  while( rpn.size() ) {
+    TokenBase* base = rpn.front();
+
+    Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
+    if(doubleTok)
+      ss << doubleTok->val;
+
+    Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
+    if(strTok)
+      ss << "'" << strTok->val << "'";
+
+    rpn.pop();
+
+    ss << (rpn.size() ? ", ":"");
+  }
+  ss << " ] }";
+  return ss.str();
+}
+
+
+
+
+
+
+
+

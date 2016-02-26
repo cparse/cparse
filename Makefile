@@ -9,4 +9,8 @@ all: $(EXE)
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)
 %.o: %.cpp %.h; $(CXX) $(CFLAGS) -c $< -o $@ $(DEBUG)
 
+again: clean all
+
+run: $(EXE); ./$(EXE)
+
 clean: ; rm -f $(EXE) $(OBJ)
