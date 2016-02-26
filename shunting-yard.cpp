@@ -146,10 +146,19 @@ TokenQueue_t calculator::toRPN(const char* expr,
 double calculator::calculate(const char* expr,
     std::map<std::string, double>* vars) {
 
-  // 1. Convert to RPN with Dijkstra's Shunting-yard algorithm.
+  // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   TokenQueue_t rpn = toRPN(expr, vars);
 
-  // 2. Evaluate the expression in RPN form.
+  double ret = calculate(rpn);
+
+  cleanRPN(rpn);
+
+  return ret;
+}
+
+double calculator::calculate(TokenQueue_t rpn) {
+
+  // Evaluate the expression in RPN form.
   std::stack<double> evaluation;
   while (!rpn.empty()) {
     TokenBase* base = rpn.front();
@@ -188,7 +197,74 @@ double calculator::calculate(const char* expr,
     } else {
       throw std::domain_error("Invalid token.");
     }
-    delete base;
   }
   return evaluation.top();
 }
+
+void calculator::cleanRPN(TokenQueue_t& rpn) {
+  while( rpn.size() ) {
+    delete rpn.front();
+    rpn.pop();
+  }
+}
+
+/* * * * * Non Static Functions * * * * */
+
+calculator::~calculator() {
+  cleanRPN(this->RPN);
+}
+
+calculator::calculator(const char* expr,
+    std::map<std::string, double>* vars,
+    std::map<std::string, int> opPrecedence) {
+  compile(expr, vars, opPrecedence);
+}
+
+void calculator::compile(const char* expr,
+    std::map<std::string, double>* vars,
+    std::map<std::string, int> opPrecedence) {
+
+  // Make sure it is empty:
+  cleanRPN(this->RPN);
+
+  this->RPN = calculator::toRPN(expr, vars, opPrecedence);
+}
+
+double calculator::eval() {
+  return calculate(this->RPN);
+}
+
+/* * * * * For Debug Only * * * * */
+
+std::string calculator::str() {
+  std::stringstream ss;
+  TokenQueue_t rpn = this->RPN;
+
+  ss << "calculator { RPN: [ ";
+  while( rpn.size() ) {
+    TokenBase* base = rpn.front();
+
+    Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
+    if(doubleTok)
+      ss << doubleTok->val;
+
+    Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
+    if(strTok)
+      ss << "'" << strTok->val << "'";
+
+    rpn.pop();
+
+    ss << (rpn.size() ? ", ":"");
+  }
+  ss << " ] }";
+  return ss.str();
+}
+
+
+
+
+
+
+
+
+
