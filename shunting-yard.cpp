@@ -254,7 +254,7 @@ void calculator::compile(const char* expr,
 
   this->RPN = calculator::toRPN(expr, vars, opPrecedence);
 }
-  
+
 double calculator::eval(std::map<std::string, double>* vars) {
   return calculate(this->RPN, vars);
 }
@@ -284,11 +284,3 @@ std::string calculator::str() {
   ss << " ] }";
   return ss.str();
 }
-
-
-
-
-
-
-
-

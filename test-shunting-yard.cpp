@@ -27,7 +27,7 @@ void assert(double actual, double expected, const char* expr = 0) {
     }
   }
 }
-void assert(const char* expr, double expected, 
+void assert(const char* expr, double expected,
     std::map<std::string, double>* vars = 0) {
   double actual = calculator::calculate(expr, vars);
   assert(actual, expected, expr);
@@ -93,12 +93,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
-
-
-
-
-
-
-
-
