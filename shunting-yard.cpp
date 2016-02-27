@@ -43,7 +43,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 #     ifdef DEBUG
         std::cout << digit << std::endl;
 #     endif
-      rpnQueue.push(new Token<double>(digit));
+      rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
       lastTokenWasOp = false;
     } else if (isvariablechar(*expr )) {
@@ -71,13 +71,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
   #     ifdef DEBUG
           std::cout << val << std::endl;
   #     endif
-        rpnQueue.push(new Token<double>(*val));;
+        rpnQueue.push(new Token<double>(*val, NUM));;
       } else {
         // Save the variable name:
   #     ifdef DEBUG
           std::cout << key << std::endl;
   #     endif
-        rpnQueue.push(new Token<std::string>(key));
+        rpnQueue.push(new Token<std::string>(key, VAR));
       }
 
       lastTokenWasOp = false;
@@ -90,7 +90,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           break;
         case ')':
           while (operatorStack.top().compare("(")) {
-            rpnQueue.push(new Token<std::string>(operatorStack.top()));
+            rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
             operatorStack.pop();
           }
           operatorStack.pop();
@@ -125,7 +125,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             if (lastTokenWasOp) {
               // Convert unary operators to binary in the RPN.
               if (!str.compare("-") || !str.compare("+")) {
-                rpnQueue.push(new Token<double>(0));
+                rpnQueue.push(new Token<double>(0, NUM));
               } else {
                 throw std::domain_error(
                     "Unrecognized unary operator: '" + str + "'.");
@@ -134,7 +134,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
             while (!operatorStack.empty() &&
                 opPrecedence[str] <= opPrecedence[operatorStack.top()]) {
-              rpnQueue.push(new Token<std::string>(operatorStack.top()));
+              rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
               operatorStack.pop();
             }
             operatorStack.push(str);
@@ -145,7 +145,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
     while (*expr && isspace(*expr )) ++expr;
   }
   while (!operatorStack.empty()) {
-    rpnQueue.push(new Token<std::string>(operatorStack.top()));
+    rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
     operatorStack.pop();
   }
   return rpnQueue;
@@ -173,11 +173,9 @@ double calculator::calculate(TokenQueue_t rpn,
     TokenBase* base = rpn.front();
     rpn.pop();
 
-    Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
-    Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-
     // Operator:
-    if (strTok && !isvariablechar(strTok->val[0])) {
+    if (base->type == OP) {
+      Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
       std::string str = strTok->val;
       if (evaluation.size() < 2) {
         throw std::domain_error("Invalid equation.");
@@ -203,13 +201,16 @@ double calculator::calculate(TokenQueue_t rpn,
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
-    } else if (doubleTok) { // Number
+    } else if (base->type == NUM) { // Number
+      Token<double>* doubleTok = static_cast<Token<double>*>(base);
       evaluation.push(doubleTok->val);
-    } else if (strTok) { // Variable
+    } else if (base->type == VAR) { // Variable
       if (!vars) {
         throw std::domain_error(
             "Detected variable, but the variable map is null.");
       }
+
+      Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
 
       std::string key = strTok->val;
       std::map<std::string, double>::iterator it = vars->find(key);

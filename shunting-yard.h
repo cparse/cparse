@@ -10,13 +10,16 @@
 #include <string>
 #include <queue>
 
-struct TokenBase { 
+enum tokType { NONE, OP, VAR, NUM };
+
+struct TokenBase {
+  tokType type;
   virtual ~TokenBase() {}
 };
 
 template<class T> class Token : public TokenBase {
 public:
-  Token (T t) : val(t) {}
+  Token (T t, tokType type) : val(t) { this->type=type; }
   T val;
 };
 
@@ -55,10 +58,3 @@ public:
 };
 
 #endif // _SHUNTING_YARD_H
-
-
-
-
-
-
-
