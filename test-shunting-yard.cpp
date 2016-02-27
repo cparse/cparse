@@ -2,6 +2,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <stdexcept>
 
 #include "shunting-yard.h"
 
