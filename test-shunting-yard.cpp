@@ -41,8 +41,8 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
 
-  assert("-pi+1", -2.14, &vars);
-  assert("-pi+1 + b1", -2.14, &vars);
+  assert("-pi + 1", -2.14, &vars);
+  assert("-pi + 1 * b1", -3.14, &vars);
 
   assert("(20+10)*3/2-3", 42.0);
   assert("1 << 4", 16.0);
@@ -65,6 +65,20 @@ int main(int argc, char** argv) {
 
   vars["b2"] = .86;
   assert(c3.eval(&vars), 4);
+
+  std::cout << "\nTesting boolean expressions\n" << std::endl;
+
+  assert("3 < 3", false);
+  assert("3 <= 3", true);
+  assert("3 > 3", false);
+  assert("3 >= 3", true);
+  assert("3 == 3", true);
+  assert("3 != 3", false);
+
+  assert("(3 && true) == true", true);
+  assert("(3 && 0) == true", false);
+  assert("(3 || 0) == true", true);
+  assert("(false || 0) == true", false);
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
