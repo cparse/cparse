@@ -11,16 +11,18 @@
 #include "shunting-yard.h"
 
 std::map<std::string, int> calculator::buildOpPrecedence() {
-  std::map<std::string, int> opPrecedence;
+  std::map<std::string, int> opp;
 
-  // Create the operator precedence map.
-  opPrecedence["("] = -1;
-  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
-  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
-  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
-  opPrecedence["^"] = 4;
+  // Create the operator precedence map based on C++ default
+  // precedence order as described on cppreference website:
+  // http://en.cppreference.com/w/c/language/operator_precedence
+  opp["^"]  = 2;
+  opp["*"]  = 3; opp["/"]  = 3; opp["%"] = 3;
+  opp["+"]  = 4; opp["-"]  = 4;
+  opp["<<"] = 5; opp[">>"] = 5;
+  opp["("]  = 16;
 
-  return opPrecedence;
+  return opp;
 }
 // Builds the opPrecedence map only once:
 std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
@@ -104,7 +106,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             //
             // If the token is an operator, o1, then
             //   While there is an operator token, o2, at the top
-            //       and p(o1) <= p(o2), then
+            //       and p(o1) >= p(o2), then
             //     pop o2 off the stack onto the output queue.
             //   Push o1 on the stack.
             std::stringstream ss;
@@ -133,7 +135,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             }
 
             while (!operatorStack.empty() &&
-                opPrecedence[str] <= opPrecedence[operatorStack.top()]) {
+                opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
               rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
               operatorStack.pop();
             }
