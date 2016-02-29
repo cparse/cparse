@@ -38,17 +38,18 @@ int main() {
 
 # Features.
  + Unary operators. +, -
- + Binary operators. +, -, /, +, <<, >>
+ + Binary operators. +, -, /, *, %, <<, >>, ^
+ + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
  + Map of variable names.
 
 # Adding a binary operator.
 To add a binary operator,
 
- 1. Update the operator precedence map in `calculator::calculate`.
- 2. Add the computation to `calculator::consume`.
+ 1. Update the operator precedence map in `calculator::buildOpPrecedence`.
+ 2. Add the computation to `calculator::calculate`.
 
 # Implementation Details
-The main steps of the `calculate` method are:
+The main steps of the calculation process are:
 
  1. Create the operator precedence map.
  2. Convert to [RPN](http://en.wikipedia.org/wiki/Reverse_Polish_notation)
@@ -126,9 +127,8 @@ while (!rpn.empty()) {
   TokenBase* base = rpn.front();
   rpn.pop();
 
-  Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
-  Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-  if (strTok) {
+  if (base->type == OP) {
+    Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
     std::string str = strTok->val;
     if (evaluation.size() < 2) {
       throw std::domain_error("Invalid equation.");
@@ -150,7 +150,8 @@ while (!rpn.empty()) {
     } else {
       throw std::domain_error("Unknown operator: '" + str + "'.");
     }
-  } else if (doubleTok) {
+  } else if (base->type == NUM) {
+    Token<double>* doubleTok = static_cast<Token<double>*>(base);
     evaluation.push(doubleTok->val);
   } else {
     throw std::domain_error("Invalid token.");

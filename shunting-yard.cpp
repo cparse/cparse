@@ -11,16 +11,22 @@
 #include "shunting-yard.h"
 
 std::map<std::string, int> calculator::buildOpPrecedence() {
-  std::map<std::string, int> opPrecedence;
+  std::map<std::string, int> opp;
 
-  // Create the operator precedence map.
-  opPrecedence["("] = -1;
-  opPrecedence["<<"] = 1; opPrecedence[">>"] = 1;
-  opPrecedence["+"]  = 2; opPrecedence["-"]  = 2;
-  opPrecedence["*"]  = 3; opPrecedence["/"]  = 3; opPrecedence["%"] = 3;
-  opPrecedence["^"] = 4;
+  // Create the operator precedence map based on C++ default
+  // precedence order as described on cppreference website:
+  // http://en.cppreference.com/w/c/language/operator_precedence
+  opp["^"]  = 2;
+  opp["*"]  = 3; opp["/"]  = 3; opp["%"] = 3;
+  opp["+"]  = 4; opp["-"]  = 4;
+  opp["<<"] = 5; opp[">>"] = 5;
+  opp["<"]  = 6; opp["<="] = 6; opp[">="] = 6; opp[">"] = 6;
+  opp["=="] = 7; opp["!="] = 7;
+  opp["&&"] = 11;
+  opp["||"] = 12;
+  opp["("]  = 16;
 
-  return opPrecedence;
+  return opp;
 }
 // Builds the opPrecedence map only once:
 std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
@@ -57,21 +63,26 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
       }
 
-      double* val = NULL;
+      bool found = false;
+      double val;
+
       std::string key = ss.str();
 
-      if(vars) {
+      if(key == "true") {
+        found = true; val = 1;
+      } else if(key == "false") {
+        found = true; val = 0;
+      } else if(vars) {
         std::map<std::string, double>::iterator it = vars->find(key);
-        if(it != vars->end())
-          val = &(it->second);
+        if(it != vars->end()) { found = true; val = it->second; }
       }
 
-      if (val) {
+      if (found) {
         // Save the number
   #     ifdef DEBUG
           std::cout << val << std::endl;
   #     endif
-        rpnQueue.push(new Token<double>(*val, NUM));;
+        rpnQueue.push(new Token<double>(val, NUM));;
       } else {
         // Save the variable name:
   #     ifdef DEBUG
@@ -133,7 +144,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             }
 
             while (!operatorStack.empty() &&
-                opPrecedence[str] <= opPrecedence[operatorStack.top()]) {
+                opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
               rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
               operatorStack.pop();
             }
@@ -198,6 +209,22 @@ double calculator::calculate(TokenQueue_t rpn,
         evaluation.push((int) left >> (int) right);
       } else if (!str.compare("%")) {
         evaluation.push((int) left % (int) right);
+      } else if (!str.compare("<")) {
+        evaluation.push(left < right);
+      } else if (!str.compare(">")) {
+        evaluation.push(left > right);
+      } else if (!str.compare("<=")) {
+        evaluation.push(left <= right);
+      } else if (!str.compare(">=")) {
+        evaluation.push(left >= right);
+      } else if (!str.compare("==")) {
+        evaluation.push(left == right);
+      } else if (!str.compare("!=")) {
+        evaluation.push(left != right);
+      } else if (!str.compare("&&")) {
+        evaluation.push((int) left && (int) right);
+      } else if (!str.compare("||")) {
+        evaluation.push((int) left || (int) right);
       } else {
         throw std::domain_error("Unknown operator: '" + str + "'.");
       }
