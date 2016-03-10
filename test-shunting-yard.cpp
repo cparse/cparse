@@ -34,6 +34,20 @@ void assert(const char* expr, double expected,
   assert(actual, expected, expr);
 }
 
+#define assert_throws(a) {try {\
+  a; \
+  std::cout << "  FAILURE, it did not THROW as expected" << std::endl; \
+} catch(...) { \
+  std::cout << "  THROWS as expected" << std::endl; \
+}}
+
+#define assert_not_throw(a) {try {\
+  a; \
+  std::cout << "  Do not THROW as expected" << std::endl; \
+} catch(...) { \
+  std::cout << "  FAILURE, it did THROW which was unexpected" << std::endl; \
+}}
+
 int main(int argc, char** argv) {
   std::map<std::string, double> vars;
   vars["pi"] = 3.14;
@@ -82,27 +96,18 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
-  try {
-    c3.eval();
-  } catch(std::domain_error err) {
-    std::cout << "  THROWS as expected" << std::endl;
-  }
+  assert_throws(c3.eval());
 
-  try {
+  assert_throws({
     vars.erase("b2");
     c3.eval(&vars);
-  } catch(std::domain_error err) {
-    std::cout << "  THROWS as expected" << std::endl;
-  }
+  });
 
-  try {
-    vars.erase("b1");
+  assert_not_throw({
     vars["b2"] = 0;
+    vars.erase("b1");
     c3.eval(&vars);
-    std::cout << "  Do not THROW as expected" << std::endl;
-  } catch(std::domain_error err) {
-    std::cout << "  If it THROWS it's a problem!" << std::endl;
-  }
+  });
 
   std::cout << "\nEnd testing" << std::endl;
 
