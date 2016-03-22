@@ -4,11 +4,19 @@
 
 A simple form of mathematical expression parsing can take a string such
 as `-pi+1` on input and output `-2.14`.
-This post presents a C++ library to parse a character sequence
+This project provides a C++ library to parse a character sequence
 as an expression using Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
 [Jesse Brown's code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
+
+# Modifications and Uses of This Code
++ In [Andrew Steiner's](https://github.com/awsteiner)
+  [o2scl](https://github.com/awsteiner/o2scl):
+  + Adds simple unary functions like sin, cos, and exp.
+  + [shunting_yard.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.cpp)
+  + [shunting_yard.h](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.h)
+  + [shunting_yard_ts.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard_ts.cpp)
 
 # Minimal example.
 
