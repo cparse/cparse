@@ -29,7 +29,7 @@ std::map<std::string, int> calculator::buildOpPrecedence() {
   return opp;
 }
 // Builds the opPrecedence map only once:
-std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
+std::map<std::string, int> calculator::_opPrecedence = calculator::buildOpPrecedence();
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,

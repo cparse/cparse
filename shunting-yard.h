@@ -27,7 +27,7 @@ typedef std::queue<TokenBase*> TokenQueue_t;
 
 class calculator {
 private:
-  static std::map<std::string, int> opPrecedence;
+  static std::map<std::string, int> _opPrecedence;
   static std::map<std::string, int> buildOpPrecedence();
 
 public:
@@ -40,7 +40,7 @@ private:
   static void cleanRPN(TokenQueue_t& rpn);
   static TokenQueue_t toRPN(const char* expr,
       std::map<std::string, double>* vars,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+      std::map<std::string, int> opPrecedence=_opPrecedence);
 
 private:
   TokenQueue_t RPN;
@@ -49,10 +49,10 @@ public:
   calculator(){}
   calculator(const char* expr,
       std::map<std::string, double>* vars = 0,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+      std::map<std::string, int> opPrecedence=_opPrecedence);
   void compile(const char* expr,
       std::map<std::string, double>* vars = 0,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+      std::map<std::string, int> opPrecedence=_opPrecedence);
   double eval(std::map<std::string, double>* vars = 0);
   std::string str();
 };
