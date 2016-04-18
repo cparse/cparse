@@ -1,24 +1,29 @@
 
 #include <sstream>
 #include <string>
+#include <iostream>
 #include "shunting-yard.h"
 #include "shunting-yard-exceptions.h"
 
 packToken& packToken::operator=(int t) {
-  delete base;
+  if(base) delete base;
   base = new Token<double>(t, NUM);
   return *this;
 }
 
 packToken& packToken::operator=(double t) {
-  delete base;
+  if(base) delete base;
   base = new Token<double>(t, NUM);
   return *this;
 }
 
 // Used mainly for testing
 bool packToken::operator==(const packToken& token) const {
-  if(token.base->type != base->type) {
+  if(!base) {
+    return token.base == 0;
+  } else if(!token.base) {
+    return base == 0;
+  } else if(token.base->type != base->type) {
     return false;
   } else {
     // Compare strings to simplify code
@@ -30,8 +35,12 @@ TokenBase* packToken::operator->() const {
   return base;
 }
 
+std::ostream& operator<<(std::ostream &os, const packToken& t) {
+  return os << t.str();
+}
+
 double packToken::asDouble() const {
-  if(base->type != NUM) {
+  if(base->type != NUM || !base) {
     throw bad_cast(
       "The Token is not a number!");
   }
@@ -40,6 +49,7 @@ double packToken::asDouble() const {
 
 std::string packToken::str() const {
   std::stringstream ss;
+  if(!base) return "undefined";
   switch(base->type) {
     case NONE:
       return "None";
