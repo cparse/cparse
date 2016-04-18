@@ -37,10 +37,10 @@ private:
   static OppMap_t buildOpPrecedence();
 
 public:
-  static double calculate(const char* expr, TokenMap_t* vars = 0);
+  static TokenBase* calculate(const char* expr, TokenMap_t* vars = 0);
 
 private:
-  static double calculate(TokenQueue_t RPN, TokenMap_t* vars = 0);
+  static TokenBase* calculate(TokenQueue_t RPN, TokenMap_t* vars = 0);
   static void cleanRPN(TokenQueue_t& rpn);
   static TokenQueue_t toRPN(const char* expr,
       TokenMap_t* vars,
@@ -57,7 +57,7 @@ public:
   void compile(const char* expr,
       TokenMap_t* vars = 0,
       OppMap_t opPrecedence=opPrecedence);
-  double eval(TokenMap_t* vars = 0);
+  TokenBase* eval(TokenMap_t* vars = 0);
   std::string str();
 };
 

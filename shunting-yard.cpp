@@ -149,20 +149,20 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-double calculator::calculate(const char* expr,
+TokenBase* calculator::calculate(const char* expr,
     TokenMap_t* vars) {
 
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   TokenQueue_t rpn = toRPN(expr, vars);
 
-  double ret = calculate(rpn);
+  TokenBase* ret = calculate(rpn);
 
   cleanRPN(rpn);
 
   return ret;
 }
 
-double calculator::calculate(TokenQueue_t _rpn,
+TokenBase* calculator::calculate(TokenQueue_t _rpn,
     TokenMap_t* vars) {
 
   TokenQueue_t rpn;
@@ -252,13 +252,8 @@ double calculator::calculate(TokenQueue_t _rpn,
       evaluation.push(base);
     }
   }
-  TokenBase* top = evaluation.top();
-  evaluation.pop();
 
-  double result = static_cast<Token<double>*>(top)->val;
-  delete top;
-
-  return result;
+  return evaluation.top();
 }
 
 void calculator::cleanRPN(TokenQueue_t& rpn) {
@@ -288,7 +283,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, vars, opPrecedence);
 }
 
-double calculator::eval(TokenMap_t* vars) {
+TokenBase* calculator::eval(TokenMap_t* vars) {
   return calculate(this->RPN, vars);
 }
 
