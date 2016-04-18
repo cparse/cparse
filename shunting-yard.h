@@ -33,7 +33,7 @@ typedef std::map<std::string, int> OppMap_t;
 
 class calculator {
 private:
-  static OppMap_t opPrecedence;
+  static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
 
 public:
@@ -44,7 +44,7 @@ private:
   static void cleanRPN(TokenQueue_t& rpn);
   static TokenQueue_t toRPN(const char* expr,
       TokenMap_t* vars,
-      OppMap_t opPrecedence=opPrecedence);
+      OppMap_t opPrecedence=_opPrecedence);
 
 private:
   TokenQueue_t RPN;
@@ -53,10 +53,10 @@ public:
   calculator(){}
   calculator(const char* expr,
       TokenMap_t* vars = 0,
-      OppMap_t opPrecedence=opPrecedence);
+      OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
       TokenMap_t* vars = 0,
-      OppMap_t opPrecedence=opPrecedence);
+      OppMap_t opPrecedence=_opPrecedence);
   TokenBase* eval(TokenMap_t* vars = 0);
   std::string str();
 };

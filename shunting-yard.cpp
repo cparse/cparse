@@ -29,7 +29,7 @@ OppMap_t calculator::buildOpPrecedence() {
   return opp;
 }
 // Builds the opPrecedence map only once:
-OppMap_t calculator::opPrecedence = calculator::buildOpPrecedence();
+OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
