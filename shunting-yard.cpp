@@ -33,7 +33,7 @@ std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecede
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-    std::map<std::string, double>* vars,
+    TokenMap_t* vars,
     std::map<std::string, int> opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
@@ -73,7 +73,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       } else if(key == "false") {
         found = true; val = 0;
       } else if(vars) {
-        std::map<std::string, double>::iterator it = vars->find(key);
+        TokenMap_t::iterator it = vars->find(key);
         if(it != vars->end()) { found = true; val = it->second; }
       }
 
@@ -163,7 +163,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 }
 
 double calculator::calculate(const char* expr,
-    std::map<std::string, double>* vars) {
+    TokenMap_t* vars) {
 
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   TokenQueue_t rpn = toRPN(expr, vars);
@@ -176,7 +176,7 @@ double calculator::calculate(const char* expr,
 }
 
 double calculator::calculate(TokenQueue_t _rpn,
-    std::map<std::string, double>* vars) {
+    TokenMap_t* vars) {
 
   TokenQueue_t rpn;
 
@@ -254,7 +254,7 @@ double calculator::calculate(TokenQueue_t _rpn,
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
-      std::map<std::string, double>::iterator it = vars->find(key);
+      TokenMap_t::iterator it = vars->find(key);
 
       if (it == vars->end()) {
         throw std::domain_error(
@@ -267,7 +267,7 @@ double calculator::calculate(TokenQueue_t _rpn,
   }
   TokenBase* top = evaluation.top();
   evaluation.pop();
-  
+
   double result = static_cast<Token<double>*>(top)->val;
   delete top;
 
@@ -288,13 +288,13 @@ calculator::~calculator() {
 }
 
 calculator::calculator(const char* expr,
-    std::map<std::string, double>* vars,
+    TokenMap_t* vars,
     std::map<std::string, int> opPrecedence) {
   compile(expr, vars, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-    std::map<std::string, double>* vars,
+    TokenMap_t* vars,
     std::map<std::string, int> opPrecedence) {
 
   // Make sure it is empty:
@@ -303,7 +303,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, vars, opPrecedence);
 }
 
-double calculator::eval(std::map<std::string, double>* vars) {
+double calculator::eval(TokenMap_t* vars) {
   return calculate(this->RPN, vars);
 }
 

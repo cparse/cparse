@@ -29,7 +29,7 @@ void assert(double actual, double expected, const char* expr = 0) {
   }
 }
 void assert(const char* expr, double expected,
-    std::map<std::string, double>* vars = 0) {
+    TokenMap_t* vars = 0) {
   double actual = calculator::calculate(expr, vars);
   assert(actual, expected, expr);
 }
@@ -49,7 +49,7 @@ void assert(const char* expr, double expected,
 }}
 
 int main(int argc, char** argv) {
-  std::map<std::string, double> vars;
+  TokenMap_t vars;
   vars["pi"] = 3.14;
   vars["b1"] = 0;
 
