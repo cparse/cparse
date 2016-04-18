@@ -50,8 +50,8 @@ void assert(const char* expr, double expected,
 
 int main(int argc, char** argv) {
   TokenMap_t vars;
-  vars["pi"] = 3.14;
-  vars["b1"] = 0;
+  vars["pi"] = new Token<double>(3.14, NUM);
+  vars["b1"] = new Token<double>(0, NUM);
 
   std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
 
@@ -74,10 +74,10 @@ int main(int argc, char** argv) {
 
   calculator c3("pi+b1+b2", &vars);
 
-  vars["b2"] = 1;
+  vars["b2"] = new Token<double>(1, NUM);
   assert(c3.eval(&vars), 4.14);
 
-  vars["b2"] = .86;
+  vars["b2"] = new Token<double>(.86, NUM);
   assert(c3.eval(&vars), 4);
 
   std::cout << "\nTesting boolean expressions\n" << std::endl;
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
   });
 
   assert_not_throw({
-    vars["b2"] = 0;
+    vars["b2"] = new Token<double>(0, NUM);
     vars.erase("b1");
     c3.eval(&vars);
   });

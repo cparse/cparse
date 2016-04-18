@@ -63,25 +63,25 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       bool found = false;
-      double val;
+      TokenBase* val;
 
       std::string key = ss.str();
 
       if(key == "true") {
-        found = true; val = 1;
+        found = true; val = new Token<double>(1, NUM);
       } else if(key == "false") {
-        found = true; val = 0;
+        found = true; val = new Token<double>(0, NUM);
       } else if(vars) {
         TokenMap_t::iterator it = vars->find(key);
-        if(it != vars->end()) { found = true; val = it->second; }
+        if(it != vars->end()) { found = true; val = it->second->clone(); }
       }
 
       if (found) {
-        // Save the number
+        // Save the token
   #     ifdef DEBUG
           std::cout << val << std::endl;
   #     endif
-        rpnQueue.push(new Token<double>(val, NUM));;
+        rpnQueue.push(val);
       } else {
         // Save the variable name:
   #     ifdef DEBUG
@@ -259,7 +259,7 @@ double calculator::calculate(TokenQueue_t _rpn,
         throw std::domain_error(
             "Unable to find the variable '" + key + "'.");
       }
-      evaluation.push(new Token<double>(it->second, NUM));
+      evaluation.push(it->second->clone());
     } else {
       evaluation.push(base);
     }
@@ -313,16 +313,19 @@ std::string calculator::str() {
   ss << "calculator { RPN: [ ";
   while( rpn.size() ) {
     TokenBase* base = rpn.front();
-
-    Token<double>* doubleTok = dynamic_cast<Token<double>*>(base);
-    if(doubleTok)
-      ss << doubleTok->val;
-
-    Token<std::string>* strTok = dynamic_cast<Token<std::string>*>(base);
-    if(strTok)
-      ss << "'" << strTok->val << "'";
-
     rpn.pop();
+
+    if(base->type == NUM) {
+      ss << static_cast<Token<double>*>(base)->val;
+    } else if(base->type == VAR) {
+      ss << static_cast<Token<std::string>*>(base)->val;
+    } else if(base->type == OP) {
+      ss << static_cast<Token<std::string>*>(base)->val;
+    } else if(base->type == NONE) {
+      ss << "None";
+    } else {
+      ss << "unknown_type";
+    }
 
     ss << (rpn.size() ? ", ":"");
   }
