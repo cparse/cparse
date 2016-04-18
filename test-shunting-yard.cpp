@@ -6,6 +6,15 @@
 
 #include "shunting-yard.h"
 
+double toDouble(TokenBase* base) {
+  if(base->type == NUM) {
+    return static_cast<Token<double>*>(base)->val;
+  } else {
+    throw std::domain_error(
+      "Cannot convert non numeric types to double!");
+  }
+}
+
 void assert(double actual, double expected, const char* expr = 0) {
   double diff = actual - expected;
   if (diff < 0) diff *= -1;
@@ -29,15 +38,29 @@ void assert(double actual, double expected, const char* expr = 0) {
   }
 }
 void assert(const char* expr, double expected,
-    std::map<std::string, double>* vars = 0) {
-  double actual = calculator::calculate(expr, vars);
+    TokenMap_t* vars = 0) {
+  double actual = toDouble(calculator::calculate(expr, vars));
   assert(actual, expected, expr);
 }
 
+#define assert_throws(a) {try {\
+  a; \
+  std::cout << "  FAILURE, it did not THROW as expected" << std::endl; \
+} catch(...) { \
+  std::cout << "  THROWS as expected" << std::endl; \
+}}
+
+#define assert_not_throw(a) {try {\
+  a; \
+  std::cout << "  Do not THROW as expected" << std::endl; \
+} catch(...) { \
+  std::cout << "  FAILURE, it did THROW which was unexpected" << std::endl; \
+}}
+
 int main(int argc, char** argv) {
-  std::map<std::string, double> vars;
-  vars["pi"] = 3.14;
-  vars["b1"] = 0;
+  TokenMap_t vars;
+  vars["pi"] = new Token<double>(3.14, NUM);
+  vars["b1"] = new Token<double>(0, NUM);
 
   std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
 
@@ -52,19 +75,19 @@ int main(int argc, char** argv) {
 
   calculator c1;
   c1.compile("-pi+1", &vars);
-  assert(c1.eval(), -2.14);
+  assert(toDouble(c1.eval()), -2.14);
 
   calculator c2("pi+4", &vars);
-  assert(c2.eval(), 7.14);
-  assert(c2.eval(), 7.14);
+  assert(toDouble(c2.eval()), 7.14);
+  assert(toDouble(c2.eval()), 7.14);
 
   calculator c3("pi+b1+b2", &vars);
 
-  vars["b2"] = 1;
-  assert(c3.eval(&vars), 4.14);
+  vars["b2"] = new Token<double>(1, NUM);
+  assert(toDouble(c3.eval(&vars)), 4.14);
 
-  vars["b2"] = .86;
-  assert(c3.eval(&vars), 4);
+  vars["b2"] = new Token<double>(.86, NUM);
+  assert(toDouble(c3.eval(&vars)), 4);
 
   std::cout << "\nTesting boolean expressions\n" << std::endl;
 
@@ -82,27 +105,18 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
-  try {
-    c3.eval();
-  } catch(std::domain_error err) {
-    std::cout << "  THROWS as expected" << std::endl;
-  }
+  assert_throws(c3.eval());
 
-  try {
+  assert_throws({
     vars.erase("b2");
     c3.eval(&vars);
-  } catch(std::domain_error err) {
-    std::cout << "  THROWS as expected" << std::endl;
-  }
+  });
 
-  try {
+  assert_not_throw({
+    vars["b2"] = new Token<double>(0, NUM);
     vars.erase("b1");
-    vars["b2"] = 0;
     c3.eval(&vars);
-    std::cout << "  Do not THROW as expected" << std::endl;
-  } catch(std::domain_error err) {
-    std::cout << "  If it THROWS it's a problem!" << std::endl;
-  }
+  });
 
   std::cout << "\nEnd testing" << std::endl;
 
