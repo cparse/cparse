@@ -17,6 +17,16 @@ packToken& packToken::operator=(double t) {
   return *this;
 }
 
+packToken& packToken::operator=(const packToken& t) {
+  if(base) delete base;
+  if(t.base) {
+    base = t.base->clone();
+  } else {
+    base = 0;
+  }
+  return *this;
+}
+
 // Used mainly for testing
 bool packToken::operator==(const packToken& token) const {
   if(!base) {

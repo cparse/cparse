@@ -7,6 +7,7 @@ public:
   packToken(TokenBase* t) : base(t) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
   packToken(const packToken& t) : base(t.base ? t.base->clone() : 0) {}
+  packToken& operator=(const packToken& t);
 
 public:
   template<class C>
