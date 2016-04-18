@@ -1,6 +1,6 @@
 // Source: http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm#
 // Author: Jesse Brown
-// Modifications: Brandon Amos
+// Modifications: Brandon Amos, Vinícius Garcia
 
 #ifndef _SHUNTING_YARD_H
 #define _SHUNTING_YARD_H
@@ -10,7 +10,7 @@
 #include <string>
 #include <queue>
 
-enum tokType { NONE, OP, VAR, NUM };
+enum tokType { NONE, OP, VAR, NUM, STR };
 
 struct TokenBase {
   tokType type;
@@ -27,8 +27,10 @@ public:
   }
 };
 
+#include "packToken.h"
+
 typedef std::queue<TokenBase*> TokenQueue_t;
-typedef std::map<std::string, TokenBase*> TokenMap_t;
+typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 
 class calculator {

@@ -59,8 +59,8 @@ void assert(const char* expr, double expected,
 
 int main(int argc, char** argv) {
   TokenMap_t vars;
-  vars["pi"] = new Token<double>(3.14, NUM);
-  vars["b1"] = new Token<double>(0, NUM);
+  vars["pi"] = 3.14;
+  vars["b1"] = 0;
 
   std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
 
@@ -83,10 +83,10 @@ int main(int argc, char** argv) {
 
   calculator c3("pi+b1+b2", &vars);
 
-  vars["b2"] = new Token<double>(1, NUM);
+  vars["b2"] = 1;
   assert(toDouble(c3.eval(&vars)), 4.14);
 
-  vars["b2"] = new Token<double>(.86, NUM);
+  vars["b2"] = .86;
   assert(toDouble(c3.eval(&vars)), 4);
 
   std::cout << "\nTesting boolean expressions\n" << std::endl;
@@ -103,6 +103,19 @@ int main(int argc, char** argv) {
   assert("(3 || 0) == true", true);
   assert("(false || 0) == true", false);
 
+  std::cout << "\nTesting string expressions\n" << std::endl;
+
+  vars["str1"] = new Token<std::string>("foo", STR);
+  vars["str2"] = new Token<std::string>("bar", STR);
+  vars["str3"] = new Token<std::string>("foobar", STR);
+  vars["str4"] = new Token<std::string>("foo10", STR);
+  vars["str5"] = new Token<std::string>("10bar", STR);
+
+  assert("str1 + str2 == str3", true, &vars);
+  assert("str1 + str2 != str3", false, &vars);
+  assert("str1 + 10 == str4", true, &vars);
+  assert("10 + str2 == str5", true, &vars);
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());
@@ -113,7 +126,7 @@ int main(int argc, char** argv) {
   });
 
   assert_not_throw({
-    vars["b2"] = new Token<double>(0, NUM);
+    vars["b2"] = 0;
     vars.erase("b1");
     c3.eval(&vars);
   });

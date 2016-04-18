@@ -190,11 +190,11 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
       }
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
-      if(b_right->type == NUM && b_left->type == NUM) {
-        double right = static_cast<Token<double>*>(b_right)->val;
+      if(b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
-        delete b_right;
+        double right = static_cast<Token<double>*>(b_right)->val;
         delete b_left;
+        delete b_right;
 
         if (!str.compare("+")) {
           evaluation.push(new Token<double>(left + right, NUM));
@@ -228,6 +228,47 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           evaluation.push(new Token<double>((int) left && (int) right, NUM));
         } else if (!str.compare("||")) {
           evaluation.push(new Token<double>((int) left || (int) right, NUM));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
+      } else if(b_left->type == STR && b_right->type == STR) {
+        std::string left = static_cast<Token<std::string>*>(b_left)->val;
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        if (!str.compare("+")) {
+          evaluation.push(new Token<std::string>(left + right, STR));
+        } else if (!str.compare("==")) {
+          evaluation.push(new Token<double>(!left.compare(right), NUM));
+        } else if (!str.compare("!=")) {
+          evaluation.push(new Token<double>(left.compare(right), NUM));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
+      } else if(b_left->type == STR && b_right->type == NUM) {
+        std::string left = static_cast<Token<std::string>*>(b_left)->val;
+        double right = static_cast<Token<double>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        std::stringstream ss;
+        if (!str.compare("+")) {
+          ss << left << right;
+          evaluation.push(new Token<std::string>(ss.str(), STR));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
+      } else if(b_left->type == NUM && b_right->type == STR) {
+        double left = static_cast<Token<double>*>(b_left)->val;
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        std::stringstream ss;
+        if (!str.compare("+")) {
+          ss << left << right;
+          evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }
