@@ -45,9 +45,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
       // If the token is a number, add it to the output queue.
       char* nextChar = 0;
       double digit = strtod(expr , &nextChar);
-#     ifdef DEBUG
-        std::cout << digit << std::endl;
-#     endif
       rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
       lastTokenWasOp = false;
@@ -78,15 +75,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if (found) {
         // Save the token
-  #     ifdef DEBUG
-          std::cout << val << std::endl;
-  #     endif
         rpnQueue.push(val);
       } else {
         // Save the variable name:
-  #     ifdef DEBUG
-          std::cout << key << std::endl;
-  #     endif
         rpnQueue.push(new Token<std::string>(key, VAR));
       }
 
@@ -128,9 +119,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
             ss.clear();
             std::string str;
             ss >> str;
-#           ifdef DEBUG
-              std::cout << str << std::endl;
-#           endif
 
             if (lastTokenWasOp) {
               // Convert unary operators to binary in the RPN.
