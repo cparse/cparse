@@ -15,12 +15,16 @@ enum tokType { NONE, OP, VAR, NUM };
 struct TokenBase {
   tokType type;
   virtual ~TokenBase() {}
+  virtual TokenBase* clone() const = 0;
 };
 
 template<class T> class Token : public TokenBase {
 public:
-  Token (T t, tokType type) : val(t) { this->type=type; }
   T val;
+  Token (T t, tokType type) : val(t) { this->type=type; }
+  virtual TokenBase* clone() const {
+    return new Token(static_cast<const Token&>(*this));
+  }
 };
 
 typedef std::queue<TokenBase*> TokenQueue_t;

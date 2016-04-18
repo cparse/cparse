@@ -175,11 +175,21 @@ double calculator::calculate(const char* expr,
   return ret;
 }
 
-double calculator::calculate(TokenQueue_t rpn,
+double calculator::calculate(TokenQueue_t _rpn,
     std::map<std::string, double>* vars) {
 
+  TokenQueue_t rpn;
+
+  // Deep copy the token list, so everything can be
+  // safely deallocated:
+  while(!_rpn.empty()) {
+    TokenBase* base = _rpn.front();
+    _rpn.pop();
+    rpn.push(base->clone());
+  }
+
   // Evaluate the expression in RPN form.
-  std::stack<double> evaluation;
+  std::stack<TokenBase*> evaluation;
   while (!rpn.empty()) {
     TokenBase* base = rpn.front();
     rpn.pop();
@@ -191,67 +201,77 @@ double calculator::calculate(TokenQueue_t rpn,
       if (evaluation.size() < 2) {
         throw std::domain_error("Invalid equation.");
       }
-      double right = evaluation.top(); evaluation.pop();
-      double left  = evaluation.top(); evaluation.pop();
-      if (!str.compare("+")) {
-        evaluation.push(left + right);
-      } else if (!str.compare("*")) {
-        evaluation.push(left * right);
-      } else if (!str.compare("-")) {
-        evaluation.push(left - right);
-      } else if (!str.compare("/")) {
-        evaluation.push(left / right);
-      } else if (!str.compare("<<")) {
-        evaluation.push((int) left << (int) right);
-      } else if (!str.compare("^")) {
-        evaluation.push(pow(left, right));
-      } else if (!str.compare(">>")) {
-        evaluation.push((int) left >> (int) right);
-      } else if (!str.compare("%")) {
-        evaluation.push((int) left % (int) right);
-      } else if (!str.compare("<")) {
-        evaluation.push(left < right);
-      } else if (!str.compare(">")) {
-        evaluation.push(left > right);
-      } else if (!str.compare("<=")) {
-        evaluation.push(left <= right);
-      } else if (!str.compare(">=")) {
-        evaluation.push(left >= right);
-      } else if (!str.compare("==")) {
-        evaluation.push(left == right);
-      } else if (!str.compare("!=")) {
-        evaluation.push(left != right);
-      } else if (!str.compare("&&")) {
-        evaluation.push((int) left && (int) right);
-      } else if (!str.compare("||")) {
-        evaluation.push((int) left || (int) right);
-      } else {
-        throw std::domain_error("Unknown operator: '" + str + "'.");
+      TokenBase* b_right = evaluation.top(); evaluation.pop();
+      TokenBase* b_left  = evaluation.top(); evaluation.pop();
+      if(b_right->type == NUM && b_left->type == NUM) {
+        double right = static_cast<Token<double>*>(b_right)->val;
+        double left = static_cast<Token<double>*>(b_left)->val;
+        delete b_right;
+        delete b_left;
+
+        if (!str.compare("+")) {
+          evaluation.push(new Token<double>(left + right, NUM));
+        } else if (!str.compare("*")) {
+          evaluation.push(new Token<double>(left * right, NUM));
+        } else if (!str.compare("-")) {
+          evaluation.push(new Token<double>(left - right, NUM));
+        } else if (!str.compare("/")) {
+          evaluation.push(new Token<double>(left / right, NUM));
+        } else if (!str.compare("<<")) {
+          evaluation.push(new Token<double>((int) left << (int) right, NUM));
+        } else if (!str.compare("^")) {
+          evaluation.push(new Token<double>(pow(left, right), NUM));
+        } else if (!str.compare(">>")) {
+          evaluation.push(new Token<double>((int) left >> (int) right, NUM));
+        } else if (!str.compare("%")) {
+          evaluation.push(new Token<double>((int) left % (int) right, NUM));
+        } else if (!str.compare("<")) {
+          evaluation.push(new Token<double>(left < right, NUM));
+        } else if (!str.compare(">")) {
+          evaluation.push(new Token<double>(left > right, NUM));
+        } else if (!str.compare("<=")) {
+          evaluation.push(new Token<double>(left <= right, NUM));
+        } else if (!str.compare(">=")) {
+          evaluation.push(new Token<double>(left >= right, NUM));
+        } else if (!str.compare("==")) {
+          evaluation.push(new Token<double>(left == right, NUM));
+        } else if (!str.compare("!=")) {
+          evaluation.push(new Token<double>(left != right, NUM));
+        } else if (!str.compare("&&")) {
+          evaluation.push(new Token<double>((int) left && (int) right, NUM));
+        } else if (!str.compare("||")) {
+          evaluation.push(new Token<double>((int) left || (int) right, NUM));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
       }
-    } else if (base->type == NUM) { // Number
-      Token<double>* doubleTok = static_cast<Token<double>*>(base);
-      evaluation.push(doubleTok->val);
     } else if (base->type == VAR) { // Variable
       if (!vars) {
         throw std::domain_error(
             "Detected variable, but the variable map is null.");
       }
 
-      Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
+      std::string key = static_cast<Token<std::string>*>(base)->val;
+      delete base;
 
-      std::string key = strTok->val;
       std::map<std::string, double>::iterator it = vars->find(key);
 
       if (it == vars->end()) {
         throw std::domain_error(
             "Unable to find the variable '" + key + "'.");
       }
-      evaluation.push(it->second);
+      evaluation.push(new Token<double>(it->second, NUM));
     } else {
-      throw std::domain_error("Invalid token.");
+      evaluation.push(base);
     }
   }
-  return evaluation.top();
+  TokenBase* top = evaluation.top();
+  evaluation.pop();
+  
+  double result = static_cast<Token<double>*>(top)->val;
+  delete top;
+
+  return result;
 }
 
 void calculator::cleanRPN(TokenQueue_t& rpn) {
