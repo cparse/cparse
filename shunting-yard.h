@@ -27,6 +27,8 @@ public:
   }
 };
 
+#include "packToken.h"
+
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, TokenBase*> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
