@@ -10,7 +10,7 @@
 #include <string>
 #include <queue>
 
-enum tokType { NONE, OP, VAR, NUM };
+enum tokType { NONE, OP, VAR, NUM, STR };
 
 struct TokenBase {
   tokType type;

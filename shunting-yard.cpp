@@ -232,6 +232,22 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }
       }
+      if(b_right->type == STR && b_left->type == STR) {
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        std::string left = static_cast<Token<std::string>*>(b_left)->val;
+        delete b_right;
+        delete b_left;
+
+        if (!str.compare("+")) {
+          evaluation.push(new Token<std::string>(left + right, STR));
+        } else if (!str.compare("==")) {
+          evaluation.push(new Token<double>(!left.compare(right), NUM));
+        } else if (!str.compare("!=")) {
+          evaluation.push(new Token<double>(left.compare(right), NUM));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
+      }
     } else if (base->type == VAR) { // Variable
       if (!vars) {
         throw std::domain_error(

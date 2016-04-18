@@ -103,6 +103,15 @@ int main(int argc, char** argv) {
   assert("(3 || 0) == true", true);
   assert("(false || 0) == true", false);
 
+  std::cout << "\nTesting string expressions\n" << std::endl;
+
+  vars["str1"] = new Token<std::string>("foo", STR);
+  vars["str2"] = new Token<std::string>("bar", STR);
+  vars["str3"] = new Token<std::string>("foobar", STR);
+
+  assert("str1 + str2 == str3", true, &vars);
+  assert("str1 + str2 != str3", false, &vars);
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());
