@@ -108,9 +108,13 @@ int main(int argc, char** argv) {
   vars["str1"] = new Token<std::string>("foo", STR);
   vars["str2"] = new Token<std::string>("bar", STR);
   vars["str3"] = new Token<std::string>("foobar", STR);
+  vars["str4"] = new Token<std::string>("foo10", STR);
+  vars["str5"] = new Token<std::string>("10bar", STR);
 
   assert("str1 + str2 == str3", true, &vars);
   assert("str1 + str2 != str3", false, &vars);
+  assert("str1 + 10 == str4", true, &vars);
+  assert("10 + str2 == str5", true, &vars);
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
