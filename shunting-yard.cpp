@@ -10,8 +10,8 @@
 
 #include "shunting-yard.h"
 
-std::map<std::string, int> calculator::buildOpPrecedence() {
-  std::map<std::string, int> opp;
+OppMap_t calculator::buildOpPrecedence() {
+  OppMap_t opp;
 
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
@@ -29,12 +29,11 @@ std::map<std::string, int> calculator::buildOpPrecedence() {
   return opp;
 }
 // Builds the opPrecedence map only once:
-std::map<std::string, int> calculator::opPrecedence = calculator::buildOpPrecedence();
+OppMap_t calculator::opPrecedence = calculator::buildOpPrecedence();
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-    TokenMap_t* vars,
-    std::map<std::string, int> opPrecedence) {
+    TokenMap_t* vars, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
 
@@ -288,14 +287,12 @@ calculator::~calculator() {
 }
 
 calculator::calculator(const char* expr,
-    TokenMap_t* vars,
-    std::map<std::string, int> opPrecedence) {
+    TokenMap_t* vars, OppMap_t opPrecedence) {
   compile(expr, vars, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-    TokenMap_t* vars,
-    std::map<std::string, int> opPrecedence) {
+    TokenMap_t* vars, OppMap_t opPrecedence) {
 
   // Make sure it is empty:
   cleanRPN(this->RPN);

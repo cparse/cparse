@@ -29,11 +29,12 @@ public:
 
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, double> TokenMap_t;
+typedef std::map<std::string, int> OppMap_t;
 
 class calculator {
 private:
-  static std::map<std::string, int> opPrecedence;
-  static std::map<std::string, int> buildOpPrecedence();
+  static OppMap_t opPrecedence;
+  static OppMap_t buildOpPrecedence();
 
 public:
   static double calculate(const char* expr, TokenMap_t* vars = 0);
@@ -41,8 +42,9 @@ public:
 private:
   static double calculate(TokenQueue_t RPN, TokenMap_t* vars = 0);
   static void cleanRPN(TokenQueue_t& rpn);
-  static TokenQueue_t toRPN(const char* expr, TokenMap_t* vars,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+  static TokenQueue_t toRPN(const char* expr,
+      TokenMap_t* vars,
+      OppMap_t opPrecedence=opPrecedence);
 
 private:
   TokenQueue_t RPN;
@@ -51,10 +53,10 @@ public:
   calculator(){}
   calculator(const char* expr,
       TokenMap_t* vars = 0,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+      OppMap_t opPrecedence=opPrecedence);
   void compile(const char* expr,
       TokenMap_t* vars = 0,
-      std::map<std::string, int> opPrecedence=opPrecedence);
+      OppMap_t opPrecedence=opPrecedence);
   double eval(TokenMap_t* vars = 0);
   std::string str();
 };
