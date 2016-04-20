@@ -17,6 +17,18 @@ packToken& packToken::operator=(double t) {
   return *this;
 }
 
+packToken& packToken::operator=(const char* t) {
+  if(base) delete base;
+  base = new Token<std::string>(t, STR);
+  return *this;
+}
+
+packToken& packToken::operator=(const std::string& t) {
+  if(base) delete base;
+  base = new Token<std::string>(t, STR);
+  return *this;
+}
+
 packToken& packToken::operator=(const packToken& t) {
   if(base) delete base;
   if(t.base) {
@@ -50,13 +62,21 @@ std::ostream& operator<<(std::ostream &os, const packToken& t) {
 }
 
 double packToken::asDouble() const {
-  if(base->type != NUM || !base) {
+  if(!base || base->type != NUM) {
     throw bad_cast(
       "The Token is not a number!");
   }
   return static_cast<Token<double>*>(base)->val;
 }
 
+std::string packToken::asString() const {
+  if(!base ||
+    (base->type != STR && base->type != VAR && base->type != OP)) {
+    throw bad_cast(
+      "The Token is not a string!");
+  }
+  return static_cast<Token<std::string>*>(base)->val;
+}
 std::string packToken::str() const {
   std::stringstream ss;
   if(!base) return "undefined";
@@ -70,6 +90,8 @@ std::string packToken::str() const {
     case NUM:
       ss << asDouble();
       return ss.str();
+    case STR:
+      return "\"" + asString() + "\"";
     default:
       return "unknown_type";
   }

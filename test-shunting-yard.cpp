@@ -118,6 +118,8 @@ int main(int argc, char** argv) {
   assert("'foo' + \"bar\" != 'foobar\"'", true, &vars);
   assert("'foo' + \"bar\\\"\" == 'foobar\"'", true, &vars);
 
+  assert(vars["str1"].asString(), "foo");
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());
