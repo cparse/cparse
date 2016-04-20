@@ -6,19 +6,17 @@
 
 #include "shunting-yard.h"
 
-double toDouble(TokenBase* base) {
-  if(base->type == NUM) {
-    return static_cast<Token<double>*>(base)->val;
-  } else {
-    throw std::domain_error(
-      "Cannot convert non numeric types to double!");
+void assert(packToken actual, packToken expected, const char* expr = 0) {
+  bool match = false;
+  if(actual->type == expected->type && actual->type == NUM) {
+    double diff = actual.asDouble() - expected.asDouble();
+    if (diff < 0) diff *= -1;
+    if (diff < 1e-15) match = true;
+  } else if(actual == expected) {
+    match = true;
   }
-}
 
-void assert(double actual, double expected, const char* expr = 0) {
-  double diff = actual - expected;
-  if (diff < 0) diff *= -1;
-  if (diff < 1e-15) {
+  if(match) {
     if(expr) {
       std::cout << "  '" << expr << "' indeed evaluated to " <<
         expected << "." << std::endl;
@@ -37,9 +35,9 @@ void assert(double actual, double expected, const char* expr = 0) {
     }
   }
 }
-void assert(const char* expr, double expected,
+void assert(const char* expr, packToken expected,
     TokenMap_t* vars = 0) {
-  double actual = toDouble(calculator::calculate(expr, vars));
+  packToken actual = calculator::calculate(expr, vars);
   assert(actual, expected, expr);
 }
 
@@ -75,19 +73,19 @@ int main(int argc, char** argv) {
 
   calculator c1;
   c1.compile("-pi+1", &vars);
-  assert(toDouble(c1.eval()), -2.14);
+  assert(c1.eval(), -2.14);
 
   calculator c2("pi+4", &vars);
-  assert(toDouble(c2.eval()), 7.14);
-  assert(toDouble(c2.eval()), 7.14);
+  assert(c2.eval(), 7.14);
+  assert(c2.eval(), 7.14);
 
   calculator c3("pi+b1+b2", &vars);
 
   vars["b2"] = 1;
-  assert(toDouble(c3.eval(&vars)), 4.14);
+  assert(c3.eval(&vars), 4.14);
 
   vars["b2"] = .86;
-  assert(toDouble(c3.eval(&vars)), 4);
+  assert(c3.eval(&vars), 4);
 
   std::cout << "\nTesting boolean expressions\n" << std::endl;
 
