@@ -240,9 +240,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         if (!str.compare("+")) {
           evaluation.push(new Token<std::string>(left + right, STR));
         } else if (!str.compare("==")) {
-          evaluation.push(new Token<double>(!left.compare(right), NUM));
+          evaluation.push(new Token<double>(left.compare(right) == 0, NUM));
         } else if (!str.compare("!=")) {
-          evaluation.push(new Token<double>(left.compare(right), NUM));
+          evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }
