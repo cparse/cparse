@@ -116,6 +116,10 @@ int main(int argc, char** argv) {
   assert("str1 + 10 == str4", true, &vars);
   assert("10 + str2 == str5", true, &vars);
 
+  assert("'foo' + \"bar\" == str3", true, &vars);
+  assert("'foo' + \"bar\" != 'foobar\"'", true, &vars);
+  assert("'foo' + \"bar\\\"\" == 'foobar\"'", true, &vars);
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());

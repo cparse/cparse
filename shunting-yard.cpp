@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "shunting-yard.h"
+#include "shunting-yard-exceptions.h"
 
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
@@ -81,6 +82,28 @@ TokenQueue_t calculator::toRPN(const char* expr,
         rpnQueue.push(new Token<std::string>(key, VAR));
       }
 
+      lastTokenWasOp = false;
+    } else if(*expr == '\'' || *expr == '"') {
+      // If it is a string literal, parse it and
+      // add to the output queue.
+      char quote = *expr;
+
+      ++expr;
+      std::stringstream ss;
+      while(*expr && *expr != quote && *expr != '\n') {
+        if(*expr == '\\') ++expr;
+        ss << *expr;
+        ++expr;
+      }
+
+      if(*expr != quote) {
+        std::string squote = (quote == '"' ? "\"": "'");
+        throw syntax_error(
+          "Expected quote (" + squote +
+          ") at end of string declaration: " + squote + ss.str() + ".");
+      }
+      ++expr;
+      rpnQueue.push(new Token<std::string>(ss.str(), STR));
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
