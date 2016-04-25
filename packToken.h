@@ -16,6 +16,7 @@ public:
   packToken(double d) : base(new Token<double>(d, NUM)) {}
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
+  packToken(TokenMap_t* tmap) : base(new Token<TokenMap_t*>(tmap, MAP)) {}
   ~packToken(){ if(base) delete base; }
 
   packToken& operator=(int t);
@@ -27,6 +28,7 @@ public:
 
   double asDouble() const;
   std::string asString() const;
+  TokenMap_t* asMap() const;
 
   std::string str() const;
 };

@@ -77,8 +77,20 @@ std::string packToken::asString() const {
   }
   return static_cast<Token<std::string>*>(base)->val;
 }
+
+TokenMap_t* packToken::asMap() const {
+  if(!base || base->type != MAP) {
+    throw bad_cast(
+      "The Token is not a map!");
+  }
+  return static_cast<Token<TokenMap_t*>*>(base)->val;
+}
+
 std::string packToken::str() const {
   std::stringstream ss;
+  TokenMap_t* tmap;
+  TokenMap_t::iterator it;
+
   if(!base) return "undefined";
   switch(base->type) {
     case NONE:
@@ -92,6 +104,16 @@ std::string packToken::str() const {
       return ss.str();
     case STR:
       return "\"" + asString() + "\"";
+    case MAP:
+      tmap = static_cast<Token<TokenMap_t*>*>(base)->val;
+      if(tmap->size() == 0) return "{}";
+      ss << "{";
+      for(it = tmap->begin(); it != tmap->end(); ++it) {
+        ss << (it == tmap->begin() ? "" : ",");
+        ss << " \"" << it->first << "\": " << it->second.str();
+      }
+      ss << " }";
+      return ss.str();
     default:
       return "unknown_type";
   }

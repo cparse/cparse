@@ -128,11 +128,14 @@ int main(int argc, char** argv) {
   tmap["key"] = "mapped value";
   tmap["key1"] = "second mapped value";
   tmap["key2"] = 10;
+  tmap["key3"] = new TokenMap_t;
 
   assert("map[\"key\"]", "mapped value", &vars);
   assert("map[\"key\"+1]", "second mapped value", &vars);
   assert("map[\"key\"+2] + 3 == 13", true, &vars);
   assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
+
+  std::cout << "  Show map: " << vars["map"] << std::endl;
 
   std::cout << "\nTesting exception management\n" << std::endl;
 

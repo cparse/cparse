@@ -27,11 +27,12 @@ public:
   }
 };
 
-#include "packToken.h"
-
+class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
+
+#include "packToken.h"
 
 class calculator {
 private:
