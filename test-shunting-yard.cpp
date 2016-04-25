@@ -120,6 +120,20 @@ int main(int argc, char** argv) {
 
   assert(vars["str1"].asString(), "foo");
 
+  std::cout << "\nTesting map access expressions\n" << std::endl;
+
+  
+  TokenMap_t tmap;
+  vars["map"] = new Token<TokenMap_t*>(&tmap, MAP);
+  tmap["key"] = "mapped value";
+  tmap["key1"] = "second mapped value";
+  tmap["key2"] = 10;
+
+  assert("map[\"key\"]", "mapped value", &vars);
+  assert("map[\"key\"+1]", "second mapped value", &vars);
+  assert("map[\"key\"+2] + 3 == 13", true, &vars);
+  assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());
