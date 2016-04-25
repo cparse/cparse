@@ -61,6 +61,35 @@ std::ostream& operator<<(std::ostream &os, const packToken& t) {
   return os << t.str();
 }
 
+packToken& packToken::operator[](const std::string& key){
+  if(!base || base->type != MAP) {
+    throw bad_cast(
+      "The Token is not a map!");
+  }
+  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+}
+const packToken& packToken::operator[](const std::string& key) const {
+  if(!base || base->type != MAP) {
+    throw bad_cast(
+      "The Token is not a map!");
+  }
+  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+}
+packToken& packToken::operator[](const char* key){
+  if(!base || base->type != MAP) {
+    throw bad_cast(
+      "The Token is not a map!");
+  }
+  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+}
+const packToken& packToken::operator[](const char* key) const {
+  if(!base || base->type != MAP) {
+    throw bad_cast(
+      "The Token is not a map!");
+  }
+  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+}
+
 double packToken::asDouble() const {
   if(!base || base->type != NUM) {
     throw bad_cast(

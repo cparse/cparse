@@ -136,6 +136,7 @@ int main(int argc, char** argv) {
   assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
 
   std::cout << "  Show map: " << vars["map"] << std::endl;
+  std::cout << "  Show number: " << vars["map"]["key2"] << std::endl;
 
   std::cout << "\nTesting exception management\n" << std::endl;
 

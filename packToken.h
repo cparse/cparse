@@ -25,6 +25,10 @@ public:
   packToken& operator=(const std::string& t);
   TokenBase* operator->() const;
   bool operator==(const packToken& t) const;
+  packToken& operator[](const std::string& key);
+  packToken& operator[](const char* key);
+  const packToken& operator[](const std::string& key) const;
+  const packToken& operator[](const char* key) const;
 
   double asDouble() const;
   std::string asString() const;
