@@ -133,10 +133,12 @@ int main(int argc, char** argv) {
   assert("map[\"key\"]", "mapped value", &vars);
   assert("map[\"key\"+1]", "second mapped value", &vars);
   assert("map[\"key\"+2] + 3 == 13", true, &vars);
+  assert("map.key1", "second mapped value", &vars);
+  tmap["key3"]["map1"] = "inseption1";
+  tmap["key3"]["map2"] = "inseption2";
+  assert("map.key3.map1", "inseption1", &vars);
+  assert("map.key3['map2']", "inseption2", &vars);
   assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
-
-  std::cout << "  Show map: " << vars["map"] << std::endl;
-  std::cout << "  Show number: " << vars["map"]["key2"] << std::endl;
 
   std::cout << "\nTesting exception management\n" << std::endl;
 

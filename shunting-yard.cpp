@@ -17,7 +17,7 @@ OppMap_t calculator::buildOpPrecedence() {
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
   // http://en.cppreference.com/w/cpp/language/operator_precedence
-  opp["[]"] = 2;
+  opp["[]"] = 2; opp["."] = 2;
   opp["^"]  = 3;
   opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
   opp["+"]  = 6; opp["-"]  = 6;
@@ -77,6 +77,18 @@ TokenQueue_t calculator::toRPN(const char* expr,
       double digit = strtod(expr , &nextChar);
       rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
+      lastTokenWasOp = false;
+    } else if(isvariablechar(*expr) && lastTokenWasOp
+      && operatorStack.size() > 0 && !operatorStack.top().compare(".")) {
+      // If it is a member access key (e.g. `map.name`)
+      // parse it and add to the output queue.
+      std::stringstream ss;
+      while( isvariablechar(*expr ) || isdigit(*expr) ) {
+        ss << *expr;
+        ++expr;
+      }
+
+      rpnQueue.push(new Token<std::string>(ss.str(), STR));
       lastTokenWasOp = false;
     } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
@@ -334,7 +346,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
         delete b_right;
 
-        if (!str.compare("[]")) {
+        if (!str.compare("[]") || !str.compare(".")) {
           TokenMap_t::iterator it = left->find(right);
 
           if (it == left->end()) {
@@ -343,6 +355,8 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           }
 
           evaluation.push(it->second->clone());
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
         }
       }
     } else if (base->type == VAR) { // Variable
