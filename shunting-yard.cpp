@@ -16,17 +16,17 @@ OppMap_t calculator::buildOpPrecedence() {
 
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
-  // http://en.cppreference.com/w/c/language/operator_precedence
-  opp["[]"] = 1;
-  opp["^"]  = 2;
-  opp["*"]  = 3; opp["/"]  = 3; opp["%"] = 3;
-  opp["+"]  = 4; opp["-"]  = 4;
-  opp["<<"] = 5; opp[">>"] = 5;
-  opp["<"]  = 6; opp["<="] = 6; opp[">="] = 6; opp[">"] = 6;
-  opp["=="] = 7; opp["!="] = 7;
-  opp["&&"] = 11;
-  opp["||"] = 12;
-  opp["("]  = 16; opp["["] = 16;
+  // http://en.cppreference.com/w/cpp/language/operator_precedence
+  opp["[]"] = 2;
+  opp["^"]  = 3;
+  opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
+  opp["+"]  = 6; opp["-"]  = 6;
+  opp["<<"] = 7; opp[">>"] = 7;
+  opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
+  opp["=="] = 9; opp["!="] = 9;
+  opp["&&"] = 13;
+  opp["||"] = 14;
+  opp["("]  = 17; opp["["] = 17;
 
   return opp;
 }
