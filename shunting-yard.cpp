@@ -9,27 +9,57 @@
 #include <math.h>
 
 #include "shunting-yard.h"
+#include "shunting-yard-exceptions.h"
 
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
 
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
-  // http://en.cppreference.com/w/c/language/operator_precedence
-  opp["^"]  = 2;
-  opp["*"]  = 3; opp["/"]  = 3; opp["%"] = 3;
-  opp["+"]  = 4; opp["-"]  = 4;
-  opp["<<"] = 5; opp[">>"] = 5;
-  opp["<"]  = 6; opp["<="] = 6; opp[">="] = 6; opp[">"] = 6;
-  opp["=="] = 7; opp["!="] = 7;
-  opp["&&"] = 11;
-  opp["||"] = 12;
-  opp["("]  = 16;
+  // http://en.cppreference.com/w/cpp/language/operator_precedence
+  opp["[]"] = 2; opp["."] = 2;
+  opp["^"]  = 3;
+  opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
+  opp["+"]  = 6; opp["-"]  = 6;
+  opp["<<"] = 7; opp[">>"] = 7;
+  opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
+  opp["=="] = 9; opp["!="] = 9;
+  opp["&&"] = 13;
+  opp["||"] = 14;
+  opp["("]  = 17; opp["["] = 17;
 
   return opp;
 }
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
+
+// Check for unary operators and "convert" them to binary:
+void calculator::handle_unary(const std::string& str,
+    TokenQueue_t& rpnQueue, bool& lastTokenWasOp,
+    OppMap_t& opPrecedence) {
+  if (lastTokenWasOp) {
+    // Convert unary operators to binary in the RPN.
+    if (!str.compare("-") || !str.compare("+")) {
+      rpnQueue.push(new Token<double>(0, NUM));
+    } else {
+      throw std::domain_error(
+          "Unrecognized unary operator: '" + str + "'.");
+    }
+  }
+}
+
+// Consume operators with precedence >= than op then add op
+void calculator::handle_op(const std::string& str,
+    TokenQueue_t& rpnQueue,
+    std::stack<std::string>& operatorStack,
+    OppMap_t& opPrecedence) {
+  while (!operatorStack.empty() &&
+      opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
+    rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
+    operatorStack.pop();
+  }
+  operatorStack.push(str);
+}
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
@@ -47,6 +77,18 @@ TokenQueue_t calculator::toRPN(const char* expr,
       double digit = strtod(expr , &nextChar);
       rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
+      lastTokenWasOp = false;
+    } else if(isvariablechar(*expr) && lastTokenWasOp
+      && operatorStack.size() > 0 && !operatorStack.top().compare(".")) {
+      // If it is a member access key (e.g. `map.name`)
+      // parse it and add to the output queue.
+      std::stringstream ss;
+      while( isvariablechar(*expr ) || isdigit(*expr) ) {
+        ss << *expr;
+        ++expr;
+      }
+
+      rpnQueue.push(new Token<std::string>(ss.str(), STR));
       lastTokenWasOp = false;
     } else if (isvariablechar(*expr )) {
       // If the function is a variable, resolve it and
@@ -82,6 +124,28 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       lastTokenWasOp = false;
+    } else if(*expr == '\'' || *expr == '"') {
+      // If it is a string literal, parse it and
+      // add to the output queue.
+      char quote = *expr;
+
+      ++expr;
+      std::stringstream ss;
+      while(*expr && *expr != quote && *expr != '\n') {
+        if(*expr == '\\') ++expr;
+        ss << *expr;
+        ++expr;
+      }
+
+      if(*expr != quote) {
+        std::string squote = (quote == '"' ? "\"": "'");
+        throw syntax_error(
+          "Expected quote (" + squote +
+          ") at end of string declaration: " + squote + ss.str() + ".");
+      }
+      ++expr;
+      rpnQueue.push(new Token<std::string>(ss.str(), STR));
+      lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
       switch (*expr) {
@@ -89,8 +153,24 @@ TokenQueue_t calculator::toRPN(const char* expr,
           operatorStack.push("(");
           ++expr;
           break;
+        case '[':
+          // This counts as a bracket and as an operator:
+          handle_unary("[]", rpnQueue, lastTokenWasOp, opPrecedence);
+          handle_op("[]", rpnQueue, operatorStack, opPrecedence);
+          // Add it as a bracket to the op stack:
+          operatorStack.push("[");
+          ++expr;
+          break;
         case ')':
           while (operatorStack.top().compare("(")) {
+            rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
+            operatorStack.pop();
+          }
+          operatorStack.pop();
+          ++expr;
+          break;
+        case ']':
+          while (operatorStack.top().compare("[")) {
             rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
             operatorStack.pop();
           }
@@ -120,22 +200,10 @@ TokenQueue_t calculator::toRPN(const char* expr,
             std::string str;
             ss >> str;
 
-            if (lastTokenWasOp) {
-              // Convert unary operators to binary in the RPN.
-              if (!str.compare("-") || !str.compare("+")) {
-                rpnQueue.push(new Token<double>(0, NUM));
-              } else {
-                throw std::domain_error(
-                    "Unrecognized unary operator: '" + str + "'.");
-              }
-            }
+            handle_unary(str, rpnQueue, lastTokenWasOp, opPrecedence);
 
-            while (!operatorStack.empty() &&
-                opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
-              rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
-              operatorStack.pop();
-            }
-            operatorStack.push(str);
+            handle_op(str, rpnQueue, operatorStack, opPrecedence);
+
             lastTokenWasOp = true;
           }
       }
@@ -240,9 +308,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         if (!str.compare("+")) {
           evaluation.push(new Token<std::string>(left + right, STR));
         } else if (!str.compare("==")) {
-          evaluation.push(new Token<double>(!left.compare(right), NUM));
+          evaluation.push(new Token<double>(left.compare(right) == 0, NUM));
         } else if (!str.compare("!=")) {
-          evaluation.push(new Token<double>(left.compare(right), NUM));
+          evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }
@@ -269,6 +337,24 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         if (!str.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
+        } else {
+          throw std::domain_error("Unknown operator: '" + str + "'.");
+        }
+      } else if(b_left->type == MAP && b_right->type == STR) {
+        TokenMap_t* left = static_cast<Token<TokenMap_t*>*>(b_left)->val;
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        if (!str.compare("[]") || !str.compare(".")) {
+          TokenMap_t::iterator it = left->find(right);
+
+          if (it == left->end()) {
+            throw std::domain_error(
+                "Unable to find the variable '" + right + "'.");
+          }
+
+          evaluation.push(it->second->clone());
         } else {
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }

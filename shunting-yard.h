@@ -10,7 +10,7 @@
 #include <string>
 #include <queue>
 
-enum tokType { NONE, OP, VAR, NUM, STR };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP };
 
 struct TokenBase {
   tokType type;
@@ -27,11 +27,12 @@ public:
   }
 };
 
-#include "packToken.h"
-
+class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
+
+#include "packToken.h"
 
 class calculator {
 private:
@@ -47,6 +48,14 @@ private:
   static TokenQueue_t toRPN(const char* expr,
       TokenMap_t* vars,
       OppMap_t opPrecedence=_opPrecedence);
+
+  static void handle_unary(const std::string& str,
+    TokenQueue_t& rpnQueue, bool& lastTokenWasOp,
+    OppMap_t& opPrecedence);
+  static void handle_op(const std::string& str,
+    TokenQueue_t& rpnQueue,
+    std::stack<std::string>& operatorStack,
+    OppMap_t& opPrecedence);
 
 private:
   TokenQueue_t RPN;
