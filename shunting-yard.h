@@ -9,6 +9,7 @@
 #include <stack>
 #include <string>
 #include <queue>
+#include <list>
 
 enum tokType { NONE, OP, VAR, NUM, STR, MAP };
 
@@ -34,19 +35,37 @@ typedef std::map<std::string, int> OppMap_t;
 
 #include "packToken.h"
 
+struct Scope {
+  typedef std::list<TokenMap_t*> Scope_t;
+  Scope_t scope;
+  
+  Scope() {};
+  Scope(TokenMap_t* vars);
+
+  TokenBase* find(std::string key);
+
+  void push(TokenMap_t* vars);
+  void push(Scope vars);
+  void pop();
+  void pop(unsigned N);
+  
+  void clean();
+  unsigned size();
+};
+
 class calculator {
 private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
 
 public:
-  static TokenBase* calculate(const char* expr, TokenMap_t* vars = 0);
+  static TokenBase* calculate(const char* expr);
+  static TokenBase* calculate(const char* expr, Scope scope);
 
 private:
-  static TokenBase* calculate(TokenQueue_t RPN, TokenMap_t* vars = 0);
+  static TokenBase* calculate(TokenQueue_t RPN, Scope scope);
   static void cleanRPN(TokenQueue_t& rpn);
-  static TokenQueue_t toRPN(const char* expr,
-      TokenMap_t* vars,
+  static TokenQueue_t toRPN(const char* expr, Scope scope,
       OppMap_t opPrecedence=_opPrecedence);
 
   static void handle_unary(const std::string& str,
@@ -60,15 +79,20 @@ private:
 private:
   TokenQueue_t RPN;
 public:
+  Scope scope;
+public:
   ~calculator();
   calculator(){}
-  calculator(const char* expr,
-      TokenMap_t* vars = 0,
+  calculator(const char* expr, Scope scope,
       OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
-      TokenMap_t* vars = 0,
       OppMap_t opPrecedence=_opPrecedence);
-  TokenBase* eval(TokenMap_t* vars = 0);
+  void compile(const char* expr,
+      Scope local= Scope(),
+      OppMap_t opPrecedence=_opPrecedence);
+  TokenBase* eval(Scope local= Scope());
+
+  // Serialization:
   std::string str();
 };
 

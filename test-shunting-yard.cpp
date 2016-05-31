@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting map access expressions\n" << std::endl;
 
-  
+
   TokenMap_t tmap;
   vars["map"] = new Token<TokenMap_t*>(&tmap, MAP);
   tmap["key"] = "mapped value";
@@ -134,11 +134,47 @@ int main(int argc, char** argv) {
   assert("map[\"key\"+1]", "second mapped value", &vars);
   assert("map[\"key\"+2] + 3 == 13", true, &vars);
   assert("map.key1", "second mapped value", &vars);
-  tmap["key3"]["map1"] = "inseption1";
-  tmap["key3"]["map2"] = "inseption2";
-  assert("map.key3.map1", "inseption1", &vars);
-  assert("map.key3['map2']", "inseption2", &vars);
+  tmap["key3"]["map1"] = "inception1";
+  tmap["key3"]["map2"] = "inception2";
+  assert("map.key3.map1", "inception1", &vars);
+  assert("map.key3['map2']", "inception2", &vars);
   assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
+
+  std::cout << "\nTesting scope management\n" << std::endl;
+
+  // Add vars to scope:
+  c3.scope.push(&vars);
+  assert(c3.eval(), 4);
+
+  tmap["b2"] = 1;
+  c3.scope.push(&tmap);
+  assert(c3.eval(), 4.14);
+
+  Scope scope = c3.scope;
+
+  // Remove vars from scope:
+  c3.scope.pop();
+  c3.scope.pop();
+
+  // Test what happens when you try to drop more namespaces than possible:
+  assert_throws(c3.scope.pop());
+
+  // Load Saved Scope
+  c3.scope = scope;
+  assert(c3.eval(), 4.14);
+
+  // Testing with 3 namespaces:
+  TokenMap_t vmap;
+  vmap["b1"] = -1.14;
+  c3.scope.push(&vmap);
+  assert(c3.eval(), 4.14);
+
+  scope = c3.scope;
+  calculator c4("pi+b1+b2", scope);
+  assert(c4.eval(), 3.);
+  assert(calculator::calculate("pi+b1+b2", scope), 3.);
+
+  c3.scope.clean();
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
