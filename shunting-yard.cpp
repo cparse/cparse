@@ -230,8 +230,14 @@ TokenBase* calculator::calculate(const char* expr, Scope local) {
   
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   TokenQueue_t rpn = toRPN(expr, local);
+  TokenBase* ret;
 
-  TokenBase* ret = calculate(rpn, local);
+  try {
+    ret = calculate(rpn, local);
+  } catch (std::exception e) {
+    cleanRPN(rpn);
+    throw e;
+  }
 
   cleanRPN(rpn);
   return ret;
