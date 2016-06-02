@@ -227,7 +227,7 @@ TokenBase* calculator::calculate(const char* expr) {
 }
 
 TokenBase* calculator::calculate(const char* expr, Scope local) {
-  
+
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   TokenQueue_t rpn = toRPN(expr, local);
   TokenBase* ret;
@@ -377,7 +377,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
         throw std::domain_error(
             "Detected variable, but the variable map is unavailable.");
       }
-      
+
       TokenBase* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
@@ -409,6 +409,19 @@ void calculator::cleanRPN(TokenQueue_t& rpn) {
 
 calculator::~calculator() {
   cleanRPN(this->RPN);
+}
+
+calculator::calculator(const calculator& calc) {
+  this->scope = calc.scope;
+  TokenQueue_t _rpn = calc.RPN;
+
+  // Deep copy the token list, so everything can be
+  // safely deallocated:
+  while(!_rpn.empty()) {
+    TokenBase* base = _rpn.front();
+    _rpn.pop();
+    this->RPN.push(base->clone());
+  }
 }
 
 calculator::calculator(const char* expr,
@@ -452,6 +465,23 @@ TokenBase* calculator::eval(Scope local) {
   scope.pop(local.size());
 
   return val;
+}
+
+calculator& calculator::operator=(const calculator& calc) {
+  this->scope = calc.scope;
+
+  // Make sure the RPN is empty:
+  cleanRPN(this->RPN);
+
+  // Deep copy the token list, so everything can be
+  // safely deallocated:
+  TokenQueue_t _rpn = calc.RPN;
+  while(!_rpn.empty()) {
+    TokenBase* base = _rpn.front();
+    _rpn.pop();
+    this->RPN.push(base->clone());
+  }
+  return *this;
 }
 
 /* * * * * For Debug Only * * * * */
@@ -536,4 +566,3 @@ void Scope::clean() {
 unsigned Scope::size() {
   return scope.size();
 }
-

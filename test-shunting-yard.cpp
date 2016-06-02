@@ -176,6 +176,18 @@ int main(int argc, char** argv) {
 
   c3.scope.clean();
 
+  std::cout << "\nTesting resource management\n" << std::endl;
+
+  calculator C1, C2("1 + 1");
+
+  // These are likely to cause seg fault if
+  // RPN copy is not handled:
+
+  // Copy:
+  assert_not_throw(calculator C3(C2));
+  // Assignment:
+  assert_not_throw(C1 = C2);
+
   std::cout << "\nTesting exception management\n" << std::endl;
 
   assert_throws(c3.eval());

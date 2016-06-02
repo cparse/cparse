@@ -38,7 +38,7 @@ typedef std::map<std::string, int> OppMap_t;
 struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
   Scope_t scope;
-  
+
   Scope() {};
   Scope(TokenMap_t* vars);
 
@@ -48,7 +48,7 @@ struct Scope {
   void push(Scope vars);
   void pop();
   void pop(unsigned N);
-  
+
   void clean();
   unsigned size();
 };
@@ -83,6 +83,7 @@ public:
 public:
   ~calculator();
   calculator(){}
+  calculator(const calculator& calc);
   calculator(const char* expr, Scope scope= Scope(),
       OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
@@ -94,6 +95,9 @@ public:
 
   // Serialization:
   std::string str();
+
+  // Operators:
+  calculator& operator=(const calculator& calc);
 };
 
 #endif // _SHUNTING_YARD_H
