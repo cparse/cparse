@@ -29,7 +29,9 @@ public:
   packToken& operator[](const char* key);
   const packToken& operator[](const std::string& key) const;
   const packToken& operator[](const char* key) const;
+  operator TokenBase*() { return base; }
 
+  bool asBool() const;
   double asDouble() const;
   std::string asString() const;
   TokenMap_t* asMap() const;
