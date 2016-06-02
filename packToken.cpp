@@ -90,6 +90,26 @@ const packToken& packToken::operator[](const char* key) const {
   return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
 }
 
+bool packToken::asBool() const {
+  if(!base) {
+    throw bad_cast(
+      "The Token is not a number!");
+  }
+
+  switch(base->type) {
+    case NUM:
+      return static_cast<Token<double>*>(base)->val != 0;
+    case STR:
+      return static_cast<Token<std::string>*>(base)->val != std::string();
+    case MAP:
+      return true;
+    case NONE:
+      return false;
+    default:
+      throw bad_cast("Token type can not be cast to boolean!");
+  }
+}
+
 double packToken::asDouble() const {
   if(!base || base->type != NUM) {
     throw bad_cast(
