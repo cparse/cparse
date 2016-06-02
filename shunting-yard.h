@@ -83,7 +83,7 @@ public:
 public:
   ~calculator();
   calculator(){}
-  calculator(const char* expr, Scope scope,
+  calculator(const char* expr, Scope scope= Scope(),
       OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
       OppMap_t opPrecedence=_opPrecedence);
