@@ -203,6 +203,18 @@ int main(int argc, char** argv) {
     c3.eval(&vars);
   });
 
+  assert_throws({
+    calculator c5("10 + - - 10");
+  });
+
+  assert_throws({
+    calculator c5("10 + +");
+  });
+
+  assert_not_throw({
+    calculator c5("10 + -10");
+  });
+
   std::cout << "\nEnd testing" << std::endl;
 
   return 0;

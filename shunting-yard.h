@@ -68,7 +68,7 @@ private:
   static TokenQueue_t toRPN(const char* expr, Scope scope,
       OppMap_t opPrecedence=_opPrecedence);
 
-  static void handle_unary(const std::string& str,
+  static bool handle_unary(const std::string& str,
     TokenQueue_t& rpnQueue, bool& lastTokenWasOp,
     OppMap_t& opPrecedence);
   static void handle_op(const std::string& str,
