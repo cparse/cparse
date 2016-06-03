@@ -215,6 +215,10 @@ int main(int argc, char** argv) {
     calculator c5("10 + -10");
   });
 
+  assert_throws({
+    calculator c5("c.[10]");
+  })
+
   std::cout << "\nEnd testing" << std::endl;
 
   return 0;

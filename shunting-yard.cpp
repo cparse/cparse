@@ -57,6 +57,12 @@ void calculator::handle_op(const std::string& str,
     TokenQueue_t& rpnQueue,
     std::stack<std::string>& operatorStack,
     OppMap_t& opPrecedence) {
+
+  // Check if operator exists:
+  if(opPrecedence.find(str) == opPrecedence.end()) {
+    throw std::domain_error("Unknown operator: `" + str + "`!");
+  }
+
   while (!operatorStack.empty() &&
       opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
     rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
