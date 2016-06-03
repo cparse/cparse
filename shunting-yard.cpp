@@ -492,20 +492,8 @@ std::string calculator::str() {
 
   ss << "calculator { RPN: [ ";
   while( rpn.size() ) {
-    TokenBase* base = rpn.front();
+    ss << packToken(rpn.front()->clone()).str();
     rpn.pop();
-
-    if(base->type == NUM) {
-      ss << static_cast<Token<double>*>(base)->val;
-    } else if(base->type == VAR) {
-      ss << static_cast<Token<std::string>*>(base)->val;
-    } else if(base->type == OP) {
-      ss << static_cast<Token<std::string>*>(base)->val;
-    } else if(base->type == NONE) {
-      ss << "None";
-    } else {
-      ss << "unknown_type";
-    }
 
     ss << (rpn.size() ? ", ":"");
   }
