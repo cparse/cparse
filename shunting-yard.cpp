@@ -33,6 +33,7 @@ OppMap_t calculator::buildOpPrecedence() {
 }
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
+Scope calculator::empty_scope = Scope();
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& str,
@@ -73,7 +74,7 @@ void calculator::handle_op(const std::string& str,
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-    Scope scope, OppMap_t opPrecedence) {
+    const Scope* global, const Scope* local, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
@@ -123,7 +124,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
       } else if(key == "false") {
         found = true; val = new Token<double>(0, NUM);
       } else {
-        val = scope.find(key);
+        if(local) val = local->find(key);
+        if(global) val = val ? val : global->find(key);
         if(val) {
           val = val->clone();
           found = true;
@@ -252,18 +254,14 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-TokenBase* calculator::calculate(const char* expr) {
-  return calculate(expr, Scope());
-}
-
-TokenBase* calculator::calculate(const char* expr, Scope local) {
+TokenBase* calculator::calculate(const char* expr, const Scope& local) {
 
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = toRPN(expr, local);
+  TokenQueue_t rpn = calculator::toRPN(expr, &local, NULL);
   TokenBase* ret;
 
   try {
-    ret = calculate(rpn, local);
+    ret = calculator::calculate(rpn, &local, NULL);
   } catch (std::exception e) {
     cleanRPN(rpn);
     throw e;
@@ -273,7 +271,8 @@ TokenBase* calculator::calculate(const char* expr, Scope local) {
   return ret;
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn,
+    const Scope* global, const Scope* local) {
 
   TokenQueue_t rpn;
 
@@ -403,16 +402,13 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
       }
     } else if (base->type == VAR) { // Variable
 
-      if (scope.size() == 0) {
-        throw std::domain_error(
-            "Detected variable, but the variable map is unavailable.");
-      }
-
       TokenBase* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
-      value = scope.find(key);
+      if (local) { value = local->find(key); }
+      if (global) { value = value ? value : global->find(key); }
+
       if(value) value = value->clone();
 
       if (value == NULL) {
@@ -455,46 +451,25 @@ calculator::calculator(const calculator& calc) {
 }
 
 calculator::calculator(const char* expr,
-    Scope scope, OppMap_t opPrecedence) {
+    const Scope& scope, OppMap_t opPrecedence) {
   compile(expr, scope, opPrecedence);
 }
 
 void calculator::compile(const char* expr, OppMap_t opPrecedence) {
-  this->RPN = calculator::toRPN(expr, scope, opPrecedence);
+  this->RPN = calculator::toRPN(expr, &scope, NULL, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-    Scope local, OppMap_t opPrecedence) {
+    const Scope& local, OppMap_t opPrecedence) {
 
   // Make sure it is empty:
   cleanRPN(this->RPN);
 
-  scope.push(local);
-
-  try {
-    this->RPN = calculator::toRPN(expr, scope, opPrecedence);
-  } catch (std::exception e) {
-    scope.pop(local.size());
-    throw e;
-  }
-
-  scope.pop(local.size());
+  this->RPN = calculator::toRPN(expr, &scope, &local, opPrecedence);
 }
 
-TokenBase* calculator::eval(Scope local) {
-  scope.push(local);
-
-  TokenBase* val;
-
-  try {
-    val = calculate(this->RPN, scope);
-  } catch(std::exception e) {
-    scope.pop(local.size());
-    throw e;
-  }
-  scope.pop(local.size());
-
-  return val;
+TokenBase* calculator::eval(const Scope& local) {
+  return calculate(this->RPN, &scope, &local);
 }
 
 calculator& calculator::operator=(const calculator& calc) {
@@ -537,7 +512,7 @@ Scope::Scope(TokenMap_t* vars) {
   if(vars) scope.push_front(vars);
 }
 
-TokenBase* Scope::find(std::string key) {
+TokenBase* Scope::find(std::string key) const {
   TokenBase* value = NULL;
 
   Scope_t::iterator s_it = scope.begin();
@@ -581,6 +556,6 @@ void Scope::clean() {
   scope = Scope_t();
 }
 
-unsigned Scope::size() {
+unsigned Scope::size() const {
   return scope.size();
 }

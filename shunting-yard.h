@@ -37,12 +37,12 @@ typedef std::map<std::string, int> OppMap_t;
 
 struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
-  Scope_t scope;
+  mutable Scope_t scope;
 
   Scope() {};
   Scope(TokenMap_t* vars);
 
-  TokenBase* find(std::string key);
+  TokenBase* find(std::string key) const;
 
   void push(TokenMap_t* vars);
   void push(Scope vars);
@@ -50,22 +50,24 @@ struct Scope {
   void pop(unsigned N);
 
   void clean();
-  unsigned size();
+  unsigned size() const;
 };
 
 class calculator {
 private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
+  static Scope empty_scope;
 
 public:
-  static TokenBase* calculate(const char* expr);
-  static TokenBase* calculate(const char* expr, Scope scope);
+  static TokenBase* calculate(const char* expr, const Scope& scope= empty_scope);
 
 private:
-  static TokenBase* calculate(TokenQueue_t RPN, Scope scope);
+  static TokenBase* calculate(TokenQueue_t RPN,
+    const Scope* global, const Scope* local);
   static void cleanRPN(TokenQueue_t& rpn);
-  static TokenQueue_t toRPN(const char* expr, Scope scope,
+  static TokenQueue_t toRPN(const char* expr,
+    const Scope* global, const Scope* local,
       OppMap_t opPrecedence=_opPrecedence);
 
   static bool handle_unary(const std::string& str,
@@ -84,14 +86,14 @@ public:
   ~calculator();
   calculator(){}
   calculator(const calculator& calc);
-  calculator(const char* expr, Scope scope= Scope(),
+  calculator(const char* expr, const Scope& scope= empty_scope,
       OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
       OppMap_t opPrecedence=_opPrecedence);
   void compile(const char* expr,
-      Scope local= Scope(),
+      const Scope& local= empty_scope,
       OppMap_t opPrecedence=_opPrecedence);
-  TokenBase* eval(Scope local= Scope());
+  TokenBase* eval(const Scope& local= empty_scope);
 
   // Serialization:
   std::string str();
