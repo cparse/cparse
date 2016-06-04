@@ -244,7 +244,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   if(lastTokenWasUnary) {
     std::string op;
     throw syntax_error(
-      "Expected operand after unary operator `" + operatorStack.top());
+      "Expected operand after unary operator `" + operatorStack.top() + "`");
   }
 
   while (!operatorStack.empty()) {
