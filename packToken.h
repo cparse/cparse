@@ -37,6 +37,7 @@ public:
   TokenMap_t* asMap() const;
 
   std::string str() const;
+  static std::string str(TokenBase* t);
 };
 
 // To allow cout to print it:
