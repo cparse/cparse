@@ -219,6 +219,14 @@ int main(int argc, char** argv) {
     calculator c5("c.[10]");
   })
 
+  TokenMap_t v1, v2;
+  v1["map"] = &v2;
+  assert_throws({
+    // Check what happens when there isn't any
+    // operators expected between the operand types.
+    calculator("map == 0").eval(&v1);
+  })
+
   std::cout << "\nEnd testing" << std::endl;
 
   return 0;

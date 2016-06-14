@@ -399,6 +399,14 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         } else {
           throw std::domain_error("Unknown operator: '" + str + "'.");
         }
+      } else {
+        packToken left = b_left->clone();
+        packToken right = b_right->clone();
+        delete b_left;
+        delete b_right;
+        
+        throw std::domain_error(
+          "Unknown operator: '" + str + "' for operators: " + left.str() + " and " + right.str() + ".");
       }
     } else if (base->type == VAR) { // Variable
 
