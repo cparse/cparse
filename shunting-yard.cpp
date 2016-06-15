@@ -292,8 +292,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
 
     // Operator:
     if (base->type == OP) {
-      Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
-      std::string str = strTok->val;
+      std::string str = static_cast<Token<std::string>*>(base)->val;
+      delete base;      
+
       if (evaluation.size() < 2) {
         throw std::domain_error("Invalid equation.");
       }
