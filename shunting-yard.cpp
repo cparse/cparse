@@ -407,7 +407,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         delete b_right;
         
         throw std::domain_error(
-          "Unknown operator: '" + str + "' for operators: " + left.str() + " and " + right.str() + ".");
+          "Invalid operands: `" + left.str() + "` and `" + right.str() + "` for operator: '" + str + "'.");
       }
     } else if (base->type == VAR) { // Variable
 
