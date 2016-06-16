@@ -339,7 +339,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         } else if (!str.compare("||")) {
           evaluation.push(new Token<double>((int) left || (int) right, NUM));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == STR) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -354,7 +354,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         } else if (!str.compare("!=")) {
           evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == NUM) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -367,7 +367,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == NUM && b_right->type == STR) {
         double left = static_cast<Token<double>*>(b_left)->val;
@@ -380,7 +380,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == MAP && b_right->type == STR) {
         TokenMap_t* left = static_cast<Token<TokenMap_t*>*>(b_left)->val;
@@ -398,16 +398,15 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
 
           evaluation.push(it->second->clone());
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          throw undefined_operation(str, left, right);
         }
       } else {
-        packToken left = b_left->clone();
-        packToken right = b_right->clone();
+        packToken p_left = b_left->clone();
+        packToken p_right = b_right->clone();
         delete b_left;
         delete b_right;
         
-        throw std::domain_error(
-          "Invalid operands: `" + left.str() + "` and `" + right.str() + "` for operator: '" + str + "'.");
+        throw undefined_operation(str, p_left, p_right);
       }
     } else if (base->type == VAR) { // Variable
 
