@@ -17,8 +17,11 @@ private:
   //
   // Do not delete the TokenBase* by yourself after
   // building a packToken!
+  //
+  // If you want to copy the TokenBase do instead:
+  // packToken(token->clone())
   explicit packToken(TokenBase* t) : base(t) {}
-  
+
   // This constructor should only be called
   // from inside the calculator class:
   friend class calculator;
