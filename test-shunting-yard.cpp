@@ -103,11 +103,11 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting string expressions\n" << std::endl;
 
-  vars["str1"] = new Token<std::string>("foo", STR);
-  vars["str2"] = new Token<std::string>("bar", STR);
-  vars["str3"] = new Token<std::string>("foobar", STR);
-  vars["str4"] = new Token<std::string>("foo10", STR);
-  vars["str5"] = new Token<std::string>("10bar", STR);
+  vars["str1"] = "foo";
+  vars["str2"] = "bar";
+  vars["str3"] = "foobar";
+  vars["str4"] = "foo10";
+  vars["str5"] = "10bar";
 
   assert("str1 + str2 == str3", true, &vars);
   assert("str1 + str2 != str3", false, &vars);
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 
 
   TokenMap_t tmap;
-  vars["map"] = new Token<TokenMap_t*>(&tmap, MAP);
+  vars["map"] = &tmap;
   tmap["key"] = "mapped value";
   tmap["key1"] = "second mapped value";
   tmap["key2"] = 10;

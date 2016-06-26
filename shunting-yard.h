@@ -60,10 +60,10 @@ private:
   static Scope empty_scope;
 
 public:
-  static TokenBase* calculate(const char* expr, const Scope& scope= empty_scope);
+  static packToken calculate(const char* expr, const Scope& scope= empty_scope);
 
 private:
-  static TokenBase* calculate(TokenQueue_t RPN,
+  static packToken calculate(TokenQueue_t RPN,
     const Scope* global, const Scope* local);
   static void cleanRPN(TokenQueue_t& rpn);
   static TokenQueue_t toRPN(const char* expr,
@@ -93,7 +93,7 @@ public:
   void compile(const char* expr,
       const Scope& local= empty_scope,
       OppMap_t opPrecedence=_opPrecedence);
-  TokenBase* eval(const Scope& local= empty_scope);
+  packToken eval(const Scope& local= empty_scope);
 
   // Serialization:
   std::string str();

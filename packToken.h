@@ -1,13 +1,27 @@
 
+class calculator;
+
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
   TokenBase* base;
 public:
   packToken() : base(0) {}
-  packToken(TokenBase* t) : base(t) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
   packToken(const packToken& t) : base(t.base ? t.base->clone() : 0) {}
   packToken& operator=(const packToken& t);
+
+private:
+  // Note:
+  // This constructor makes sure the TokenBase*
+  // will be deleted when the packToken destructor is called.
+  //
+  // Do not delete the TokenBase* by yourself after
+  // building a packToken!
+  explicit packToken(TokenBase* t) : base(t) {}
+  
+  // This constructor should only be called
+  // from inside the calculator class:
+  friend class calculator;
 
 public:
   template<class C>
