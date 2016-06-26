@@ -527,7 +527,7 @@ TokenBase* Scope::find(std::string key) const {
   for(; s_it != scope.end(); s_it++) {
     TokenMap_t::iterator it = (*s_it)->find(key);
     if(it != (*s_it)->end()) {
-      value = it->second->clone();
+      value = it->second;
       break;
     }
   }
