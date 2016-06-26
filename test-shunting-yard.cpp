@@ -123,12 +123,12 @@ int main(int argc, char** argv) {
   std::cout << "\nTesting map access expressions\n" << std::endl;
 
 
-  TokenMap_t tmap;
+  TokenMap_t tmap, key3;
   vars["map"] = &tmap;
   tmap["key"] = "mapped value";
   tmap["key1"] = "second mapped value";
   tmap["key2"] = 10;
-  tmap["key3"] = new TokenMap_t;
+  tmap["key3"] = &key3;
 
   assert("map[\"key\"]", "mapped value", &vars);
   assert("map[\"key\"+1]", "second mapped value", &vars);

@@ -45,6 +45,7 @@ bool calculator::handle_unary(const std::string& str,
       rpnQueue.push(new Token<double>(0, NUM));
       return true;
     } else {
+      cleanRPN(rpnQueue);
       throw std::domain_error(
           "Unrecognized unary operator: '" + str + "'.");
     }
@@ -61,6 +62,7 @@ void calculator::handle_op(const std::string& str,
 
   // Check if operator exists:
   if(opPrecedence.find(str) == opPrecedence.end()) {
+    cleanRPN(rpnQueue);
     throw std::domain_error("Unknown operator: `" + str + "`!");
   }
 
@@ -157,6 +159,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if(*expr != quote) {
         std::string squote = (quote == '"' ? "\"": "'");
+        cleanRPN(rpnQueue);
         throw syntax_error(
           "Expected quote (" + squote +
           ") at end of string declaration: " + squote + ss.str() + ".");
@@ -171,6 +174,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       if(lastTokenWasUnary) {
         std::string op;
         op.push_back(*expr);
+        cleanRPN(rpnQueue);
         throw syntax_error(
           "Expected operand after unary operator `" + operatorStack.top() +
           "` but found: `" + op + "` instead.");
@@ -243,6 +247,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
   if(lastTokenWasUnary) {
     std::string op;
+    cleanRPN(rpnQueue);
     throw syntax_error(
       "Expected operand after unary operator `" + operatorStack.top() + "`");
   }
@@ -271,6 +276,13 @@ packToken calculator::calculate(const char* expr, const Scope& local) {
   return ret;
 }
 
+void cleanStack(std::stack<TokenBase*> st) {
+  while(st.size() > 0) {
+    delete st.top();
+    st.pop();
+  }
+}
+
 packToken calculator::calculate(TokenQueue_t _rpn,
     const Scope* global, const Scope* local) {
 
@@ -296,6 +308,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       delete base;      
 
       if (evaluation.size() < 2) {
+        cleanRPN(rpn);
+        cleanStack(evaluation);
         throw std::domain_error("Invalid equation.");
       }
       TokenBase* b_right = evaluation.top(); evaluation.pop();
@@ -339,6 +353,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         } else if (!str.compare("||")) {
           evaluation.push(new Token<double>((int) left || (int) right, NUM));
         } else {
+          cleanRPN(rpn);
+          cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == STR) {
@@ -354,6 +370,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         } else if (!str.compare("!=")) {
           evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
+          cleanRPN(rpn);
+          cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == NUM) {
@@ -367,6 +385,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
+          cleanRPN(rpn);
+          cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == NUM && b_right->type == STR) {
@@ -380,6 +400,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
+          cleanRPN(rpn);
+          cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == MAP && b_right->type == STR) {
@@ -392,12 +414,16 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           TokenMap_t::iterator it = left->find(right);
 
           if (it == left->end()) {
+            cleanRPN(rpn);
+            cleanStack(evaluation);
             throw std::domain_error(
                 "Unable to find the variable '" + right + "'.");
           }
 
           evaluation.push(it->second->clone());
         } else {
+          cleanRPN(rpn);
+          cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
       } else {
@@ -406,6 +432,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
         delete b_right;
         
+        cleanRPN(rpn);
+        cleanStack(evaluation);
         throw undefined_operation(str, p_left, p_right);
       }
     } else if (base->type == VAR) { // Variable
@@ -420,6 +448,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if(value) value = value->clone();
 
       if (value == NULL) {
+        cleanRPN(rpn);
+        cleanStack(evaluation);
         throw std::domain_error(
             "Unable to find the variable '" + key + "'.");
       }
