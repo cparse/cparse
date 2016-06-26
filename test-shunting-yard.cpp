@@ -190,17 +190,27 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
-  assert_throws(c3.eval());
+  TokenMap_t emap;
+  emap["a"] = 10;
+  emap["b"] = 20;
+
+  calculator ecalc;
+  ecalc.compile("a+b+del", &emap);
+  emap["del"] = 30;
+
+  assert_throws(ecalc.eval());
+
+  assert_not_throw(ecalc.eval(&emap));
 
   assert_throws({
-    vars.erase("b2");
-    c3.eval(&vars);
+    emap.erase("del");
+    ecalc.eval(&emap);
   });
 
   assert_not_throw({
-    vars["b2"] = 0;
-    vars.erase("b1");
-    c3.eval(&vars);
+    emap["del"] = 0;
+    emap.erase("a");
+    ecalc.eval(&emap);
   });
 
   assert_throws({
