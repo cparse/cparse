@@ -103,11 +103,11 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting string expressions\n" << std::endl;
 
-  vars["str1"] = new Token<std::string>("foo", STR);
-  vars["str2"] = new Token<std::string>("bar", STR);
-  vars["str3"] = new Token<std::string>("foobar", STR);
-  vars["str4"] = new Token<std::string>("foo10", STR);
-  vars["str5"] = new Token<std::string>("10bar", STR);
+  vars["str1"] = "foo";
+  vars["str2"] = "bar";
+  vars["str3"] = "foobar";
+  vars["str4"] = "foo10";
+  vars["str5"] = "10bar";
 
   assert("str1 + str2 == str3", true, &vars);
   assert("str1 + str2 != str3", false, &vars);
@@ -123,12 +123,12 @@ int main(int argc, char** argv) {
   std::cout << "\nTesting map access expressions\n" << std::endl;
 
 
-  TokenMap_t tmap;
-  vars["map"] = new Token<TokenMap_t*>(&tmap, MAP);
+  TokenMap_t tmap, key3;
+  vars["map"] = &tmap;
   tmap["key"] = "mapped value";
   tmap["key1"] = "second mapped value";
   tmap["key2"] = 10;
-  tmap["key3"] = new TokenMap_t;
+  tmap["key3"] = &key3;
 
   assert("map[\"key\"]", "mapped value", &vars);
   assert("map[\"key\"+1]", "second mapped value", &vars);
@@ -190,18 +190,52 @@ int main(int argc, char** argv) {
 
   std::cout << "\nTesting exception management\n" << std::endl;
 
-  assert_throws(c3.eval());
+  TokenMap_t emap;
+  emap["a"] = 10;
+  emap["b"] = 20;
+
+  calculator ecalc;
+  ecalc.compile("a+b+del", &emap);
+  emap["del"] = 30;
+
+  assert_throws(ecalc.eval());
+
+  assert_not_throw(ecalc.eval(&emap));
 
   assert_throws({
-    vars.erase("b2");
-    c3.eval(&vars);
+    emap.erase("del");
+    ecalc.eval(&emap);
   });
 
   assert_not_throw({
-    vars["b2"] = 0;
-    vars.erase("b1");
-    c3.eval(&vars);
+    emap["del"] = 0;
+    emap.erase("a");
+    ecalc.eval(&emap);
   });
+
+  assert_throws({
+    calculator c5("10 + - - 10");
+  });
+
+  assert_throws({
+    calculator c5("10 + +");
+  });
+
+  assert_not_throw({
+    calculator c5("10 + -10");
+  });
+
+  assert_throws({
+    calculator c5("c.[10]");
+  })
+
+  TokenMap_t v1, v2;
+  v1["map"] = &v2;
+  assert_throws({
+    // Check what happens when there isn't any
+    // operators expected between the operand types.
+    calculator("map == 0").eval(&v1);
+  })
 
   std::cout << "\nEnd testing" << std::endl;
 

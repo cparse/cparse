@@ -33,20 +33,25 @@ OppMap_t calculator::buildOpPrecedence() {
 }
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
+Scope calculator::empty_scope = Scope();
 
 // Check for unary operators and "convert" them to binary:
-void calculator::handle_unary(const std::string& str,
+bool calculator::handle_unary(const std::string& str,
     TokenQueue_t& rpnQueue, bool& lastTokenWasOp,
     OppMap_t& opPrecedence) {
   if (lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
     if (!str.compare("-") || !str.compare("+")) {
       rpnQueue.push(new Token<double>(0, NUM));
+      return true;
     } else {
+      cleanRPN(rpnQueue);
       throw std::domain_error(
           "Unrecognized unary operator: '" + str + "'.");
     }
   }
+
+  return false;
 }
 
 // Consume operators with precedence >= than op then add op
@@ -54,6 +59,13 @@ void calculator::handle_op(const std::string& str,
     TokenQueue_t& rpnQueue,
     std::stack<std::string>& operatorStack,
     OppMap_t& opPrecedence) {
+
+  // Check if operator exists:
+  if(opPrecedence.find(str) == opPrecedence.end()) {
+    cleanRPN(rpnQueue);
+    throw std::domain_error("Unknown operator: `" + str + "`!");
+  }
+
   while (!operatorStack.empty() &&
       opPrecedence[str] >= opPrecedence[operatorStack.top()]) {
     rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
@@ -64,9 +76,10 @@ void calculator::handle_op(const std::string& str,
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-    Scope scope, OppMap_t opPrecedence) {
+    const Scope* global, const Scope* local, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
+  bool lastTokenWasUnary = false;
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
@@ -79,6 +92,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
       lastTokenWasOp = false;
+      lastTokenWasUnary = false;
     } else if(isvariablechar(*expr) && lastTokenWasOp
       && operatorStack.size() > 0 && !operatorStack.top().compare(".")) {
       // If it is a member access key (e.g. `map.name`)
@@ -112,7 +126,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
       } else if(key == "false") {
         found = true; val = new Token<double>(0, NUM);
       } else {
-        val = scope.find(key);
+        if(local) val = local->find(key);
+        if(global) val = val ? val : global->find(key);
         if(val) {
           val = val->clone();
           found = true;
@@ -128,6 +143,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       lastTokenWasOp = false;
+      lastTokenWasUnary = false;
     } else if(*expr == '\'' || *expr == '"') {
       // If it is a string literal, parse it and
       // add to the output queue.
@@ -143,6 +159,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if(*expr != quote) {
         std::string squote = (quote == '"' ? "\"": "'");
+        cleanRPN(rpnQueue);
         throw syntax_error(
           "Expected quote (" + squote +
           ") at end of string declaration: " + squote + ss.str() + ".");
@@ -152,6 +169,17 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
+
+      // Check for syntax errors (excess of operators i.e. 10 + + -1):
+      if(lastTokenWasUnary) {
+        std::string op;
+        op.push_back(*expr);
+        cleanRPN(rpnQueue);
+        throw syntax_error(
+          "Expected operand after unary operator `" + operatorStack.top() +
+          "` but found: `" + op + "` instead.");
+      }
+
       switch (*expr) {
         case '(':
           operatorStack.push("(");
@@ -159,7 +187,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           break;
         case '[':
           // This counts as a bracket and as an operator:
-          handle_unary("[]", rpnQueue, lastTokenWasOp, opPrecedence);
+          lastTokenWasUnary = handle_unary("[]", rpnQueue, lastTokenWasOp, opPrecedence);
           handle_op("[]", rpnQueue, operatorStack, opPrecedence);
           // Add it as a bracket to the op stack:
           operatorStack.push("[");
@@ -205,7 +233,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
             ss >> str;
 
-            handle_unary(str, rpnQueue, lastTokenWasOp, opPrecedence);
+            lastTokenWasUnary = handle_unary(str, rpnQueue, lastTokenWasOp, opPrecedence);
 
             handle_op(str, rpnQueue, operatorStack, opPrecedence);
 
@@ -215,6 +243,15 @@ TokenQueue_t calculator::toRPN(const char* expr,
     }
     while (*expr && isspace(*expr )) ++expr;
   }
+
+  // Check for syntax errors (excess of operators i.e. 10 + + -1):
+  if(lastTokenWasUnary) {
+    std::string op;
+    cleanRPN(rpnQueue);
+    throw syntax_error(
+      "Expected operand after unary operator `" + operatorStack.top() + "`");
+  }
+
   while (!operatorStack.empty()) {
     rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
     operatorStack.pop();
@@ -222,18 +259,14 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-TokenBase* calculator::calculate(const char* expr) {
-  return calculate(expr, Scope());
-}
-
-TokenBase* calculator::calculate(const char* expr, Scope local) {
+packToken calculator::calculate(const char* expr, const Scope& local) {
 
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = toRPN(expr, local);
-  TokenBase* ret;
+  TokenQueue_t rpn = calculator::toRPN(expr, &local, NULL);
+  packToken ret;
 
   try {
-    ret = calculate(rpn, local);
+    ret = calculator::calculate(rpn, &local, NULL);
   } catch (std::exception e) {
     cleanRPN(rpn);
     throw e;
@@ -243,7 +276,15 @@ TokenBase* calculator::calculate(const char* expr, Scope local) {
   return ret;
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
+void cleanStack(std::stack<TokenBase*> st) {
+  while(st.size() > 0) {
+    delete st.top();
+    st.pop();
+  }
+}
+
+packToken calculator::calculate(TokenQueue_t _rpn,
+    const Scope* global, const Scope* local) {
 
   TokenQueue_t rpn;
 
@@ -263,9 +304,12 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
 
     // Operator:
     if (base->type == OP) {
-      Token<std::string>* strTok = static_cast<Token<std::string>*>(base);
-      std::string str = strTok->val;
+      std::string str = static_cast<Token<std::string>*>(base)->val;
+      delete base;      
+
       if (evaluation.size() < 2) {
+        cleanRPN(rpn);
+        cleanStack(evaluation);
         throw std::domain_error("Invalid equation.");
       }
       TokenBase* b_right = evaluation.top(); evaluation.pop();
@@ -309,7 +353,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
         } else if (!str.compare("||")) {
           evaluation.push(new Token<double>((int) left || (int) right, NUM));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          cleanRPN(rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == STR) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -324,7 +370,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
         } else if (!str.compare("!=")) {
           evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          cleanRPN(rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == STR && b_right->type == NUM) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -337,7 +385,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          cleanRPN(rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == NUM && b_right->type == STR) {
         double left = static_cast<Token<double>*>(b_left)->val;
@@ -350,7 +400,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          cleanRPN(rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, right);
         }
       } else if(b_left->type == MAP && b_right->type == STR) {
         TokenMap_t* left = static_cast<Token<TokenMap_t*>*>(b_left)->val;
@@ -362,30 +414,42 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
           TokenMap_t::iterator it = left->find(right);
 
           if (it == left->end()) {
+            cleanRPN(rpn);
+            cleanStack(evaluation);
             throw std::domain_error(
                 "Unable to find the variable '" + right + "'.");
           }
 
           evaluation.push(it->second->clone());
         } else {
-          throw std::domain_error("Unknown operator: '" + str + "'.");
+          cleanRPN(rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, right);
         }
+      } else {
+        packToken p_left(b_left->clone());
+        packToken p_right(b_right->clone());
+        delete b_left;
+        delete b_right;
+        
+        cleanRPN(rpn);
+        cleanStack(evaluation);
+        throw undefined_operation(str, p_left, p_right);
       }
     } else if (base->type == VAR) { // Variable
-
-      if (scope.size() == 0) {
-        throw std::domain_error(
-            "Detected variable, but the variable map is unavailable.");
-      }
 
       TokenBase* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
-      value = scope.find(key);
+      if (local) { value = local->find(key); }
+      if (global) { value = value ? value : global->find(key); }
+
       if(value) value = value->clone();
 
       if (value == NULL) {
+        cleanRPN(rpn);
+        cleanStack(evaluation);
         throw std::domain_error(
             "Unable to find the variable '" + key + "'.");
       }
@@ -395,7 +459,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, Scope scope) {
     }
   }
 
-  return evaluation.top();
+  return packToken(evaluation.top());
 }
 
 void calculator::cleanRPN(TokenQueue_t& rpn) {
@@ -425,46 +489,25 @@ calculator::calculator(const calculator& calc) {
 }
 
 calculator::calculator(const char* expr,
-    Scope scope, OppMap_t opPrecedence) {
+    const Scope& scope, OppMap_t opPrecedence) {
   compile(expr, scope, opPrecedence);
 }
 
 void calculator::compile(const char* expr, OppMap_t opPrecedence) {
-  this->RPN = calculator::toRPN(expr, scope, opPrecedence);
+  this->RPN = calculator::toRPN(expr, &scope, NULL, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-    Scope local, OppMap_t opPrecedence) {
+    const Scope& local, OppMap_t opPrecedence) {
 
   // Make sure it is empty:
   cleanRPN(this->RPN);
 
-  scope.push(local);
-
-  try {
-    this->RPN = calculator::toRPN(expr, scope, opPrecedence);
-  } catch (std::exception e) {
-    scope.pop(local.size());
-    throw e;
-  }
-
-  scope.pop(local.size());
+  this->RPN = calculator::toRPN(expr, &scope, &local, opPrecedence);
 }
 
-TokenBase* calculator::eval(Scope local) {
-  scope.push(local);
-
-  TokenBase* val;
-
-  try {
-    val = calculate(this->RPN, scope);
-  } catch(std::exception e) {
-    scope.pop(local.size());
-    throw e;
-  }
-  scope.pop(local.size());
-
-  return val;
+packToken calculator::eval(const Scope& local) {
+  return calculate(this->RPN, &scope, &local);
 }
 
 calculator& calculator::operator=(const calculator& calc) {
@@ -492,20 +535,8 @@ std::string calculator::str() {
 
   ss << "calculator { RPN: [ ";
   while( rpn.size() ) {
-    TokenBase* base = rpn.front();
+    ss << packToken(rpn.front()->clone()).str();
     rpn.pop();
-
-    if(base->type == NUM) {
-      ss << static_cast<Token<double>*>(base)->val;
-    } else if(base->type == VAR) {
-      ss << static_cast<Token<std::string>*>(base)->val;
-    } else if(base->type == OP) {
-      ss << static_cast<Token<std::string>*>(base)->val;
-    } else if(base->type == NONE) {
-      ss << "None";
-    } else {
-      ss << "unknown_type";
-    }
 
     ss << (rpn.size() ? ", ":"");
   }
@@ -519,14 +550,14 @@ Scope::Scope(TokenMap_t* vars) {
   if(vars) scope.push_front(vars);
 }
 
-TokenBase* Scope::find(std::string key) {
+TokenBase* Scope::find(std::string key) const {
   TokenBase* value = NULL;
 
   Scope_t::iterator s_it = scope.begin();
   for(; s_it != scope.end(); s_it++) {
     TokenMap_t::iterator it = (*s_it)->find(key);
     if(it != (*s_it)->end()) {
-      value = it->second->clone();
+      value = it->second;
       break;
     }
   }
@@ -563,6 +594,6 @@ void Scope::clean() {
   scope = Scope_t();
 }
 
-unsigned Scope::size() {
+unsigned Scope::size() const {
   return scope.size();
 }

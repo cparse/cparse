@@ -136,6 +136,9 @@ TokenMap_t* packToken::asMap() const {
 }
 
 std::string packToken::str() const {
+  return packToken::str(base);
+}
+std::string packToken::str(TokenBase* base) {
   std::stringstream ss;
   TokenMap_t* tmap;
   TokenMap_t::iterator it;
@@ -149,10 +152,10 @@ std::string packToken::str() const {
     case VAR:
       return static_cast<Token<std::string>*>(base)->val;
     case NUM:
-      ss << asDouble();
+      ss << static_cast<Token<double>*>(base)->val;
       return ss.str();
     case STR:
-      return "\"" + asString() + "\"";
+      return "\"" + static_cast<Token<std::string>*>(base)->val + "\"";
     case MAP:
       tmap = static_cast<Token<TokenMap_t*>*>(base)->val;
       if(tmap->size() == 0) return "{}";
