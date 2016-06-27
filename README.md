@@ -179,9 +179,3 @@ while (!rpn.empty()) {
 ```
 
 The evaluated value resides in `evaluation.top` of type double.
-
-# Future work.
-See the [issues](https://github.com/bamos/cpp-expression-parser/issues)
-on GitHub for work to be done.
-I'm currently not actively working on additional features,
-so please contribute if you add additional functionality or bug fixes.
