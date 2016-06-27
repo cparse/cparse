@@ -1,14 +1,24 @@
-# C++ expression parsing.
+# C++ Expression Parser • [ ![Build Status] [travis-image] ] [travis] ![License] [license-image] ] [license]
 
-[![Build Status](https://travis-ci.org/bamos/cpp-expression-parser.svg?branch=master)](https://travis-ci.org/bamos/cpp-expression-parser)
+[travis-image]: https://travis-ci.org/bamos/cpp-expression-parser.png?branch=master
+[travis]: http://travis-ci.org/bamos/cpp-expression-parser
 
-A simple form of mathematical expression parsing can take a string such
-as `-pi+1` on input and output `-2.14`.
+[release-image]: http://img.shields.io/badge/release-0.2.1-blue.svg?style=flat
+[releases]: https://github.com/cmusatyalab/openface/releases
+
+[license-image]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
+[license]: LICENSE
+
 This project provides a C++ library to parse a character sequence
 as an expression using Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
-[Jesse Brown's code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
+[Jesse Brown's original code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
+
+**This project was created by [Brandon Amos](http://bamos.github.io) and
+contains substantial modifications from Vinícius Garcia.**
+
+---
 
 # Modifications and Uses of This Code
 + In [Andrew Steiner's](https://github.com/awsteiner)

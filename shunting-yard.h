@@ -1,7 +1,3 @@
-// Source: http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm#
-// Author: Jesse Brown
-// Modifications: Brandon Amos, Vinícius Garcia
-
 #ifndef SHUNTING_YARD_H_
 #define SHUNTING_YARD_H_
 
