@@ -7,7 +7,7 @@
 [releases]: https://github.com/cmusatyalab/openface/releases
 
 [license-image]: http://img.shields.io/badge/license-MIT-blue.svg?style=flat
-[license]: LICENSE
+[license]: LICENSE.mit
 
 This project provides a C++ library to parse a character sequence
 as an expression using Dijkstra's
