@@ -2,8 +2,8 @@
 // Author: Jesse Brown
 // Modifications: Brandon Amos, Vinícius Garcia
 
-#ifndef _SHUNTING_YARD_H
-#define _SHUNTING_YARD_H
+#ifndef SHUNTING_YARD_H_
+#define SHUNTING_YARD_H_
 
 #include <map>
 #include <stack>
@@ -20,9 +20,9 @@ struct TokenBase {
 };
 
 template<class T> class Token : public TokenBase {
-public:
+ public:
   T val;
-  Token (T t, tokType type) : val(t) { this->type=type; }
+  Token(T t, tokType type) : val(t) { this->type = type; }
   virtual TokenBase* clone() const {
     return new Token(static_cast<const Token&>(*this));
   }
@@ -39,7 +39,7 @@ struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
 
-  Scope() {};
+  Scope() {}
   Scope(TokenMap_t* vars);
 
   TokenBase* find(std::string key) const;
@@ -54,52 +54,53 @@ struct Scope {
 };
 
 class calculator {
-private:
+ private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
   static Scope empty_scope;
 
-public:
-  static packToken calculate(const char* expr, const Scope& scope= empty_scope);
+ public:
+  static packToken calculate(const char* expr, const Scope& scope = empty_scope);
 
-private:
+ private:
   static packToken calculate(TokenQueue_t RPN,
-    const Scope* global, const Scope* local);
-  static void cleanRPN(TokenQueue_t& rpn);
+                             const Scope* global, const Scope* local);
+  static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr,
-    const Scope* global, const Scope* local,
-      OppMap_t opPrecedence=_opPrecedence);
+                            const Scope* global, const Scope* local,
+                            OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& str,
-    TokenQueue_t& rpnQueue, bool& lastTokenWasOp,
-    OppMap_t& opPrecedence);
+                           TokenQueue_t* rpnQueue, bool lastTokenWasOp,
+                           OppMap_t opPrecedence);
   static void handle_op(const std::string& str,
-    TokenQueue_t& rpnQueue,
-    std::stack<std::string>& operatorStack,
-    OppMap_t& opPrecedence);
+                        TokenQueue_t* rpnQueue,
+                        std::stack<std::string>* operatorStack,
+                        OppMap_t opPrecedence);
 
-private:
+ private:
   TokenQueue_t RPN;
-public:
+
+ public:
   Scope scope;
-public:
+
   ~calculator();
-  calculator(){}
+  calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& scope= empty_scope,
-      OppMap_t opPrecedence=_opPrecedence);
+  calculator(const char* expr, const Scope& scope = empty_scope,
+             OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-      OppMap_t opPrecedence=_opPrecedence);
+               OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-      const Scope& local= empty_scope,
-      OppMap_t opPrecedence=_opPrecedence);
-  packToken eval(const Scope& local= empty_scope);
+               const Scope& local = empty_scope,
+               OppMap_t opPrecedence = _opPrecedence);
+  packToken eval(const Scope& local = empty_scope);
 
   // Serialization:
   std::string str();
 
   // Operators:
-  calculator& operator=(const calculator& calc);
+  calculator& operator = (const calculator& calc);
 };
 
-#endif // _SHUNTING_YARD_H
+#endif  // SHUNTING_YARD_H_

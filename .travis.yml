@@ -1,3 +1,12 @@
 language: cpp
+addons:
+  apt:
+    packages:
+    - cppcheck
+    - python-pip
+before_install:
+  - sudo pip install cpplint
 script:
-  make && make test
+  - make && make test
+  - cpplint --filter=-whitespace/line_length,-legal/copyright,-runtime/explicit *.cpp *.h
+  - cppcheck --suppress='*:catch.hpp' . --force

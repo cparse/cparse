@@ -1,32 +1,20 @@
+#ifndef PACKTOKEN_H_
+#define PACKTOKEN_H_
+
+#include <string>
 
 class calculator;
 
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
   TokenBase* base;
-public:
+
+ public:
   packToken() : base(0) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
   packToken(const packToken& t) : base(t.base ? t.base->clone() : 0) {}
   packToken& operator=(const packToken& t);
 
-private:
-  // Note:
-  // This constructor makes sure the TokenBase*
-  // will be deleted when the packToken destructor is called.
-  //
-  // Do not delete the TokenBase* by yourself after
-  // building a packToken!
-  //
-  // If you want to copy the TokenBase do instead:
-  // packToken(token->clone())
-  explicit packToken(TokenBase* t) : base(t) {}
-
-  // This constructor should only be called
-  // from inside the calculator class:
-  friend class calculator;
-
-public:
   template<class C>
   packToken(C c, tokType type) : base(new Token<C>(c, type)) {}
   packToken(int d) : base(new Token<double>(d, NUM)) {}
@@ -34,7 +22,7 @@ public:
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
   packToken(TokenMap_t* tmap) : base(new Token<TokenMap_t*>(tmap, MAP)) {}
-  ~packToken(){ if(base) delete base; }
+  ~packToken() {if (base) delete base;}
 
   packToken& operator=(int t);
   packToken& operator=(double t);
@@ -55,7 +43,25 @@ public:
 
   std::string str() const;
   static std::string str(TokenBase* t);
+
+ private:
+  // Note:
+  // This constructor makes sure the TokenBase*
+  // will be deleted when the packToken destructor is called.
+  //
+  // Do not delete the TokenBase* by yourself after
+  // building a packToken!
+  //
+  // If you want to copy the TokenBase do instead:
+  // packToken(token->clone())
+  explicit packToken(TokenBase* t) : base(t) {}
+
+  // This constructor should only be called
+  // from inside the calculator class:
+  friend class calculator;
 };
 
 // To allow cout to print it:
 std::ostream& operator<<(std::ostream& os, const packToken& t);
+
+#endif  // PACKTOKEN_H_

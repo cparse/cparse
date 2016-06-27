@@ -1,14 +1,16 @@
 
-#ifndef _SHUNTING_YARD_EXCEPTIONS_H
-#define _SHUNTING_YARD_EXCEPTIONS_H
+#ifndef SHUNTING_YARD_EXCEPTIONS_H_
+#define SHUNTING_YARD_EXCEPTIONS_H_
 
+#include "./shunting-yard.h"
+
+#include <string>
 #include <stdexcept>
-#include "shunting-yard.h"
 
 class msg_exception : public std::exception {
-protected:
+ protected:
   const std::string msg;
-public:
+ public:
   msg_exception(const std::string& msg) : msg(msg) {}
   ~msg_exception() throw() {}
   const char* what() const throw() {
@@ -29,4 +31,4 @@ struct undefined_operation : public msg_exception {
     : msg_exception("Unexpected operation with operator '" + op + "' and operands: " + left.str() + " and " + right.str() + ".") {}
 };
 
-#endif
+#endif  // SHUNTING_YARD_EXCEPTIONS_H_

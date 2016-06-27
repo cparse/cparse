@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
-#include "shunting-yard.h"
+#include "./shunting-yard.h"
 
 TokenMap_t vars, tmap, emap, key3;
 int main(int argc, char** argv) {
@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   emap["a"] = 10;
   emap["b"] = 20;
 
-  int result = Catch::Session().run( argc, argv );
+  int result = Catch::Session().run(argc, argv);
   return result;
 }
 
