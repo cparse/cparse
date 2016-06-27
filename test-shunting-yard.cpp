@@ -1,243 +1,182 @@
-#include <iostream>
-#include <limits>
-#include <map>
-#include <string>
-#include <stdexcept>
+#define CATCH_CONFIG_RUNNER
+#include "catch.hpp"
 
 #include "shunting-yard.h"
 
-void assert(packToken actual, packToken expected, const char* expr = 0) {
-  bool match = false;
-  if(actual->type == expected->type && actual->type == NUM) {
-    double diff = actual.asDouble() - expected.asDouble();
-    if (diff < 0) diff *= -1;
-    if (diff < 1e-15) match = true;
-  } else if(actual == expected) {
-    match = true;
-  }
-
-  if(match) {
-    if(expr) {
-      std::cout << "  '" << expr << "' indeed evaluated to " <<
-        expected << "." << std::endl;
-    } else {
-      std::cout << "  actual value '" << actual <<
-        "' indeed matches the expected value '" << expected << "'" << std::endl;
-    }
-  } else {
-    if(expr) {
-      std::cout << "  FAILURE '" << expr << "' evaluated to " <<
-        actual << " and NOT " << expected << "!" << std::endl;
-    } else {
-      std::cout << "  FAILURE, actual value '" << actual <<
-        "' does not match the expected value '" << expected <<
-        "'" << std::endl;
-    }
-  }
-}
-void assert(const char* expr, packToken expected,
-    TokenMap_t* vars = 0) {
-  packToken actual = calculator::calculate(expr, vars);
-  assert(actual, expected, expr);
-}
-
-#define assert_throws(a) {try {\
-  a; \
-  std::cout << "  FAILURE, it did not THROW as expected" << std::endl; \
-} catch(...) { \
-  std::cout << "  THROWS as expected" << std::endl; \
-}}
-
-#define assert_not_throw(a) {try {\
-  a; \
-  std::cout << "  Do not THROW as expected" << std::endl; \
-} catch(...) { \
-  std::cout << "  FAILURE, it did THROW which was unexpected" << std::endl; \
-}}
-
+TokenMap_t vars, tmap, emap, key3;
 int main(int argc, char** argv) {
-  TokenMap_t vars;
   vars["pi"] = 3.14;
-  vars["b1"] = 0;
-
-  std::cout << "\nTests with static calculate::calculate()\n" << std::endl;
-
-  assert("-pi + 1", -2.14, &vars);
-  assert("-pi + 1 * b1", -3.14, &vars);
-
-  assert("(20+10)*3/2-3", 42.0);
-  assert("1 << 4", 16.0);
-  assert("1+(-2*3)", -5);
-
-  std::cout << "\nTests with calculate::compile() & calculate::eval()\n" << std::endl;
-
-  calculator c1;
-  c1.compile("-pi+1", &vars);
-  assert(c1.eval(), -2.14);
-
-  calculator c2("pi+4", &vars);
-  assert(c2.eval(), 7.14);
-  assert(c2.eval(), 7.14);
-
-  calculator c3("pi+b1+b2", &vars);
-
-  vars["b2"] = 1;
-  assert(c3.eval(&vars), 4.14);
-
-  vars["b2"] = .86;
-  assert(c3.eval(&vars), 4);
-
-  std::cout << "\nTesting boolean expressions\n" << std::endl;
-
-  assert("3 < 3", false);
-  assert("3 <= 3", true);
-  assert("3 > 3", false);
-  assert("3 >= 3", true);
-  assert("3 == 3", true);
-  assert("3 != 3", false);
-
-  assert("(3 && true) == true", true);
-  assert("(3 && 0) == true", false);
-  assert("(3 || 0) == true", true);
-  assert("(false || 0) == true", false);
-
-  std::cout << "\nTesting string expressions\n" << std::endl;
-
+  vars["b1"] = 0.0;
+  vars["b2"] = 0.86;
   vars["str1"] = "foo";
   vars["str2"] = "bar";
   vars["str3"] = "foobar";
   vars["str4"] = "foo10";
   vars["str5"] = "10bar";
 
-  assert("str1 + str2 == str3", true, &vars);
-  assert("str1 + str2 != str3", false, &vars);
-  assert("str1 + 10 == str4", true, &vars);
-  assert("10 + str2 == str5", true, &vars);
-
-  assert("'foo' + \"bar\" == str3", true, &vars);
-  assert("'foo' + \"bar\" != 'foobar\"'", true, &vars);
-  assert("'foo' + \"bar\\\"\" == 'foobar\"'", true, &vars);
-
-  assert(vars["str1"].asString(), "foo");
-
-  std::cout << "\nTesting map access expressions\n" << std::endl;
-
-
-  TokenMap_t tmap, key3;
   vars["map"] = &tmap;
   tmap["key"] = "mapped value";
   tmap["key1"] = "second mapped value";
   tmap["key2"] = 10;
   tmap["key3"] = &key3;
-
-  assert("map[\"key\"]", "mapped value", &vars);
-  assert("map[\"key\"+1]", "second mapped value", &vars);
-  assert("map[\"key\"+2] + 3 == 13", true, &vars);
-  assert("map.key1", "second mapped value", &vars);
   tmap["key3"]["map1"] = "inception1";
   tmap["key3"]["map2"] = "inception2";
-  assert("map.key3.map1", "inception1", &vars);
-  assert("map.key3['map2']", "inception2", &vars);
-  assert_throws(calculator::calculate("map[\"no_key\"]", &vars));
 
-  std::cout << "\nTesting scope management\n" << std::endl;
+  emap["a"] = 10;
+  emap["b"] = 20;
+
+  int result = Catch::Session().run( argc, argv );
+  return result;
+}
+
+TEST_CASE("Static calculate::calculate()") {
+  REQUIRE(calculator::calculate("-pi + 1", &vars).asDouble() == Approx(-2.14));
+  REQUIRE(calculator::calculate("-pi + 1 * b1", &vars).asDouble() == Approx(-3.14));
+  REQUIRE(calculator::calculate("(20+10)*3/2-3", &vars).asDouble() == Approx(42.0));
+  REQUIRE(calculator::calculate("1 << 4", &vars).asDouble() == Approx(16.0));
+  REQUIRE(calculator::calculate("1+(-2*3)", &vars).asDouble() == Approx(-5));
+}
+
+TEST_CASE("calculate::compile() and calculate::eval()") {
+  calculator c1;
+  c1.compile("-pi+1", &vars);
+  REQUIRE(c1.eval().asDouble() == Approx(-2.14));
+
+  calculator c2("pi+4", &vars);
+  REQUIRE(c2.eval().asDouble() == Approx(7.14));
+  REQUIRE(c2.eval().asDouble() == Approx(7.14));
+
+  calculator c3("pi+b1+b2", &vars);
+  REQUIRE(c3.eval(&vars).asDouble() == Approx(4.0));
+}
+
+TEST_CASE("Boolean expressions") {
+  REQUIRE_FALSE(calculator::calculate("3 < 3").asBool());
+  REQUIRE(calculator::calculate("3 <= 3").asBool());
+  REQUIRE_FALSE(calculator::calculate("3 > 3").asBool());
+  REQUIRE(calculator::calculate("3 >= 3").asBool());
+  REQUIRE(calculator::calculate("3 == 3").asBool());
+  REQUIRE_FALSE(calculator::calculate("3 != 3").asBool());
+
+  REQUIRE(calculator::calculate("(3 && true) == true").asBool());
+  REQUIRE_FALSE(calculator::calculate("(3 && 0) == true").asBool());
+  REQUIRE(calculator::calculate("(3 || 0) == true").asBool());
+  REQUIRE_FALSE(calculator::calculate("(false || 0) == true").asBool());
+}
+
+TEST_CASE("String expressions") {
+  REQUIRE(calculator::calculate("str1 + str2 == str3", &vars).asBool());
+  REQUIRE_FALSE(calculator::calculate("str1 + str2 != str3", &vars).asBool());
+  REQUIRE(calculator::calculate("str1 + 10 == str4", &vars).asBool());
+  REQUIRE(calculator::calculate("10 + str2 == str5", &vars).asBool());
+
+  REQUIRE(calculator::calculate("'foo' + \"bar\" == str3", &vars).asBool());
+  REQUIRE(calculator::calculate("'foo' + \"bar\" != 'foobar\"'", &vars).asBool());
+  REQUIRE(calculator::calculate("'foo' + \"bar\\\"\" == 'foobar\"'", &vars).asBool());
+}
+
+TEST_CASE("Map access expressions") {
+  REQUIRE(calculator::calculate("map[\"key\"]", &vars).asString() == "mapped value");
+  REQUIRE(calculator::calculate("map[\"key\"+1]", &vars).asString() ==
+          "second mapped value");
+  REQUIRE(calculator::calculate("map[\"key\"+2] + 3 == 13", &vars).asBool());
+  REQUIRE(calculator::calculate("map.key1", &vars).asString() == "second mapped value");
+
+  REQUIRE(calculator::calculate("map.key3.map1", &vars).asString() == "inception1");
+  REQUIRE(calculator::calculate("map.key3['map2']", &vars).asString() == "inception2");
+  REQUIRE_THROWS(calculator::calculate("map[\"no_key\"]", &vars));
+}
+
+TEST_CASE("Scope management") {
+  calculator c("pi+b1+b2");
 
   // Add vars to scope:
-  c3.scope.push(&vars);
-  assert(c3.eval(), 4);
+  c.scope.push(&vars);
+  REQUIRE(c.eval().asDouble() == Approx(4));
 
-  tmap["b2"] = 1;
-  c3.scope.push(&tmap);
-  assert(c3.eval(), 4.14);
+  tmap["b2"] = 1.0;
+  c.scope.push(&tmap);
+  REQUIRE(c.eval().asDouble() == Approx(4.14));
 
-  Scope scope = c3.scope;
+  Scope scope = c.scope;
 
   // Remove vars from scope:
-  c3.scope.pop();
-  c3.scope.pop();
+  c.scope.pop();
+  c.scope.pop();
 
   // Test what happens when you try to drop more namespaces than possible:
-  assert_throws(c3.scope.pop());
+  REQUIRE_THROWS(c.scope.pop());
 
   // Load Saved Scope
-  c3.scope = scope;
-  assert(c3.eval(), 4.14);
+  c.scope = scope;
+  REQUIRE(c.eval().asDouble() == Approx(4.14));
 
   // Testing with 3 namespaces:
   TokenMap_t vmap;
   vmap["b1"] = -1.14;
-  c3.scope.push(&vmap);
-  assert(c3.eval(), 4.14);
+  c.scope.push(&vmap);
+  REQUIRE(c.eval().asDouble() == Approx(3.0));
 
-  scope = c3.scope;
-  calculator c4("pi+b1+b2", scope);
-  assert(c4.eval(), 3.);
-  assert(calculator::calculate("pi+b1+b2", scope), 3.);
+  scope = c.scope;
+  calculator c2("pi+b1+b2", scope);
+  REQUIRE(c2.eval().asDouble() == Approx(3.0));
+  REQUIRE(calculator::calculate("pi+b1+b2", scope).asDouble() == Approx(3.0));
 
-  c3.scope.clean();
+  c.scope.clean();
+}
 
-  std::cout << "\nTesting resource management\n" << std::endl;
-
+TEST_CASE("Resource management") {
   calculator C1, C2("1 + 1");
 
   // These are likely to cause seg fault if
   // RPN copy is not handled:
 
   // Copy:
-  assert_not_throw(calculator C3(C2));
+  REQUIRE_NOTHROW(calculator C3(C2));
   // Assignment:
-  assert_not_throw(C1 = C2);
+  REQUIRE_NOTHROW(C1 = C2);
+}
 
-  std::cout << "\nTesting exception management\n" << std::endl;
-
-  TokenMap_t emap;
-  emap["a"] = 10;
-  emap["b"] = 20;
-
+TEST_CASE("Exception management") {
   calculator ecalc;
   ecalc.compile("a+b+del", &emap);
   emap["del"] = 30;
 
-  assert_throws(ecalc.eval());
+  REQUIRE_THROWS(ecalc.eval());
+  REQUIRE_NOTHROW(ecalc.eval(&emap));
 
-  assert_not_throw(ecalc.eval(&emap));
+  REQUIRE_THROWS({
+      emap.erase("del");
+      ecalc.eval(&emap);
+    });
 
-  assert_throws({
-    emap.erase("del");
-    ecalc.eval(&emap);
-  });
+  REQUIRE_NOTHROW({
+      emap["del"] = 0;
+      emap.erase("a");
+      ecalc.eval(&emap);
+    });
 
-  assert_not_throw({
-    emap["del"] = 0;
-    emap.erase("a");
-    ecalc.eval(&emap);
-  });
+  REQUIRE_THROWS({
+      calculator c5("10 + - - 10");
+    });
 
-  assert_throws({
-    calculator c5("10 + - - 10");
-  });
+  REQUIRE_THROWS({
+      calculator c5("10 + +");
+    });
 
-  assert_throws({
-    calculator c5("10 + +");
-  });
+  REQUIRE_NOTHROW({
+      calculator c5("10 + -10");
+    });
 
-  assert_not_throw({
-    calculator c5("10 + -10");
-  });
-
-  assert_throws({
-    calculator c5("c.[10]");
-  })
+  REQUIRE_THROWS({
+      calculator c5("c.[10]");
+    });
 
   TokenMap_t v1, v2;
   v1["map"] = &v2;
-  assert_throws({
-    // Check what happens when there isn't any
-    // operators expected between the operand types.
-    calculator("map == 0").eval(&v1);
-  })
-
-  std::cout << "\nEnd testing" << std::endl;
-
-  return 0;
+  REQUIRE_THROWS({
+      // Check what happens when there isn't any
+      // operators expected between the operand types.
+      calculator("map == 0").eval(&v1);
+    });
 }
