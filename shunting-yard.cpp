@@ -305,7 +305,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     // Operator:
     if (base->type == OP) {
       std::string str = static_cast<Token<std::string>*>(base)->val;
-      delete base;      
+      delete base;
 
       if (evaluation.size() < 2) {
         cleanRPN(rpn);
@@ -431,7 +431,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         packToken p_right(b_right->clone());
         delete b_left;
         delete b_right;
-        
+
         cleanRPN(rpn);
         cleanStack(evaluation);
         throw undefined_operation(str, p_left, p_right);
