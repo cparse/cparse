@@ -156,27 +156,13 @@ TEST_CASE("Exception management") {
       ecalc.eval(&emap);
     });
 
-  REQUIRE_THROWS({
-      calculator c5("10 + - - 10");
-    });
-
-  REQUIRE_THROWS({
-      calculator c5("10 + +");
-    });
-
-  REQUIRE_NOTHROW({
-      calculator c5("10 + -10");
-    });
-
-  REQUIRE_THROWS({
-      calculator c5("c.[10]");
-    });
+  REQUIRE_THROWS(calculator c5("10 + - - 10"));
+  REQUIRE_THROWS(calculator c5("10 + +"));
+  REQUIRE_NOTHROW(calculator c5("10 + -10"));
+  REQUIRE_THROWS(calculator c5("c.[10]"));
 
   TokenMap_t v1, v2;
   v1["map"] = &v2;
-  REQUIRE_THROWS({
-      // Check what happens when there isn't any
-      // operators expected between the operand types.
-      calculator("map == 0").eval(&v1);
-    });
+  // Mismatched types, no supported operators.
+  REQUIRE_THROWS(calculator("map == 0").eval(&v1));
 }
