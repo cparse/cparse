@@ -145,16 +145,12 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(ecalc.eval());
   REQUIRE_NOTHROW(ecalc.eval(&emap));
 
-  REQUIRE_THROWS({
-      emap.erase("del");
-      ecalc.eval(&emap);
-    });
+  emap.erase("del");
+  REQUIRE_THROWS(ecalc.eval(&emap));
 
-  REQUIRE_NOTHROW({
-      emap["del"] = 0;
-      emap.erase("a");
-      ecalc.eval(&emap);
-    });
+  emap["del"] = 0;
+  emap.erase("a");
+  REQUIRE_NOTHROW(ecalc.eval(&emap));
 
   REQUIRE_THROWS(calculator c5("10 + - - 10"));
   REQUIRE_THROWS(calculator c5("10 + +"));
