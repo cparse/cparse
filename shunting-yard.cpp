@@ -74,7 +74,7 @@ void calculator::handle_op(const std::string& str,
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               const Scope* global, const Scope* local, OppMap_t opPrecedence) {
+                               const Scope* vars, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
@@ -114,27 +114,24 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
       }
 
-      bool found = false;
-      TokenBase* val = NULL;
+      TokenBase* value = NULL;
 
       std::string key = ss.str();
 
       if (key == "true") {
-        found = true; val = new Token<double>(1, NUM);
+        value = new Token<double>(1, NUM);
       } else if (key == "false") {
-        found = true; val = new Token<double>(0, NUM);
+        value = new Token<double>(0, NUM);
       } else {
-        if (local) val = local->find(key);
-        if (global) val = val ? val : global->find(key);
-        if (val) {
-          val = val->clone();
-          found = true;
+        if (vars) value = vars->find(key);
+        if (value) {
+          value = value->clone();
         }
       }
 
-      if (found) {
+      if (value) {
         // Save the token
-        rpnQueue.push(val);
+        rpnQueue.push(value);
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -259,13 +256,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, const Scope& local) {
+packToken calculator::calculate(const char* expr, const Scope& vars) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = calculator::toRPN(expr, &local, NULL);
+  TokenQueue_t rpn = calculator::toRPN(expr, &vars);
   packToken ret;
 
   try {
-    ret = calculator::calculate(rpn, &local, NULL);
+    ret = calculator::calculate(rpn, &vars);
   } catch (std::exception e) {
     cleanRPN(&rpn);
     throw e;
@@ -283,7 +280,7 @@ void cleanStack(std::stack<TokenBase*> st) {
 }
 
 packToken calculator::calculate(TokenQueue_t _rpn,
-                                const Scope* global, const Scope* local) {
+                                const Scope* vars) {
   TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -442,8 +439,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
-      if (local) { value = local->find(key); }
-      if (global) { value = value ? value : global->find(key); }
+      if (vars) { value = vars->find(key); }
 
       if (value) value = value->clone();
 
@@ -476,7 +472,6 @@ calculator::~calculator() {
 }
 
 calculator::calculator(const calculator& calc) {
-  this->scope = calc.scope;
   TokenQueue_t _rpn = calc.RPN;
 
   // Deep copy the token list, so everything can be
@@ -494,24 +489,25 @@ calculator::calculator(const char* expr,
 }
 
 void calculator::compile(const char* expr, OppMap_t opPrecedence) {
-  this->RPN = calculator::toRPN(expr, &scope, NULL, opPrecedence);
-}
-
-void calculator::compile(const char* expr,
-                         const Scope& local, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, &scope, &local, opPrecedence);
+  this->RPN = calculator::toRPN(expr, NULL, opPrecedence);
 }
 
-packToken calculator::eval(const Scope& local) {
-  return calculate(this->RPN, &scope, &local);
+void calculator::compile(const char* expr,
+                         const Scope& vars, OppMap_t opPrecedence) {
+  // Make sure it is empty:
+  cleanRPN(&this->RPN);
+
+  this->RPN = calculator::toRPN(expr, &vars, opPrecedence);
+}
+
+packToken calculator::eval(const Scope& vars) {
+  return calculate(this->RPN, &vars);
 }
 
 calculator& calculator::operator=(const calculator& calc) {
-  this->scope = calc.scope;
-
   // Make sure the RPN is empty:
   cleanRPN(&this->RPN);
 

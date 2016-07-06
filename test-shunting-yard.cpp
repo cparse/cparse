@@ -89,40 +89,41 @@ TEST_CASE("Map access expressions") {
 
 TEST_CASE("Scope management") {
   calculator c("pi+b1+b2");
+  Scope scope;
 
   // Add vars to scope:
-  c.scope.push(&vars);
-  REQUIRE(c.eval().asDouble() == Approx(4));
+  scope.push(&vars);
+  REQUIRE(c.eval(scope).asDouble() == Approx(4));
 
   tmap["b2"] = 1.0;
-  c.scope.push(&tmap);
-  REQUIRE(c.eval().asDouble() == Approx(4.14));
+  scope.push(&tmap);
+  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
 
-  Scope scope = c.scope;
+  Scope scope_bkp = scope;
 
   // Remove vars from scope:
-  c.scope.pop();
-  c.scope.pop();
+  scope.pop();
+  scope.pop();
 
   // Test what happens when you try to drop more namespaces than possible:
-  REQUIRE_THROWS(c.scope.pop());
+  REQUIRE_THROWS(scope.pop());
 
   // Load Saved Scope
-  c.scope = scope;
-  REQUIRE(c.eval().asDouble() == Approx(4.14));
+  scope = scope_bkp;
+  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
 
   // Testing with 3 namespaces:
   TokenMap_t vmap;
   vmap["b1"] = -1.14;
-  c.scope.push(&vmap);
-  REQUIRE(c.eval().asDouble() == Approx(3.0));
+  scope.push(&vmap);
+  REQUIRE(c.eval(scope).asDouble() == Approx(3.0));
 
-  scope = c.scope;
-  calculator c2("pi+b1+b2", scope);
+  scope_bkp = scope;
+  calculator c2("pi+b1+b2", scope_bkp);
   REQUIRE(c2.eval().asDouble() == Approx(3.0));
-  REQUIRE(calculator::calculate("pi+b1+b2", scope).asDouble() == Approx(3.0));
+  REQUIRE(calculator::calculate("pi+b1+b2", scope_bkp).asDouble() == Approx(3.0));
 
-  c.scope.clean();
+  scope.clean();
 }
 
 TEST_CASE("Resource management") {
