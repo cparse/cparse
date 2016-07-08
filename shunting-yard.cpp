@@ -34,6 +34,9 @@ OppMap_t calculator::buildOpPrecedence() {
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 Scope calculator::empty_scope = Scope();
 
+packToken trueToken = packToken(1);
+packToken falseToken = packToken(0);
+
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& str,
                               TokenQueue_t* rpnQueue, bool lastTokenWasOp,
@@ -114,24 +117,21 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
       }
 
-      TokenBase* value = NULL;
+      packToken* value = NULL;
 
       std::string key = ss.str();
 
       if (key == "true") {
-        value = new Token<double>(1, NUM);
+        value = &trueToken;
       } else if (key == "false") {
-        value = new Token<double>(0, NUM);
+        value = &falseToken;
       } else {
         if (vars) value = vars->find(key);
-        if (value) {
-          value = value->clone();
-        }
       }
 
       if (value) {
         // Save the token
-        rpnQueue.push(value);
+        rpnQueue.push((*value)->clone());
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -309,6 +309,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       }
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
+
       if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
         double right = static_cast<Token<double>*>(b_right)->val;
@@ -435,21 +436,20 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         throw undefined_operation(str, p_left, p_right);
       }
     } else if (base->type == VAR) {  // Variable
-      TokenBase* value = NULL;
+      packToken* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
       if (vars) { value = vars->find(key); }
 
-      if (value) value = value->clone();
-
+      // TODO: Move this error throw to after the operator evaluation.
       if (value == NULL) {
         cleanRPN(&rpn);
         cleanStack(evaluation);
         throw std::domain_error(
                                 "Unable to find the variable '" + key + "'.");
       }
-      evaluation.push(value);
+      evaluation.push((*value)->clone());
     } else {
       evaluation.push(base);
     }
@@ -545,14 +545,14 @@ Scope::Scope(TokenMap_t* vars) {
   if (vars) scope.push_front(vars);
 }
 
-TokenBase* Scope::find(std::string key) const {
-  TokenBase* value = NULL;
+packToken* Scope::find(std::string key) const {
+  packToken* value = NULL;
 
   Scope_t::iterator s_it = scope.begin();
   for (; s_it != scope.end(); s_it++) {
     TokenMap_t::iterator it = (*s_it)->find(key);
     if (it != (*s_it)->end()) {
-      value = it->second;
+      value = &(it->second);
       break;
     }
   }

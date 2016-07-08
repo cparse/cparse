@@ -38,7 +38,7 @@ struct Scope {
   Scope() {}
   Scope(TokenMap_t* vars);
 
-  TokenBase* find(std::string key) const;
+  packToken* find(std::string key) const;
 
   void push(TokenMap_t* vars);
   void push(Scope vars);
