@@ -1,10 +1,10 @@
-#define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
 #include "./shunting-yard.h"
 
-TokenMap_t vars, tmap, emap, key3;
-int main(int argc, char** argv) {
+TokenMap_t vars, tmap, key3, emap;
+
+void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
   vars["b1"] = 0.0;
   vars["b2"] = 0.86;
@@ -24,9 +24,6 @@ int main(int argc, char** argv) {
 
   emap["a"] = 10;
   emap["b"] = 20;
-
-  int result = Catch::Session().run(argc, argv);
-  return result;
 }
 
 TEST_CASE("Static calculate::calculate()") {
