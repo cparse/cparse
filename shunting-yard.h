@@ -7,7 +7,7 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC };
 
 struct TokenBase {
   tokType type;
@@ -31,6 +31,10 @@ typedef std::map<std::string, int> OppMap_t;
 
 #include "packToken.h"
 
+// Define the `Function` class
+// as well as some built-in functions:
+#include "functions.h"
+
 struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
@@ -41,12 +45,12 @@ struct Scope {
   packToken* find(std::string key) const;
   void asign(std::string key, TokenBase* value) const;
 
-  void push(TokenMap_t* vars);
-  void push(Scope vars);
-  void pop();
-  void pop(unsigned N);
+  void push(TokenMap_t* vars) const;
+  void push(Scope vars) const;
+  void pop() const;
+  void pop(unsigned N) const;
 
-  void clean();
+  void clean() const;
   unsigned size() const;
 };
 

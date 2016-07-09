@@ -9,6 +9,8 @@ class Scope;
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
   TokenBase* base;
+ public:
+  static const packToken None;
 
  public:
   packToken() : base(0) {}

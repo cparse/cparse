@@ -84,6 +84,21 @@ TEST_CASE("Map access expressions") {
   REQUIRE_THROWS(calculator::calculate("map[\"no_key\"]", &vars));
 }
 
+TEST_CASE("Function usage expressions") {
+
+  TokenMap_t vars;
+  vars["pi"] = 3.141592653589793;
+  vars["a"] = -4;
+
+  REQUIRE(calculator::calculate("sqrt(4)", &vars).asDouble() == 2);
+  REQUIRE(calculator::calculate("sin(pi)", &vars).asDouble() == Approx(0));
+  REQUIRE(calculator::calculate("cos(pi/2)", &vars).asDouble() == Approx(0));
+  REQUIRE(calculator::calculate("tan(pi)", &vars).asDouble() == Approx(0));
+  calculator c("a + sqrt(4) * 2");
+  REQUIRE(c.eval(&vars).asDouble() == 0);
+  REQUIRE(calculator::calculate("sqrt(4-a*3) * 2", &vars).asDouble() == 8);
+}
+
 TEST_CASE("Scope management") {
   calculator c("pi+b1+b2");
   Scope scope;

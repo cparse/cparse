@@ -17,7 +17,7 @@ OppMap_t calculator::buildOpPrecedence() {
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
   // http://en.cppreference.com/w/cpp/language/operator_precedence
-  opp["[]"] = 2; opp["."] = 2;
+  opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
   opp["^"]  = 3;
   opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
   opp["+"]  = 6; opp["-"]  = 6;
@@ -164,6 +164,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
+      tokType lastType;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (lastTokenWasUnary) {
@@ -177,6 +178,15 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       switch (*expr) {
       case '(':
+        // If it is a function call:
+        lastType = rpnQueue.front()->type;
+        if (lastType == VAR || lastType == FUNC) {
+          // This counts as a bracket and as an operator:
+          lastTokenWasUnary = handle_unary("()", &rpnQueue,
+                                           lastTokenWasOp, opPrecedence);
+          handle_op("()", &rpnQueue, &operatorStack, opPrecedence);
+          // Add it as a bracket to the op stack:
+        }
         operatorStack.push("(");
         ++expr;
         break;
@@ -425,6 +435,27 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
+      } else if (b_left->type == FUNC) {
+        Function* f_left = static_cast<Function*>(b_left);
+        std::string* names = f_left->args;
+        unsigned nargs = f_left->nargs;
+        packToken (*func)(const Scope*) = f_left->func;
+        delete b_left;
+
+        TokenMap_t args;
+        // Note that current the system supports only one parameter.
+        for(unsigned i = 0; i < nargs; ++i) {
+          args.insert({ names[i], packToken(b_right->clone()) });
+        }
+        delete b_right;
+
+        // Add args to scope:
+        vars->push(&args);
+        packToken ret = func(vars);
+        vars->pop();
+
+        evaluation.push(ret->clone());
+
       } else {
         packToken p_left(b_left->clone());
         packToken p_right(b_right->clone());
@@ -542,6 +573,9 @@ std::string calculator::str() {
 /* * * * * Scope Class: * * * * */
 
 Scope::Scope(TokenMap_t* vars) {
+  // Add default functions to the global namespace:
+  scope.push_front(&Function::default_functions);
+
   if (vars) scope.push_front(vars);
 }
 
@@ -578,31 +612,31 @@ void Scope::asign(std::string key, TokenBase* value) const {
   }
 }
 
-void Scope::push(TokenMap_t* vars) {
+void Scope::push(TokenMap_t* vars) const {
   if (vars) scope.push_front(vars);
 }
 
-void Scope::push(Scope other) {
+void Scope::push(Scope other) const {
   Scope_t::reverse_iterator s_it = other.scope.rbegin();
   for (; s_it != other.scope.rend(); s_it++) {
     push(*s_it);
   }
 }
 
-void Scope::pop() {
+void Scope::pop() const {
   if (scope.size() == 0)
     throw std::range_error("Calculator::drop_namespace(): No namespace left to drop!");
   scope.pop_front();
 }
 
 // Pop the N top elements:
-void Scope::pop(unsigned N) {
+void Scope::pop(unsigned N) const {
   for (unsigned i=0; i < N; i++) {
     pop();
   }
 }
 
-void Scope::clean() {
+void Scope::clean() const {
   scope = Scope_t();
 }
 
