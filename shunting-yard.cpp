@@ -27,6 +27,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
+  opp["="] = 15;
   opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
@@ -497,6 +498,39 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(str, left, p_right);
         }
+      } else if (b_right->type == VAR) {
+        // An unbound variable should only be allowed on the
+        // left side as an asignment: "var = something"
+        packToken var(b_right->clone());
+        delete b_right;
+        delete b_left;
+
+        // So throw an error:
+        cleanRPN(&rpn);
+        cleanStack(evaluation);
+        throw std::domain_error("Unable to find the variable '" + var.str() + "'.");
+      } else if (b_left->type == VAR) {
+        std::string left = static_cast<Token<std::string>*>(b_left)->val;
+        delete b_left;
+
+        if (!str.compare("=")) {
+          if (vars) {
+            vars->asign(left, b_right);
+            evaluation.push(b_right);
+          } else {
+            delete b_right;
+            cleanRPN(&rpn);
+            cleanStack(evaluation);
+            throw std::domain_error("No Scope available for asignment of variable `" + left + "`.");
+          }
+        } else {
+          packToken p_right(b_right->clone());
+          delete b_right;
+
+          cleanRPN(&rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, p_right);
+        }
       } else {
         packToken p_left(b_left->clone());
         packToken p_right(b_right->clone());
@@ -510,17 +544,15 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     } else if (base->type == VAR) {  // Variable
       packToken* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
-      delete base;
 
       if (vars) { value = vars->find(key); }
 
-      if (value == NULL) {
-        cleanRPN(&rpn);
-        cleanStack(evaluation);
-        throw std::domain_error(
-                                "Unable to find the variable '" + key + "'.");
+      if (value) {
+        evaluation.push((*value)->clone());
+        delete base;
+      } else {
+        evaluation.push(base);
       }
-      evaluation.push((*value)->clone());
     } else {
       evaluation.push(base);
     }

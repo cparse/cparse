@@ -1,4 +1,5 @@
 #include "catch.hpp"
+#include <iostream>
 
 #include "./shunting-yard.h"
 
@@ -111,6 +112,20 @@ TEST_CASE("Function usage expressions") {
 
   // The test bellow will fail, TODO fix it:
   // REQUIRE_NOTHROW(calculator::calculate("print()"));
+}
+
+TEST_CASE("Asignment expressions", "[!mayfail]") {
+  calculator::calculate("asignment = 10", &vars);
+
+  // Asigning to an unexistent variable works.
+  REQUIRE(calculator::calculate("asignment", &vars).asDouble() == 10);
+
+  // But it doesn't work with an existing variable:
+  INFO("This tests an asignment to an existing variable. It is on our TODO list to fix it.");
+  REQUIRE_NOTHROW(calculator::calculate("asignment = 20", &vars));
+
+  INFO("Chained asignments don't work yet, its on the TODO list to fix it.");
+  REQUIRE_NOTHROW(calculator::calculate("asign1 = asign2 = 20", &vars));
 }
 
 TEST_CASE("Scope management") {
