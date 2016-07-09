@@ -179,7 +179,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = rpnQueue.front()->type;
+        lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
         if (lastType == VAR || lastType == FUNC) {
           // This counts as a bracket and as an operator:
           lastTokenWasUnary = handle_unary("()", &rpnQueue,
@@ -613,6 +613,9 @@ void Scope::asign(std::string key, TokenBase* value) const {
     (*variable) = packToken(value);
   } else {
     // Insert it on the most local context
+    if (scope.size() == 0) {
+      throw std::range_error("Cannot insert a variable into an empty scope!");
+    }
     scope.front()->insert( std::pair<std::string, packToken>(key, packToken(value)) );
   }
 }
