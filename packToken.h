@@ -4,6 +4,7 @@
 #include <string>
 
 class calculator;
+class Scope;
 
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
@@ -57,8 +58,9 @@ class packToken {
   explicit packToken(TokenBase* t) : base(t) {}
 
   // This constructor should only be called
-  // from inside the calculator class:
+  // from inside the calculator os Scope classes:
   friend class calculator;
+  friend class Scope;
 };
 
 // To allow cout to print it:

@@ -560,6 +560,24 @@ packToken* Scope::find(std::string key) const {
   return value;
 }
 
+void Scope::asign(std::string key, TokenBase* value) const {
+
+  if (value) {
+    value = value->clone();
+  } else {
+    throw std::invalid_argument("Scope asignment expected a non NULL argument as value!");
+  }
+
+  packToken* variable = find(key);
+
+  if (variable) {
+    (*variable) = packToken(value);
+  } else {
+    // Insert it on the most local context
+    scope.front()->insert( std::pair<std::string, packToken>(key, packToken(value)) );
+  }
+}
+
 void Scope::push(TokenMap_t* vars) {
   if (vars) scope.push_front(vars);
 }
