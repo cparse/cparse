@@ -273,7 +273,10 @@ packToken calculator::calculate(const char* expr, const Scope& vars) {
 
   try {
     ret = calculator::calculate(rpn, &vars);
-  } catch (std::exception e) {
+  } catch (undefined_operation e) {
+    cleanRPN(&rpn);
+    throw e;
+  } catch (std::domain_error e) {
     cleanRPN(&rpn);
     throw e;
   }
