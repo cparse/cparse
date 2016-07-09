@@ -7,7 +7,7 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE };
 
 struct TokenBase {
   tokType type;
@@ -28,6 +28,7 @@ class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
+typedef std::list<TokenBase*> Tuple_t;
 
 #include "packToken.h"
 

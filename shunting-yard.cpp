@@ -26,6 +26,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
+  opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
   return opp;
@@ -325,7 +326,19 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
 
-      if (b_left->type == NUM && b_right->type == NUM) {
+      // If it is a tuple operator:
+      if (!str.compare(",")) {
+        if (b_left->type == TUPLE) {
+          Tuple* tuple = static_cast<Tuple*>(b_left);
+          tuple->push_back(b_right);
+          delete b_right;
+          evaluation.push(tuple);
+        } else {
+          evaluation.push(new Tuple(b_left, b_right));
+          delete b_left;
+          delete b_right;
+        }
+      } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
         double right = static_cast<Token<double>*>(b_right)->val;
         delete b_left;
@@ -441,26 +454,48 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           throw undefined_operation(str, left, right);
         }
       } else if (b_left->type == FUNC) {
-        Function* f_left = static_cast<Function*>(b_left);
-        std::string* names = f_left->args;
-        unsigned nargs = f_left->nargs;
-        packToken (*func)(const Scope*) = f_left->func;
+        Function left = *static_cast<Function*>(b_left);
         delete b_left;
 
-        TokenMap_t args;
-        // Note that current the system supports only one parameter.
-        for(unsigned i = 0; i < nargs; ++i) {
-          args.insert({ names[i], packToken(b_right->clone()) });
+        if (!str.compare("()")) {
+          // Collect the parameter tuple:
+          Tuple right;
+          if (b_right->type == TUPLE) {
+            right = *static_cast<Tuple*>(b_right);
+          } else {
+            right = Tuple(b_right);
+          }
+          delete b_right;
+
+          // Build the local namespace:
+          TokenMap_t local;
+          for (unsigned i = 0; i < left.nargs; ++i) {
+            packToken value;
+            if (right.size()) {
+              value = packToken(right.pop_front());
+            } else {
+              value = packToken::None;
+            }
+
+            local.insert({ left.arg_names[i], value });
+          }
+
+          // Add args to scope:
+          vars->push(&local);
+          // Execute the function:
+          packToken ret = left.func(vars);
+          // Drop the local scope:
+          vars->pop();
+
+          evaluation.push(ret->clone());
+        } else {
+          packToken p_right(b_right->clone());
+          delete b_right;
+
+          cleanRPN(&rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, p_right);
         }
-        delete b_right;
-
-        // Add args to scope:
-        vars->push(&args);
-        packToken ret = func(vars);
-        vars->pop();
-
-        evaluation.push(ret->clone());
-
       } else {
         packToken p_left(b_left->clone());
         packToken p_right(b_right->clone());
