@@ -189,6 +189,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
         operatorStack.push("(");
         ++expr;
+        lastTokenWasOp = true;
         break;
       case '[':
         // This counts as a bracket and as an operator:
@@ -198,6 +199,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         // Add it as a bracket to the op stack:
         operatorStack.push("[");
         ++expr;
+        lastTokenWasOp = true;
         break;
       case ')':
         while (operatorStack.top().compare("(")) {
