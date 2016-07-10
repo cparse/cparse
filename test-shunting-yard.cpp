@@ -114,18 +114,18 @@ TEST_CASE("Function usage expressions") {
   // REQUIRE_NOTHROW(calculator::calculate("print()"));
 }
 
-TEST_CASE("Asignment expressions", "[!mayfail]") {
-  calculator::calculate("asignment = 10", &vars);
+TEST_CASE("Assignment expressions", "[!mayfail]") {
+  calculator::calculate("assignment = 10", &vars);
 
-  // Asigning to an unexistent variable works.
-  REQUIRE(calculator::calculate("asignment", &vars).asDouble() == 10);
+  // Assigning to an unexistent variable works.
+  REQUIRE(calculator::calculate("assignment", &vars).asDouble() == 10);
 
-  // But it doesn't work with an existing variable:
-  INFO("This tests an asignment to an existing variable. It is on our TODO list to fix it.");
-  REQUIRE_NOTHROW(calculator::calculate("asignment = 20", &vars));
+  // Assigning to existent variables should work as well.
+  REQUIRE_NOTHROW(calculator::calculate("assignment = 20", &vars));
+  REQUIRE(calculator::calculate("assignment", &vars).asDouble() == 20);
 
-  INFO("Chained asignments don't work yet, its on the TODO list to fix it.");
-  REQUIRE_NOTHROW(calculator::calculate("asign1 = asign2 = 20", &vars));
+  INFO("Chained assignments don't work yet, its on the TODO list to fix it.");
+  REQUIRE_NOTHROW(calculator::calculate("assign1 = assign2 = 20", &vars));
 }
 
 TEST_CASE("Scope management") {

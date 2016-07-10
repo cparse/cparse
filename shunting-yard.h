@@ -7,10 +7,11 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE, REF=0x10 };
+typedef unsigned char uint8_t;
 
 struct TokenBase {
-  tokType type;
+  uint8_t type;
   virtual ~TokenBase() {}
   virtual TokenBase* clone() const = 0;
 };
@@ -18,13 +19,14 @@ struct TokenBase {
 template<class T> class Token : public TokenBase {
  public:
   T val;
-  Token(T t, tokType type) : val(t) { this->type = type; }
+  Token(T t, uint8_t type) : val(t) { this->type = type; }
   virtual TokenBase* clone() const {
     return new Token(static_cast<const Token&>(*this));
   }
 };
 
 class packToken;
+typedef std::pair<std::string, TokenBase*> RefValue_t;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;

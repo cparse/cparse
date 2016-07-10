@@ -152,6 +152,11 @@ std::string packToken::str(TokenBase* base) {
   TokenMap_t::iterator it;
 
   if (!base) return "undefined";
+
+  if (base->type & REF) {
+    base = static_cast<Token<RefValue_t>*>(base)->val.second;
+  }
+
   switch (base->type) {
     case NONE:
       return "None";

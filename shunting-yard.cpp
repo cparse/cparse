@@ -133,8 +133,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       if (value) {
-        // Save the token
-        rpnQueue.push((*value)->clone());
+        // Save a reference token:
+        TokenBase* copy = (*value)->clone();
+        rpnQueue.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -167,7 +168,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      tokType lastType;
+      uint8_t lastType;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (lastTokenWasUnary) {
@@ -183,7 +184,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       case '(':
         // If it is a function call:
         lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
-        if (lastType == VAR || lastType == FUNC) {
+        if (lastType == VAR || lastType == (FUNC | REF)) {
           // This counts as a bracket and as an operator:
           lastTokenWasUnary = handle_unary("()", &rpnQueue,
                                            lastTokenWasOp, opPrecedence);
@@ -328,6 +329,29 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
 
+      if (b_right->type & REF) {
+        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_right)->val;
+        delete b_right;
+        b_right = rvalue.second->clone();
+      } else if (b_right->type == VAR) {
+        std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_right;
+        delete b_left;
+        cleanRPN(&rpn);
+        cleanStack(evaluation);
+        throw std::domain_error("Unable to find the variable '" + var_name + "'.");
+      }
+
+      std::string r_left;
+      if (b_left->type & REF) {
+        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_left)->val;
+        delete b_left;
+        r_left = rvalue.first;
+        b_left = rvalue.second->clone();
+      } else if (b_left->type == VAR) {
+        r_left = static_cast<Token<std::string>*>(b_left)->val;
+      }
+
       // If it is a tuple operator:
       if (!str.compare(",")) {
         if (b_left->type == TUPLE) {
@@ -339,6 +363,28 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           evaluation.push(new Tuple(b_left, b_right));
           delete b_left;
           delete b_right;
+        }
+      // If it is an assignment operation:
+      } else if (!str.compare("=")) {
+        delete b_left;
+
+        if (r_left.size() > 0) {
+          if (vars) {
+            vars->asign(r_left, b_right);
+            evaluation.push(b_right);
+          } else {
+            delete b_right;
+            cleanRPN(&rpn);
+            cleanStack(evaluation);
+            throw std::domain_error("No Scope available for asignment of variable `" + r_left + "`.");
+          }
+        } else {
+          packToken p_right(b_right->clone());
+          delete b_right;
+
+          cleanRPN(&rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, r_left, p_right);
         }
       } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
@@ -498,39 +544,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(str, left, p_right);
         }
-      } else if (b_right->type == VAR) {
-        // An unbound variable should only be allowed on the
-        // left side as an asignment: "var = something"
-        packToken var(b_right->clone());
-        delete b_right;
-        delete b_left;
-
-        // So throw an error:
-        cleanRPN(&rpn);
-        cleanStack(evaluation);
-        throw std::domain_error("Unable to find the variable '" + var.str() + "'.");
-      } else if (b_left->type == VAR) {
-        std::string left = static_cast<Token<std::string>*>(b_left)->val;
-        delete b_left;
-
-        if (!str.compare("=")) {
-          if (vars) {
-            vars->asign(left, b_right);
-            evaluation.push(b_right);
-          } else {
-            delete b_right;
-            cleanRPN(&rpn);
-            cleanStack(evaluation);
-            throw std::domain_error("No Scope available for asignment of variable `" + left + "`.");
-          }
-        } else {
-          packToken p_right(b_right->clone());
-          delete b_right;
-
-          cleanRPN(&rpn);
-          cleanStack(evaluation);
-          throw undefined_operation(str, left, p_right);
-        }
       } else {
         packToken p_left(b_left->clone());
         packToken p_right(b_right->clone());
@@ -548,7 +561,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (vars) { value = vars->find(key); }
 
       if (value) {
-        evaluation.push((*value)->clone());
+        TokenBase* copy = (*value)->clone();
+        evaluation.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
         delete base;
       } else {
         evaluation.push(base);
@@ -558,7 +572,13 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     }
   }
 
-  return packToken(evaluation.top());
+  TokenBase* result = evaluation.top();
+  if (result->type & REF) {
+    RefValue_t rvalue = static_cast<Token<RefValue_t>*>(result)->val;
+    delete result;
+    result = rvalue.second;
+  }
+  return packToken(result);
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
