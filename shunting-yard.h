@@ -42,7 +42,7 @@ class Scope {
   mutable Scope_t scope;
 
   Scope(TokenMap_t* vars);
-  Scope() : Scope(0) {};
+  Scope() : Scope(0) {}
 
   packToken* find(std::string key) const;
   void asign(std::string key, TokenBase* value) const;
