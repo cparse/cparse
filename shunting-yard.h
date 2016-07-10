@@ -36,12 +36,13 @@ typedef std::list<TokenBase*> Tuple_t;
 // as well as some built-in functions:
 #include "./functions.h"
 
-struct Scope {
+class Scope {
+ public:
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
 
   Scope(TokenMap_t* vars);
-  Scope() : Scope(0) {}
+  Scope() : Scope(0) {};
 
   packToken* find(std::string key) const;
   void asign(std::string key, TokenBase* value) const;
