@@ -10,9 +10,7 @@
 #include <exception>
 #include <string>
 #include <stack>
-
-#include <utility> // For std::pair
-#include <initializer_list>
+#include <utility>  // For std::pair
 
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
@@ -480,7 +478,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
               value = packToken::None;
             }
 
-            local.insert({ left.arg_names[i], value });
+            local.insert(std::pair<std::string, packToken>(left.arg_names[i], value));
           }
 
           // Add args to scope:
