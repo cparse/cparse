@@ -42,6 +42,13 @@ packToken default_tan(const Scope* scope) {
 
   return tan(number);
 }
+packToken default_abs(const Scope* scope) {
+  // Get a single argument:
+  double number = scope->find("number")->asDouble();
+
+  return std::abs(number);
+}
+
 
 std::string pow_args[] = {"number", "exp"};
 packToken default_pow(const Scope* scope) {
@@ -62,6 +69,7 @@ TokenMap_t Function::initialize_functions() {
   funcs["sin"] = Function(&default_sin, 1, num_arg);
   funcs["cos"] = Function(&default_cos, 1, num_arg);
   funcs["tan"] = Function(&default_tan, 1, num_arg);
+  funcs["abs"] = Function(&default_abs, 1, num_arg);
   funcs["pow"] = Function(&default_pow, 2, pow_args);
   return funcs;
 }

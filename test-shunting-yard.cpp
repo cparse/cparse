@@ -96,6 +96,8 @@ TEST_CASE("Function usage expressions") {
   calculator c("a + sqrt(4) * 2");
   REQUIRE(c.eval(&vars).asDouble() == 0);
   REQUIRE(calculator::calculate("sqrt(4-a*3) * 2", &vars).asDouble() == 8);
+  REQUIRE(calculator::calculate("abs(42)", &vars).asDouble() == 42);
+  REQUIRE(calculator::calculate("abs(-42)", &vars).asDouble() == 42);
 
   // With more than one argument:
   REQUIRE(calculator::calculate("pow(2,2)", &vars).asDouble() == 4);
