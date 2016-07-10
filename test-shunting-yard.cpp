@@ -76,7 +76,7 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"key\"]", &vars).asString() == "mapped value");
   REQUIRE(calculator::calculate("map[\"key\"+1]", &vars).asString() ==
           "second mapped value");
-  REQUIRE(calculator::calculate("map[\"key\"+2] + 3 == 13", &vars).asBool());
+  REQUIRE(calculator::calculate("map[\"key\"+2] + 3 == 13", &vars).asBool() == true);
   REQUIRE(calculator::calculate("map.key1", &vars).asString() == "second mapped value");
 
   REQUIRE(calculator::calculate("map.key3.map1", &vars).asString() == "inception1");
