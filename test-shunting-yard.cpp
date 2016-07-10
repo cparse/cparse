@@ -131,7 +131,7 @@ TEST_CASE("Scope management") {
   scope.pop();
   scope.pop();
 
-  scope.pop(); // Final pop for default functions.
+  scope.pop();  // Final pop for default functions.
 
   // Test what happens when you try to drop more namespaces than possible:
   REQUIRE_THROWS(scope.pop());
