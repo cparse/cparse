@@ -3,7 +3,7 @@ SRC=$(EXE).cpp shunting-yard.cpp packToken.cpp functions.cpp catch.cpp
 OBJ=$(SRC:.cpp=.o)
 
 CXX=g++
-CFLAGS=-g -Wall -pedantic #-DDEBUG
+CFLAGS=-std=c++0x -g -Wall -pedantic #-DDEBUG
 all: $(EXE)
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)

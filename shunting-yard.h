@@ -40,8 +40,8 @@ struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
 
-  Scope() {}
   Scope(TokenMap_t* vars);
+  Scope() : Scope(0) {}
 
   packToken* find(std::string key) const;
   void asign(std::string key, TokenBase* value) const;
