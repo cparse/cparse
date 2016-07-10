@@ -612,11 +612,6 @@ std::string calculator::str() {
 
 /* * * * * Scope Class: * * * * */
 
-Scope::Scope() {
-  // Add default functions to the global namespace:
-  scope.push_front(&Function::default_functions);
-}
-
 Scope::Scope(TokenMap_t* vars) {
   // Add default functions to the global namespace:
   scope.push_front(&Function::default_functions);
