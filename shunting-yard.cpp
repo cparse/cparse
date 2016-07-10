@@ -10,6 +10,7 @@
 #include <exception>
 #include <string>
 #include <stack>
+#include <utility>  // For std::pair
 
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
@@ -17,7 +18,7 @@ OppMap_t calculator::buildOpPrecedence() {
   // Create the operator precedence map based on C++ default
   // precedence order as described on cppreference website:
   // http://en.cppreference.com/w/cpp/language/operator_precedence
-  opp["[]"] = 2; opp["."] = 2;
+  opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
   opp["^"]  = 3;
   opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
   opp["+"]  = 6; opp["-"]  = 6;
@@ -26,6 +27,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
+  opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
   return opp;
@@ -33,6 +35,9 @@ OppMap_t calculator::buildOpPrecedence() {
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 Scope calculator::empty_scope = Scope();
+
+packToken trueToken = packToken(1);
+packToken falseToken = packToken(0);
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& str,
@@ -74,7 +79,7 @@ void calculator::handle_op(const std::string& str,
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               const Scope* global, const Scope* local, OppMap_t opPrecedence) {
+                               const Scope* vars, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
@@ -114,27 +119,21 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
       }
 
-      bool found = false;
-      TokenBase* val = NULL;
+      packToken* value = NULL;
 
       std::string key = ss.str();
 
       if (key == "true") {
-        found = true; val = new Token<double>(1, NUM);
+        value = &trueToken;
       } else if (key == "false") {
-        found = true; val = new Token<double>(0, NUM);
+        value = &falseToken;
       } else {
-        if (local) val = local->find(key);
-        if (global) val = val ? val : global->find(key);
-        if (val) {
-          val = val->clone();
-          found = true;
-        }
+        if (vars) value = vars->find(key);
       }
 
-      if (found) {
+      if (value) {
         // Save the token
-        rpnQueue.push(val);
+        rpnQueue.push((*value)->clone());
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -167,6 +166,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
+      tokType lastType;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (lastTokenWasUnary) {
@@ -180,8 +180,18 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       switch (*expr) {
       case '(':
+        // If it is a function call:
+        lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
+        if (lastType == VAR || lastType == FUNC) {
+          // This counts as a bracket and as an operator:
+          lastTokenWasUnary = handle_unary("()", &rpnQueue,
+                                           lastTokenWasOp, opPrecedence);
+          handle_op("()", &rpnQueue, &operatorStack, opPrecedence);
+          // Add it as a bracket to the op stack:
+        }
         operatorStack.push("(");
         ++expr;
+        lastTokenWasOp = true;
         break;
       case '[':
         // This counts as a bracket and as an operator:
@@ -191,6 +201,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         // Add it as a bracket to the op stack:
         operatorStack.push("[");
         ++expr;
+        lastTokenWasOp = true;
         break;
       case ')':
         while (operatorStack.top().compare("(")) {
@@ -259,14 +270,17 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, const Scope& local) {
+packToken calculator::calculate(const char* expr, const Scope& vars) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = calculator::toRPN(expr, &local, NULL);
+  TokenQueue_t rpn = calculator::toRPN(expr, &vars);
   packToken ret;
 
   try {
-    ret = calculator::calculate(rpn, &local, NULL);
-  } catch (std::exception e) {
+    ret = calculator::calculate(rpn, &vars);
+  } catch (undefined_operation e) {
+    cleanRPN(&rpn);
+    throw e;
+  } catch (std::domain_error e) {
     cleanRPN(&rpn);
     throw e;
   }
@@ -283,7 +297,7 @@ void cleanStack(std::stack<TokenBase*> st) {
 }
 
 packToken calculator::calculate(TokenQueue_t _rpn,
-                                const Scope* global, const Scope* local) {
+                                const Scope* vars) {
   TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -312,7 +326,20 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       }
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
-      if (b_left->type == NUM && b_right->type == NUM) {
+
+      // If it is a tuple operator:
+      if (!str.compare(",")) {
+        if (b_left->type == TUPLE) {
+          Tuple* tuple = static_cast<Tuple*>(b_left);
+          tuple->push_back(b_right);
+          delete b_right;
+          evaluation.push(tuple);
+        } else {
+          evaluation.push(new Tuple(b_left, b_right));
+          delete b_left;
+          delete b_right;
+        }
+      } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
         double right = static_cast<Token<double>*>(b_right)->val;
         delete b_left;
@@ -427,6 +454,49 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(str, left, right);
         }
+      } else if (b_left->type == FUNC) {
+        Function left = *static_cast<Function*>(b_left);
+        delete b_left;
+
+        if (!str.compare("()")) {
+          // Collect the parameter tuple:
+          Tuple right;
+          if (b_right->type == TUPLE) {
+            right = *static_cast<Tuple*>(b_right);
+          } else {
+            right = Tuple(b_right);
+          }
+          delete b_right;
+
+          // Build the local namespace:
+          TokenMap_t local;
+          for (unsigned i = 0; i < left.nargs; ++i) {
+            packToken value;
+            if (right.size()) {
+              value = packToken(right.pop_front());
+            } else {
+              value = packToken::None;
+            }
+
+            local.insert(std::pair<std::string, packToken>(left.arg_names[i], value));
+          }
+
+          // Add args to scope:
+          vars->push(&local);
+          // Execute the function:
+          packToken ret = left.func(vars);
+          // Drop the local scope:
+          vars->pop();
+
+          evaluation.push(ret->clone());
+        } else {
+          packToken p_right(b_right->clone());
+          delete b_right;
+
+          cleanRPN(&rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(str, left, p_right);
+        }
       } else {
         packToken p_left(b_left->clone());
         packToken p_right(b_right->clone());
@@ -438,14 +508,11 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         throw undefined_operation(str, p_left, p_right);
       }
     } else if (base->type == VAR) {  // Variable
-      TokenBase* value = NULL;
+      packToken* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
-      if (local) { value = local->find(key); }
-      if (global) { value = value ? value : global->find(key); }
-
-      if (value) value = value->clone();
+      if (vars) { value = vars->find(key); }
 
       if (value == NULL) {
         cleanRPN(&rpn);
@@ -453,7 +520,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         throw std::domain_error(
                                 "Unable to find the variable '" + key + "'.");
       }
-      evaluation.push(value);
+      evaluation.push((*value)->clone());
     } else {
       evaluation.push(base);
     }
@@ -476,7 +543,6 @@ calculator::~calculator() {
 }
 
 calculator::calculator(const calculator& calc) {
-  this->scope = calc.scope;
   TokenQueue_t _rpn = calc.RPN;
 
   // Deep copy the token list, so everything can be
@@ -494,24 +560,25 @@ calculator::calculator(const char* expr,
 }
 
 void calculator::compile(const char* expr, OppMap_t opPrecedence) {
-  this->RPN = calculator::toRPN(expr, &scope, NULL, opPrecedence);
-}
-
-void calculator::compile(const char* expr,
-                         const Scope& local, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, &scope, &local, opPrecedence);
+  this->RPN = calculator::toRPN(expr, NULL, opPrecedence);
 }
 
-packToken calculator::eval(const Scope& local) {
-  return calculate(this->RPN, &scope, &local);
+void calculator::compile(const char* expr,
+                         const Scope& vars, OppMap_t opPrecedence) {
+  // Make sure it is empty:
+  cleanRPN(&this->RPN);
+
+  this->RPN = calculator::toRPN(expr, &vars, opPrecedence);
+}
+
+packToken calculator::eval(const Scope& vars) {
+  return calculate(this->RPN, &vars);
 }
 
 calculator& calculator::operator=(const calculator& calc) {
-  this->scope = calc.scope;
-
   // Make sure the RPN is empty:
   cleanRPN(&this->RPN);
 
@@ -546,17 +613,20 @@ std::string calculator::str() {
 /* * * * * Scope Class: * * * * */
 
 Scope::Scope(TokenMap_t* vars) {
+  // Add default functions to the global namespace:
+  scope.push_front(&Function::default_functions);
+
   if (vars) scope.push_front(vars);
 }
 
-TokenBase* Scope::find(std::string key) const {
-  TokenBase* value = NULL;
+packToken* Scope::find(std::string key) const {
+  packToken* value = NULL;
 
   Scope_t::iterator s_it = scope.begin();
   for (; s_it != scope.end(); s_it++) {
     TokenMap_t::iterator it = (*s_it)->find(key);
     if (it != (*s_it)->end()) {
-      value = it->second;
+      value = &(it->second);
       break;
     }
   }
@@ -564,31 +634,51 @@ TokenBase* Scope::find(std::string key) const {
   return value;
 }
 
-void Scope::push(TokenMap_t* vars) {
+void Scope::asign(std::string key, TokenBase* value) const {
+  if (value) {
+    value = value->clone();
+  } else {
+    throw std::invalid_argument("Scope asignment expected a non NULL argument as value!");
+  }
+
+  packToken* variable = find(key);
+
+  if (variable) {
+    (*variable) = packToken(value);
+  } else {
+    // Insert it on the most local context
+    if (scope.size() == 0) {
+      throw std::range_error("Cannot insert a variable into an empty scope!");
+    }
+    scope.front()->insert(std::pair<std::string, packToken>(key, packToken(value)));
+  }
+}
+
+void Scope::push(TokenMap_t* vars) const {
   if (vars) scope.push_front(vars);
 }
 
-void Scope::push(Scope other) {
+void Scope::push(Scope other) const {
   Scope_t::reverse_iterator s_it = other.scope.rbegin();
   for (; s_it != other.scope.rend(); s_it++) {
     push(*s_it);
   }
 }
 
-void Scope::pop() {
+void Scope::pop() const {
   if (scope.size() == 0)
     throw std::range_error("Calculator::drop_namespace(): No namespace left to drop!");
   scope.pop_front();
 }
 
 // Pop the N top elements:
-void Scope::pop(unsigned N) {
+void Scope::pop(unsigned N) const {
   for (unsigned i=0; i < N; i++) {
     pop();
   }
 }
 
-void Scope::clean() {
+void Scope::clean() const {
   scope = Scope_t();
 }
 

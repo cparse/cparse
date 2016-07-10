@@ -1,10 +1,10 @@
-#define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
 
 #include "./shunting-yard.h"
 
-TokenMap_t vars, tmap, emap, key3;
-int main(int argc, char** argv) {
+TokenMap_t vars, tmap, key3, emap;
+
+void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
   vars["b1"] = 0.0;
   vars["b2"] = 0.86;
@@ -24,9 +24,6 @@ int main(int argc, char** argv) {
 
   emap["a"] = 10;
   emap["b"] = 20;
-
-  int result = Catch::Session().run(argc, argv);
-  return result;
 }
 
 TEST_CASE("Static calculate::calculate()") {
@@ -79,7 +76,7 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"key\"]", &vars).asString() == "mapped value");
   REQUIRE(calculator::calculate("map[\"key\"+1]", &vars).asString() ==
           "second mapped value");
-  REQUIRE(calculator::calculate("map[\"key\"+2] + 3 == 13", &vars).asBool());
+  REQUIRE(calculator::calculate("map[\"key\"+2] + 3 == 13", &vars).asBool() == true);
   REQUIRE(calculator::calculate("map.key1", &vars).asString() == "second mapped value");
 
   REQUIRE(calculator::calculate("map.key3.map1", &vars).asString() == "inception1");
@@ -87,42 +84,70 @@ TEST_CASE("Map access expressions") {
   REQUIRE_THROWS(calculator::calculate("map[\"no_key\"]", &vars));
 }
 
+TEST_CASE("Function usage expressions") {
+  TokenMap_t vars;
+  vars["pi"] = 3.141592653589793;
+  vars["a"] = -4;
+
+  REQUIRE(calculator::calculate("sqrt(4)", &vars).asDouble() == 2);
+  REQUIRE(calculator::calculate("sin(pi)", &vars).asDouble() == Approx(0));
+  REQUIRE(calculator::calculate("cos(pi/2)", &vars).asDouble() == Approx(0));
+  REQUIRE(calculator::calculate("tan(pi)", &vars).asDouble() == Approx(0));
+  calculator c("a + sqrt(4) * 2");
+  REQUIRE(c.eval(&vars).asDouble() == 0);
+  REQUIRE(calculator::calculate("sqrt(4-a*3) * 2", &vars).asDouble() == 8);
+
+  // With more than one argument:
+  REQUIRE(calculator::calculate("pow(2,2)", &vars).asDouble() == 4);
+  REQUIRE(calculator::calculate("pow(2,3)", &vars).asDouble() == 8);
+  REQUIRE(calculator::calculate("pow(2,a)", &vars).asDouble() == Approx(1./16));
+  REQUIRE(calculator::calculate("pow(2,a+4)", &vars).asDouble() == 1);
+
+  REQUIRE_THROWS(calculator::calculate("foo(10)"));
+  REQUIRE_THROWS(calculator::calculate("foo(10),"));
+  REQUIRE_THROWS(calculator::calculate("foo,(10)"));
+
+  // The test bellow will fail, TODO fix it:
+  // REQUIRE_NOTHROW(calculator::calculate("print()"));
+}
+
 TEST_CASE("Scope management") {
   calculator c("pi+b1+b2");
+  Scope scope;
 
   // Add vars to scope:
-  c.scope.push(&vars);
-  REQUIRE(c.eval().asDouble() == Approx(4));
+  scope.push(&vars);
+  REQUIRE(c.eval(scope).asDouble() == Approx(4));
 
   tmap["b2"] = 1.0;
-  c.scope.push(&tmap);
-  REQUIRE(c.eval().asDouble() == Approx(4.14));
+  scope.push(&tmap);
+  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
 
-  Scope scope = c.scope;
+  Scope scope_bkp = scope;
 
   // Remove vars from scope:
-  c.scope.pop();
-  c.scope.pop();
+  scope.pop();
+  scope.pop();
 
   // Test what happens when you try to drop more namespaces than possible:
-  REQUIRE_THROWS(c.scope.pop());
+  REQUIRE_THROWS(scope.pop());
 
   // Load Saved Scope
-  c.scope = scope;
-  REQUIRE(c.eval().asDouble() == Approx(4.14));
+  scope = scope_bkp;
+  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
 
   // Testing with 3 namespaces:
   TokenMap_t vmap;
   vmap["b1"] = -1.14;
-  c.scope.push(&vmap);
-  REQUIRE(c.eval().asDouble() == Approx(3.0));
+  scope.push(&vmap);
+  REQUIRE(c.eval(scope).asDouble() == Approx(3.0));
 
-  scope = c.scope;
-  calculator c2("pi+b1+b2", scope);
+  scope_bkp = scope;
+  calculator c2("pi+b1+b2", scope_bkp);
   REQUIRE(c2.eval().asDouble() == Approx(3.0));
-  REQUIRE(calculator::calculate("pi+b1+b2", scope).asDouble() == Approx(3.0));
+  REQUIRE(calculator::calculate("pi+b1+b2", scope_bkp).asDouble() == Approx(3.0));
 
-  c.scope.clean();
+  scope.clean();
 }
 
 TEST_CASE("Resource management") {

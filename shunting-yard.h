@@ -7,7 +7,7 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE };
 
 struct TokenBase {
   tokType type;
@@ -28,8 +28,13 @@ class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
+typedef std::list<TokenBase*> Tuple_t;
 
-#include "packToken.h"
+#include "./packToken.h"
+
+// Define the `Function` class
+// as well as some built-in functions:
+#include "./functions.h"
 
 struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;
@@ -38,14 +43,15 @@ struct Scope {
   Scope() {}
   Scope(TokenMap_t* vars);
 
-  TokenBase* find(std::string key) const;
+  packToken* find(std::string key) const;
+  void asign(std::string key, TokenBase* value) const;
 
-  void push(TokenMap_t* vars);
-  void push(Scope vars);
-  void pop();
-  void pop(unsigned N);
+  void push(TokenMap_t* vars) const;
+  void push(Scope vars) const;
+  void pop() const;
+  void pop(unsigned N) const;
 
-  void clean();
+  void clean() const;
   unsigned size() const;
 };
 
@@ -60,10 +66,10 @@ class calculator {
 
  private:
   static packToken calculate(TokenQueue_t RPN,
-                             const Scope* global, const Scope* local);
+                             const Scope* vars);
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr,
-                            const Scope* global, const Scope* local,
+                            const Scope* vars,
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& str,
@@ -78,8 +84,6 @@ class calculator {
   TokenQueue_t RPN;
 
  public:
-  Scope scope;
-
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
@@ -88,9 +92,9 @@ class calculator {
   void compile(const char* expr,
                OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-               const Scope& local = empty_scope,
+               const Scope& vars = empty_scope,
                OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& local = empty_scope);
+  packToken eval(const Scope& vars = empty_scope);
 
   // Serialization:
   std::string str();
