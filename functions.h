@@ -1,8 +1,9 @@
 
-#ifndef SHUNTING_YARD_FUNC_H_
-#define SHUNTING_YARD_FUNC_H_
+#ifndef FUNCTIONS_H_
+#define FUNCTIONS_H_
 
 #include <list>
+#include <string>
 
 class Function : public TokenBase {
   static TokenMap_t initialize_functions();
@@ -26,7 +27,7 @@ class Function : public TokenBase {
 class Tuple : public TokenBase {
  public:
   typedef std::list<TokenBase*> Tuple_t;
- 
+
  public:
   Tuple_t tuple;
 
@@ -35,7 +36,7 @@ class Tuple : public TokenBase {
   Tuple(const TokenBase* a);
   Tuple(const TokenBase* a, const TokenBase* b);
   Tuple(const Tuple& t) : tuple(copyTuple(t.tuple)) { this->type = TUPLE; }
-  ~Tuple() { cleanTuple(tuple); }
+  ~Tuple() { cleanTuple(&tuple); }
 
  public:
   void push_back(const TokenBase* tb);
@@ -44,7 +45,7 @@ class Tuple : public TokenBase {
 
  private:
   Tuple_t copyTuple(const Tuple_t& t);
-  void cleanTuple(Tuple_t& t);
+  void cleanTuple(Tuple_t* t);
 
  public:
   Tuple& operator=(const Tuple& t);
@@ -54,4 +55,4 @@ class Tuple : public TokenBase {
   }
 };
 
-#endif
+#endif  // FUNCTIONS_H_

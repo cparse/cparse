@@ -30,11 +30,11 @@ typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
-#include "packToken.h"
+#include "./packToken.h"
 
 // Define the `Function` class
 // as well as some built-in functions:
-#include "functions.h"
+#include "./functions.h"
 
 struct Scope {
   typedef std::list<TokenMap_t*> Scope_t;

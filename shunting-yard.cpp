@@ -11,6 +11,9 @@
 #include <string>
 #include <stack>
 
+#include <utility> // For std::pair
+#include <initializer_list>
+
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
 
@@ -513,7 +516,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
       if (vars) { value = vars->find(key); }
 
-      // TODO: Move this error throw to after the operator evaluation.
       if (value == NULL) {
         cleanRPN(&rpn);
         cleanStack(evaluation);
@@ -635,7 +637,6 @@ packToken* Scope::find(std::string key) const {
 }
 
 void Scope::asign(std::string key, TokenBase* value) const {
-
   if (value) {
     value = value->clone();
   } else {
@@ -651,7 +652,7 @@ void Scope::asign(std::string key, TokenBase* value) const {
     if (scope.size() == 0) {
       throw std::range_error("Cannot insert a variable into an empty scope!");
     }
-    scope.front()->insert( std::pair<std::string, packToken>(key, packToken(value)) );
+    scope.front()->insert(std::pair<std::string, packToken>(key, packToken(value)));
   }
 }
 

@@ -85,7 +85,6 @@ TEST_CASE("Map access expressions") {
 }
 
 TEST_CASE("Function usage expressions") {
-
   TokenMap_t vars;
   vars["pi"] = 3.141592653589793;
   vars["a"] = -4;

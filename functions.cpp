@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cmath>
+#include <string>
 #include "./shunting-yard.h"
 
 TokenMap_t Function::default_functions = Function::initialize_functions();
@@ -10,8 +11,7 @@ std::string text_arg[] = {"text"};
 packToken default_print(const Scope* scope) {
   // Get a single argument:
   std::string text = scope->find("text")->asString();
-  printf(text.c_str());
-  printf("\n");
+  printf("%s\n", text.c_str());
 
   return packToken::None;
 }
@@ -98,21 +98,21 @@ unsigned Tuple::size() {
 Tuple::Tuple_t Tuple::copyTuple(const Tuple_t& t) {
   Tuple_t copy;
   Tuple_t::const_iterator it;
-  for(it = t.begin(); it != t.end(); ++it) {
+  for (it = t.begin(); it != t.end(); ++it) {
     copy.push_back((*it)->clone());
   }
   return copy;
 }
 
-void Tuple::cleanTuple(Tuple_t& t) {
-  while(t.size()) {
-    delete t.back();
-    t.pop_back();
+void Tuple::cleanTuple(Tuple_t* t) {
+  while (t->size()) {
+    delete t->back();
+    t->pop_back();
   }
 }
 
 Tuple& Tuple::operator=(const Tuple& t) {
-  cleanTuple(tuple);
+  cleanTuple(&tuple);
   tuple = copyTuple(t.tuple);
   return *this;
 }
