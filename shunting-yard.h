@@ -7,7 +7,7 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE, REF=0x10 };
+enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE, REF = 0x10 };
 typedef unsigned char uint8_t;
 
 struct TokenBase {
