@@ -124,8 +124,10 @@ TEST_CASE("Assignment expressions", "[!mayfail]") {
   REQUIRE_NOTHROW(calculator::calculate("assignment = 20", &vars));
   REQUIRE(calculator::calculate("assignment", &vars).asDouble() == 20);
 
-  INFO("Chained assignments don't work yet, its on the TODO list to fix it.");
-  REQUIRE_NOTHROW(calculator::calculate("assign1 = assign2 = 20", &vars));
+  // Chain assigning should work with a right-to-left order:
+  REQUIRE_NOTHROW(calculator::calculate("a = b = 20", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("a = b = c = d = 30", &vars));
+  REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", &vars) == true);
 }
 
 TEST_CASE("Scope management") {

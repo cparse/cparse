@@ -70,8 +70,10 @@ void calculator::handle_op(const std::string& str,
     throw std::domain_error("Unknown operator: `" + str + "`!");
   }
 
-  while (!operatorStack->empty() &&
-         opPrecedence[str] >= opPrecedence[operatorStack->top()]) {
+  float cur_opp = opPrecedence[str];
+  // To force "=" to be evaluated from the right to the left:
+  if (str == "=") cur_opp -= 0.1;
+  while (!operatorStack->empty() && cur_opp >= opPrecedence[operatorStack->top()]) {
     rpnQueue->push(new Token<std::string>(operatorStack->top(), OP));
     operatorStack->pop();
   }
