@@ -63,7 +63,7 @@ class Scope {
   Scope() : Scope(NULL) {}
 
   packToken* find(std::string key) const;
-  void asign(std::string key, TokenBase* value) const;
+  void assign(std::string key, TokenBase* value) const;
 
   void push(TokenMap_t* vars) const;
   void push(Scope vars) const;
@@ -81,7 +81,7 @@ class calculator {
   static Scope empty_scope;
 
  public:
-  static packToken calculate(const char* expr, const Scope& scope = empty_scope);
+  static packToken calculate(const char* expr, const Scope& vars = empty_scope);
 
  private:
   static packToken calculate(TokenQueue_t RPN,
@@ -91,10 +91,10 @@ class calculator {
                             const Scope* vars,
                             OppMap_t opPrecedence = _opPrecedence);
 
-  static bool handle_unary(const std::string& str,
+  static bool handle_unary(const std::string& op,
                            TokenQueue_t* rpnQueue, bool lastTokenWasOp,
                            OppMap_t opPrecedence);
-  static void handle_op(const std::string& str,
+  static void handle_op(const std::string& op,
                         TokenQueue_t* rpnQueue,
                         std::stack<std::string>* operatorStack,
                         OppMap_t opPrecedence);
@@ -106,7 +106,7 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& scope = empty_scope,
+  calculator(const char* expr, const Scope& vars = empty_scope,
              OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
                OppMap_t opPrecedence = _opPrecedence);
