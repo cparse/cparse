@@ -25,12 +25,28 @@ template<class T> class Token : public TokenBase {
   }
 };
 
+struct TokenNone : public TokenBase {
+  TokenNone() { this->type = NONE; }
+  virtual TokenBase* clone() const {
+    return new TokenNone(static_cast<const TokenNone&>(*this));
+  }
+};
+
 class packToken;
-typedef std::pair<std::string, TokenBase*> RefValue_t;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
+
+struct RefValue_t {
+  std::string name;
+  TokenBase* value;
+  TokenMap_t* source_map;
+  RefValue_t(std::string n, TokenBase* v, TokenMap_t* m) :
+    name(n), value(v), source_map(m) {}
+  RefValue_t(std::string n, TokenBase* v) :
+    name(n), value(v), source_map(0) {}
+};
 
 #include "./packToken.h"
 

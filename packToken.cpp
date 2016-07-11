@@ -4,14 +4,7 @@
 #include "./shunting-yard.h"
 #include "./shunting-yard-exceptions.h"
 
-struct None_t : public TokenBase {
-  None_t() { this->type = NONE; }
-  virtual TokenBase* clone() const {
-    return new None_t(static_cast<const None_t&>(*this));
-  }
-};
-
-const packToken packToken::None = packToken(None_t());
+const packToken packToken::None = packToken(TokenNone());
 
 packToken& packToken::operator=(int t) {
   if (base) delete base;
@@ -154,7 +147,7 @@ std::string packToken::str(TokenBase* base) {
   if (!base) return "undefined";
 
   if (base->type & REF) {
-    base = static_cast<Token<RefValue_t>*>(base)->val.second;
+    base = static_cast<Token<RefValue_t>*>(base)->val.value;
   }
 
   switch (base->type) {

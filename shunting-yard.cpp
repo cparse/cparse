@@ -334,7 +334,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (b_right->type & REF) {
         RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_right)->val;
         delete b_right;
-        b_right = rvalue.second->clone();
+        b_right = rvalue.value->clone();
       } else if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
@@ -345,11 +345,13 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       }
 
       std::string r_left;
+      TokenMap_t* m_left = NULL;
       if (b_left->type & REF) {
         RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_left)->val;
         delete b_left;
-        r_left = rvalue.first;
-        b_left = rvalue.second->clone();
+        r_left = rvalue.name;
+        b_left = rvalue.value->clone();
+        m_left = rvalue.source_map;
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
@@ -372,7 +374,11 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
         if (r_left.size() > 0) {
           if (vars) {
-            vars->asign(r_left, b_right);
+            if (m_left && b_right->type != NONE) {
+              (*m_left)[r_left] = packToken(b_right->clone());
+            } else {
+              vars->asign(r_left, b_right);
+            }
             evaluation.push(b_right);
           } else {
             delete b_right;
@@ -490,14 +496,17 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         if (!str.compare("[]") || !str.compare(".")) {
           TokenMap_t::iterator it = left->find(right);
 
+          TokenBase* value;
+          uint8_t type;
           if (it == left->end()) {
-            cleanRPN(&rpn);
-            cleanStack(evaluation);
-            throw std::domain_error(
-                                    "Unable to find the variable '" + right + "'.");
+            value = new TokenNone();
+            type = NONE | REF;
+          } else {
+            value = it->second->clone();
+            type = value->type | REF;
           }
 
-          evaluation.push(it->second->clone());
+          evaluation.push(new Token<RefValue_t>({right, value, left}, type));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
@@ -578,7 +587,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
   if (result->type & REF) {
     RefValue_t rvalue = static_cast<Token<RefValue_t>*>(result)->val;
     delete result;
-    result = rvalue.second;
+    result = rvalue.value;
   }
   return packToken(result);
 }

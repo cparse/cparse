@@ -82,7 +82,7 @@ TEST_CASE("Map access expressions") {
 
   REQUIRE(calculator::calculate("map.key3.map1", &vars).asString() == "inception1");
   REQUIRE(calculator::calculate("map.key3['map2']", &vars).asString() == "inception2");
-  REQUIRE_THROWS(calculator::calculate("map[\"no_key\"]", &vars));
+  REQUIRE(calculator::calculate("map[\"no_key\"]", &vars) == packToken::None);
 }
 
 TEST_CASE("Function usage expressions") {
@@ -114,7 +114,7 @@ TEST_CASE("Function usage expressions") {
   // REQUIRE_NOTHROW(calculator::calculate("print()"));
 }
 
-TEST_CASE("Assignment expressions", "[!mayfail]") {
+TEST_CASE("Assignment expressions") {
   calculator::calculate("assignment = 10", &vars);
 
   // Assigning to an unexistent variable works.
@@ -128,6 +128,27 @@ TEST_CASE("Assignment expressions", "[!mayfail]") {
   REQUIRE_NOTHROW(calculator::calculate("a = b = 20", &vars));
   REQUIRE_NOTHROW(calculator::calculate("a = b = c = d = 30", &vars));
   REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", &vars) == true);
+}
+
+TEST_CASE("Assignment expressions on maps") {
+  TokenMap_t asn_map;
+  vars["m"] = &asn_map;
+  calculator::calculate("m['asn'] = 10", &vars);
+
+  // Assigning to an unexistent variable works.
+  REQUIRE(calculator::calculate("m['asn']", &vars).asDouble() == 10);
+
+  // Assigning to existent variables should work as well.
+  REQUIRE_NOTHROW(calculator::calculate("m['asn'] = 20", &vars));
+  REQUIRE(calculator::calculate("m['asn']", &vars).asDouble() == 20);
+
+  // Chain assigning should work with a right-to-left order:
+  REQUIRE_NOTHROW(calculator::calculate("m.a = m.b = 20", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("m.a = m.b = m.c = m.d = 30", &vars));
+  REQUIRE(calculator::calculate("m.a == m.b && m.b == m.c && m.b == m.d && m.d == 30", &vars) == true);
+
+  REQUIRE_NOTHROW(calculator::calculate("m.m = m", &vars));
+  REQUIRE(calculator::calculate("10 + (a = m.a = m.m.b)", &vars) == 40);
 }
 
 TEST_CASE("Scope management") {
