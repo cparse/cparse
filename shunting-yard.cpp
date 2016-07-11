@@ -27,6 +27,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
+  opp["="] = 15;
   opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
@@ -40,18 +41,17 @@ packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 
 // Check for unary operators and "convert" them to binary:
-bool calculator::handle_unary(const std::string& str,
+bool calculator::handle_unary(const std::string& op,
                               TokenQueue_t* rpnQueue, bool lastTokenWasOp,
                               OppMap_t opPrecedence) {
   if (lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
-    if (!str.compare("-") || !str.compare("+")) {
+    if (!op.compare("-") || !op.compare("+")) {
       rpnQueue->push(new Token<double>(0, NUM));
       return true;
     } else {
       cleanRPN(rpnQueue);
-      throw std::domain_error(
-                              "Unrecognized unary operator: '" + str + "'.");
+      throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
     }
   }
 
@@ -59,22 +59,32 @@ bool calculator::handle_unary(const std::string& str,
 }
 
 // Consume operators with precedence >= than op then add op
-void calculator::handle_op(const std::string& str,
+void calculator::handle_op(const std::string& op,
                            TokenQueue_t* rpnQueue,
                            std::stack<std::string>* operatorStack,
                            OppMap_t opPrecedence) {
   // Check if operator exists:
-  if (opPrecedence.find(str) == opPrecedence.end()) {
+  if (opPrecedence.find(op) == opPrecedence.end()) {
     cleanRPN(rpnQueue);
-    throw std::domain_error("Unknown operator: `" + str + "`!");
+    throw std::domain_error("Unknown operator: `" + op + "`!");
   }
 
-  while (!operatorStack->empty() &&
-         opPrecedence[str] >= opPrecedence[operatorStack->top()]) {
+  float cur_opp = opPrecedence[op];
+  // To force "=" to be evaluated from the right to the left:
+  if (op == "=") cur_opp -= 0.1;
+
+  // Let p(o) denote the precedence of an operator o.
+  //
+  // If the token is an operator, o1, then
+  //   While there is an operator token, o2, at the top
+  //       and p(o1) <= p(o2), then
+  //     pop o2 off the stack onto the output queue.
+  //   Push o1 on the stack.
+  while (!operatorStack->empty() && cur_opp >= opPrecedence[operatorStack->top()]) {
     rpnQueue->push(new Token<std::string>(operatorStack->top(), OP));
     operatorStack->pop();
   }
-  operatorStack->push(str);
+  operatorStack->push(op);
 }
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
@@ -132,8 +142,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       if (value) {
-        // Save the token
-        rpnQueue.push((*value)->clone());
+        // Save a reference token:
+        TokenBase* copy = (*value)->clone();
+        rpnQueue.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -157,8 +168,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       if (*expr != quote) {
         std::string squote = (quote == '"' ? "\"": "'");
         cleanRPN(&rpnQueue);
-        throw syntax_error(
-                           "Expected quote (" + squote +
+        throw syntax_error("Expected quote (" + squote +
                            ") at end of string declaration: " + squote + ss.str() + ".");
       }
       ++expr;
@@ -166,15 +176,14 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      tokType lastType;
+      uint8_t lastType;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (lastTokenWasUnary) {
         std::string op;
         op.push_back(*expr);
         cleanRPN(&rpnQueue);
-        throw syntax_error(
-                           "Expected operand after unary operator `" + operatorStack.top() +
+        throw syntax_error("Expected operand after unary operator `" + operatorStack.top() +
                            "` but found: `" + op + "` instead.");
       }
 
@@ -182,7 +191,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       case '(':
         // If it is a function call:
         lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
-        if (lastType == VAR || lastType == FUNC) {
+        if (lastType == VAR || lastType == (FUNC | REF)) {
           // This counts as a bracket and as an operator:
           lastTokenWasUnary = handle_unary("()", &rpnQueue,
                                            lastTokenWasOp, opPrecedence);
@@ -221,15 +230,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       default:
         {
-          // The token is an operator.
-          //
-          // Let p(o) denote the precedence of an operator o.
-          //
-          // If the token is an operator, o1, then
-          //   While there is an operator token, o2, at the top
-          //       and p(o1) <= p(o2), then
-          //     pop o2 off the stack onto the output queue.
-          //   Push o1 on the stack.
+          // Then the token is an operator
           std::stringstream ss;
           ss << *expr;
           ++expr;
@@ -239,14 +240,14 @@ TokenQueue_t calculator::toRPN(const char* expr,
             ++expr;
           }
           ss.clear();
-          std::string str;
+          std::string op;
 
-          ss >> str;
+          ss >> op;
 
-          lastTokenWasUnary = handle_unary(str, &rpnQueue,
+          lastTokenWasUnary = handle_unary(op, &rpnQueue,
                                            lastTokenWasOp, opPrecedence);
 
-          handle_op(str, &rpnQueue, &operatorStack, opPrecedence);
+          handle_op(op, &rpnQueue, &operatorStack, opPrecedence);
 
           lastTokenWasOp = true;
         }
@@ -257,10 +258,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
   if (lastTokenWasUnary) {
-    std::string op;
     cleanRPN(&rpnQueue);
-    throw syntax_error(
-                       "Expected operand after unary operator `" + operatorStack.top() + "`");
+    throw syntax_error("Expected operand after unary operator `" + operatorStack.top() + "`");
   }
 
   while (!operatorStack.empty()) {
@@ -316,7 +315,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
     // Operator:
     if (base->type == OP) {
-      std::string str = static_cast<Token<std::string>*>(base)->val;
+      std::string op = static_cast<Token<std::string>*>(base)->val;
       delete base;
 
       if (evaluation.size() < 2) {
@@ -327,8 +326,33 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
 
+      if (b_right->type & REF) {
+        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_right)->val;
+        delete b_right;
+        b_right = rvalue.value->clone();
+      } else if (b_right->type == VAR) {
+        std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_right;
+        delete b_left;
+        cleanRPN(&rpn);
+        cleanStack(evaluation);
+        throw std::domain_error("Unable to find the variable '" + var_name + "'.");
+      }
+
+      std::string r_left;
+      TokenMap_t* m_left = NULL;
+      if (b_left->type & REF) {
+        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_left)->val;
+        delete b_left;
+        r_left = rvalue.name;
+        b_left = rvalue.value->clone();
+        m_left = rvalue.source_map;
+      } else if (b_left->type == VAR) {
+        r_left = static_cast<Token<std::string>*>(b_left)->val;
+      }
+
       // If it is a tuple operator:
-      if (!str.compare(",")) {
+      if (!op.compare(",")) {
         if (b_left->type == TUPLE) {
           Tuple* tuple = static_cast<Tuple*>(b_left);
           tuple->push_back(b_right);
@@ -339,6 +363,32 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           delete b_left;
           delete b_right;
         }
+      // If it is an assignment operation:
+      } else if (!op.compare("=")) {
+        delete b_left;
+
+        if (r_left.size() > 0) {
+          if (vars) {
+            if (m_left && b_right->type != NONE) {
+              (*m_left)[r_left] = packToken(b_right->clone());
+            } else {
+              vars->assign(r_left, b_right);
+            }
+            evaluation.push(b_right);
+          } else {
+            delete b_right;
+            cleanRPN(&rpn);
+            cleanStack(evaluation);
+            throw std::domain_error("No Scope available for assignment of variable `" + r_left + "`.");
+          }
+        } else {
+          packToken p_right(b_right->clone());
+          delete b_right;
+
+          cleanRPN(&rpn);
+          cleanStack(evaluation);
+          throw undefined_operation(op, r_left, p_right);
+        }
       } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
         double right = static_cast<Token<double>*>(b_right)->val;
@@ -348,42 +398,42 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         int left_i = static_cast<int>(left);
         int right_i = static_cast<int>(right);
 
-        if (!str.compare("+")) {
+        if (!op.compare("+")) {
           evaluation.push(new Token<double>(left + right, NUM));
-        } else if (!str.compare("*")) {
+        } else if (!op.compare("*")) {
           evaluation.push(new Token<double>(left * right, NUM));
-        } else if (!str.compare("-")) {
+        } else if (!op.compare("-")) {
           evaluation.push(new Token<double>(left - right, NUM));
-        } else if (!str.compare("/")) {
+        } else if (!op.compare("/")) {
           evaluation.push(new Token<double>(left / right, NUM));
-        } else if (!str.compare("<<")) {
+        } else if (!op.compare("<<")) {
           evaluation.push(new Token<double>(left_i << right_i, NUM));
-        } else if (!str.compare("^")) {
+        } else if (!op.compare("^")) {
           evaluation.push(new Token<double>(pow(left, right), NUM));
-        } else if (!str.compare(">>")) {
+        } else if (!op.compare(">>")) {
           evaluation.push(new Token<double>(left_i >> right_i, NUM));
-        } else if (!str.compare("%")) {
+        } else if (!op.compare("%")) {
           evaluation.push(new Token<double>(left_i % right_i, NUM));
-        } else if (!str.compare("<")) {
+        } else if (!op.compare("<")) {
           evaluation.push(new Token<double>(left < right, NUM));
-        } else if (!str.compare(">")) {
+        } else if (!op.compare(">")) {
           evaluation.push(new Token<double>(left > right, NUM));
-        } else if (!str.compare("<=")) {
+        } else if (!op.compare("<=")) {
           evaluation.push(new Token<double>(left <= right, NUM));
-        } else if (!str.compare(">=")) {
+        } else if (!op.compare(">=")) {
           evaluation.push(new Token<double>(left >= right, NUM));
-        } else if (!str.compare("==")) {
+        } else if (!op.compare("==")) {
           evaluation.push(new Token<double>(left == right, NUM));
-        } else if (!str.compare("!=")) {
+        } else if (!op.compare("!=")) {
           evaluation.push(new Token<double>(left != right, NUM));
-        } else if (!str.compare("&&")) {
+        } else if (!op.compare("&&")) {
           evaluation.push(new Token<double>(left_i && right_i, NUM));
-        } else if (!str.compare("||")) {
+        } else if (!op.compare("||")) {
           evaluation.push(new Token<double>(left_i || right_i, NUM));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, right);
+          throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == STR && b_right->type == STR) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -391,16 +441,16 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
         delete b_right;
 
-        if (!str.compare("+")) {
+        if (!op.compare("+")) {
           evaluation.push(new Token<std::string>(left + right, STR));
-        } else if (!str.compare("==")) {
+        } else if (!op.compare("==")) {
           evaluation.push(new Token<double>(left.compare(right) == 0, NUM));
-        } else if (!str.compare("!=")) {
+        } else if (!op.compare("!=")) {
           evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, right);
+          throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == STR && b_right->type == NUM) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
@@ -409,13 +459,13 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_right;
 
         std::stringstream ss;
-        if (!str.compare("+")) {
+        if (!op.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, right);
+          throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == NUM && b_right->type == STR) {
         double left = static_cast<Token<double>*>(b_left)->val;
@@ -424,13 +474,13 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_right;
 
         std::stringstream ss;
-        if (!str.compare("+")) {
+        if (!op.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, right);
+          throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == MAP && b_right->type == STR) {
         TokenMap_t* left = static_cast<Token<TokenMap_t*>*>(b_left)->val;
@@ -438,27 +488,30 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
         delete b_right;
 
-        if (!str.compare("[]") || !str.compare(".")) {
+        if (!op.compare("[]") || !op.compare(".")) {
           TokenMap_t::iterator it = left->find(right);
 
+          TokenBase* value;
+          uint8_t type;
           if (it == left->end()) {
-            cleanRPN(&rpn);
-            cleanStack(evaluation);
-            throw std::domain_error(
-                                    "Unable to find the variable '" + right + "'.");
+            value = new TokenNone();
+            type = NONE | REF;
+          } else {
+            value = it->second->clone();
+            type = value->type | REF;
           }
 
-          evaluation.push(it->second->clone());
+          evaluation.push(new Token<RefValue_t>({right, value, left}, type));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, right);
+          throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == FUNC) {
         Function left = *static_cast<Function*>(b_left);
         delete b_left;
 
-        if (!str.compare("()")) {
+        if (!op.compare("()")) {
           // Collect the parameter tuple:
           Tuple right;
           if (b_right->type == TUPLE) {
@@ -495,7 +548,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
           cleanRPN(&rpn);
           cleanStack(evaluation);
-          throw undefined_operation(str, left, p_right);
+          throw undefined_operation(op, left, p_right);
         }
       } else {
         packToken p_left(b_left->clone());
@@ -505,28 +558,33 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
         cleanRPN(&rpn);
         cleanStack(evaluation);
-        throw undefined_operation(str, p_left, p_right);
+        throw undefined_operation(op, p_left, p_right);
       }
     } else if (base->type == VAR) {  // Variable
       packToken* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
-      delete base;
 
       if (vars) { value = vars->find(key); }
 
-      if (value == NULL) {
-        cleanRPN(&rpn);
-        cleanStack(evaluation);
-        throw std::domain_error(
-                                "Unable to find the variable '" + key + "'.");
+      if (value) {
+        TokenBase* copy = (*value)->clone();
+        evaluation.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
+        delete base;
+      } else {
+        evaluation.push(base);
       }
-      evaluation.push((*value)->clone());
     } else {
       evaluation.push(base);
     }
   }
 
-  return packToken(evaluation.top());
+  TokenBase* result = evaluation.top();
+  if (result->type & REF) {
+    RefValue_t rvalue = static_cast<Token<RefValue_t>*>(result)->val;
+    delete result;
+    result = rvalue.value;
+  }
+  return packToken(result);
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
@@ -555,8 +613,8 @@ calculator::calculator(const calculator& calc) {
 }
 
 calculator::calculator(const char* expr,
-                       const Scope& scope, OppMap_t opPrecedence) {
-  compile(expr, scope, opPrecedence);
+                       const Scope& vars, OppMap_t opPrecedence) {
+  compile(expr, vars, opPrecedence);
 }
 
 void calculator::compile(const char* expr, OppMap_t opPrecedence) {
@@ -634,11 +692,11 @@ packToken* Scope::find(std::string key) const {
   return value;
 }
 
-void Scope::asign(std::string key, TokenBase* value) const {
+void Scope::assign(std::string key, TokenBase* value) const {
   if (value) {
     value = value->clone();
   } else {
-    throw std::invalid_argument("Scope asignment expected a non NULL argument as value!");
+    throw std::invalid_argument("Scope assignment expected a non NULL argument as value!");
   }
 
   packToken* variable = find(key);
