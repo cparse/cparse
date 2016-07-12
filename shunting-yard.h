@@ -109,8 +109,6 @@ class calculator {
   calculator(const char* expr, const Scope& vars = empty_scope,
              OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-               OppMap_t opPrecedence = _opPrecedence);
-  void compile(const char* expr,
                const Scope& vars = empty_scope,
                OppMap_t opPrecedence = _opPrecedence);
   packToken eval(const Scope& vars = empty_scope);

@@ -617,13 +617,6 @@ calculator::calculator(const char* expr,
   compile(expr, vars, opPrecedence);
 }
 
-void calculator::compile(const char* expr, OppMap_t opPrecedence) {
-  // Make sure it is empty:
-  cleanRPN(&this->RPN);
-
-  this->RPN = calculator::toRPN(expr, NULL, opPrecedence);
-}
-
 void calculator::compile(const char* expr,
                          const Scope& vars, OppMap_t opPrecedence) {
   // Make sure it is empty:
