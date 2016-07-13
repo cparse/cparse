@@ -87,17 +87,26 @@ void calculator::handle_op(const std::string& op,
   operatorStack->push(op);
 }
 
+bool isdelim(char c, const char* delim) {
+  while(*delim && c != *delim) ++delim;
+  return *delim;
+}
+
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               const Scope* vars, OppMap_t opPrecedence) {
+                               const Scope* vars, const char* delim,
+                               const char** rest, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   bool lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
 
+  static char c = '\0';
+  if (!delim) delim = &c;
+
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && isspace(*expr)) ++expr;
-  while (*expr) {
+  while (*expr && isblank(*expr)) ++expr;
+  while (*expr && !isdelim(*expr, delim)) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
       char* nextChar = 0;
@@ -234,7 +243,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           std::stringstream ss;
           ss << *expr;
           ++expr;
-          while (*expr && !isspace(*expr) && !isdigit(*expr)
+          while (*expr && !isblank(*expr) && !isdigit(*expr)
                  && !isvariablechar(*expr) && *expr != '(' && *expr != ')') {
             ss << *expr;
             ++expr;
@@ -253,7 +262,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
       }
     }
-    while (*expr && isspace(*expr)) ++expr;
+    while (*expr && isblank(*expr)) ++expr;
   }
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
@@ -266,12 +275,15 @@ TokenQueue_t calculator::toRPN(const char* expr,
     rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
     operatorStack.pop();
   }
+
+  if (rest) *rest = expr;
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, const Scope& vars) {
+packToken calculator::calculate(const char* expr, const Scope& vars,
+                                const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = calculator::toRPN(expr, &vars);
+  TokenQueue_t rpn = calculator::toRPN(expr, &vars, delim, rest);
   packToken ret;
 
   try {
@@ -612,17 +624,21 @@ calculator::calculator(const calculator& calc) {
   }
 }
 
-calculator::calculator(const char* expr,
-                       const Scope& vars, OppMap_t opPrecedence) {
-  compile(expr, vars, opPrecedence);
+// Work as a sub-parser:
+// - Stops at delim or '\0'
+// - Returns the rest of the string as char* rest
+calculator::calculator(const char* expr, const Scope& vars,
+                            const char* delim, const char** rest, OppMap_t opPrecedence) {
+  compile(expr, vars, delim, rest, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-                         const Scope& vars, OppMap_t opPrecedence) {
+                         const Scope& vars, const char* delim,
+                         const char** rest, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, &vars, opPrecedence);
+  this->RPN = calculator::toRPN(expr, &vars, delim, rest, opPrecedence);
 }
 
 packToken calculator::eval(const Scope& vars) {

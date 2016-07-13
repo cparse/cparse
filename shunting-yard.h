@@ -81,14 +81,15 @@ class calculator {
   static Scope empty_scope;
 
  public:
-  static packToken calculate(const char* expr, const Scope& vars = empty_scope);
+  static packToken calculate(const char* expr, const Scope& vars = empty_scope,
+                             const char* delim=0, const char** rest=0);
 
  private:
   static packToken calculate(TokenQueue_t RPN,
                              const Scope* vars);
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr,
-                            const Scope* vars,
+                            const Scope* vars, const char* delim=0, const char** rest=0,
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& op,
@@ -107,10 +108,11 @@ class calculator {
   calculator() {}
   calculator(const calculator& calc);
   calculator(const char* expr, const Scope& vars = empty_scope,
+             const char* delim=0, const char** rest=0,
              OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-               const Scope& vars = empty_scope,
-               OppMap_t opPrecedence = _opPrecedence);
+               const Scope& vars = empty_scope, const char* delim=0,
+               const char** rest=0, OppMap_t opPrecedence = _opPrecedence);
   packToken eval(const Scope& vars = empty_scope);
 
   // Serialization:

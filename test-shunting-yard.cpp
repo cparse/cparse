@@ -192,6 +192,35 @@ TEST_CASE("Scope management") {
   scope.clean();
 }
 
+// Working as a slave parser implies it will return
+// a pointer to the place it has stopped parsing
+// and accept a list of delimiters that should make it stop.
+TEST_CASE("Parsing as slave parser") {
+  const char* original_code = "a=1; b=2\n c=a+b }";
+  const char* code = original_code;
+  TokenMap_t vars;
+  calculator c1, c2, c3;
+
+  // With static function:
+  REQUIRE_NOTHROW(calculator::calculate(code, &vars, ";}\n", &code));
+  REQUIRE(code == &(original_code[3]));
+  REQUIRE(vars["a"].asDouble() == 1);
+
+  // With constructor:
+  REQUIRE_NOTHROW((c2 = calculator(++code, &vars, ";}\n", &code)));
+  REQUIRE(code == &(original_code[8]));
+
+  // With compile method:
+  REQUIRE_NOTHROW(c3.compile(++code, &vars, ";}\n", &code));
+  REQUIRE(code == &(original_code[16]));
+
+  REQUIRE_NOTHROW(c2.eval(&vars));
+  REQUIRE(vars["b"] == 2);
+
+  REQUIRE_NOTHROW(c3.eval(&vars));
+  REQUIRE(vars["c"] == 3);
+}
+
 TEST_CASE("Resource management") {
   calculator C1, C2("1 + 1");
 
