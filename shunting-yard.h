@@ -116,7 +116,8 @@ class calculator {
   packToken eval(const Scope& vars = empty_scope);
 
   // Serialization:
-  std::string str();
+  std::string str() const;
+  static std::string str(TokenQueue_t rpn);
 
   // Operators:
   calculator& operator = (const calculator& calc);

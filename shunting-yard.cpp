@@ -379,6 +379,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       } else if (!op.compare("=")) {
         delete b_left;
 
+        // If the left operand has a variable name:
         if (r_left.size() > 0) {
           if (vars) {
             if (m_left && b_right->type != NONE) {
@@ -662,9 +663,12 @@ calculator& calculator::operator=(const calculator& calc) {
 
 /* * * * * For Debug Only * * * * */
 
-std::string calculator::str() {
+std::string calculator::str() const {
+  return str(this->RPN);
+}
+
+std::string calculator::str(TokenQueue_t rpn) {
   std::stringstream ss;
-  TokenQueue_t rpn = this->RPN;
 
   ss << "calculator { RPN: [ ";
   while (rpn.size()) {
