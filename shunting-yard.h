@@ -56,6 +56,9 @@ struct RefValue_t {
 
 class Scope {
  public:
+  const static Scope empty;
+
+ public:
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
 
@@ -78,10 +81,9 @@ class calculator {
  private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
-  static Scope empty_scope;
 
  public:
-  static packToken calculate(const char* expr, const Scope& vars = empty_scope,
+  static packToken calculate(const char* expr, const Scope& vars = Scope::empty,
                              const char* delim=0, const char** rest=0);
 
  private:
@@ -107,13 +109,13 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& vars = empty_scope,
+  calculator(const char* expr, const Scope& vars = Scope::empty,
              const char* delim=0, const char** rest=0,
              OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-               const Scope& vars = empty_scope, const char* delim=0,
+               const Scope& vars = Scope::empty, const char* delim=0,
                const char** rest=0, OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& vars = empty_scope);
+  packToken eval(const Scope& vars = Scope::empty);
 
   // Serialization:
   std::string str() const;

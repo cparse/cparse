@@ -35,7 +35,7 @@ OppMap_t calculator::buildOpPrecedence() {
 }
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
-Scope calculator::empty_scope = Scope();
+const Scope Scope::empty = Scope();
 
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
