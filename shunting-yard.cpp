@@ -103,9 +103,14 @@ TokenQueue_t calculator::toRPN(const char* expr,
   static char c = '\0';
   if (!delim) delim = &c;
 
+  while (*expr && isblank(*expr)) ++expr;
+
+  if (*expr == '\0' || isdelim(*expr, delim)) {
+    throw std::invalid_argument("Cannot build a calculator from an empty expression!");
+  }
+
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && isblank(*expr)) ++expr;
   while (*expr && !isdelim(*expr, delim)) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.

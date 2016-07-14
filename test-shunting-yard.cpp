@@ -238,6 +238,9 @@ TEST_CASE("Exception management") {
   ecalc.compile("a+b+del", &emap);
   emap["del"] = 30;
 
+  REQUIRE_THROWS(calculator(""));
+  REQUIRE_THROWS(calculator("      "));
+
   REQUIRE_THROWS(ecalc.eval());
   REQUIRE_NOTHROW(ecalc.eval(&emap));
 
