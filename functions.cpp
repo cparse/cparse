@@ -2,7 +2,9 @@
 #include <cmath>
 #include <string>
 #include <stdexcept>
+
 #include "./shunting-yard.h"
+#include "./functions.h"
 
 TokenMap_t Function::default_functions = Function::initialize_functions();
 

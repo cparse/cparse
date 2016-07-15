@@ -11,6 +11,7 @@
 #include <string>
 #include <stack>
 #include <utility>  // For std::pair
+#include <cstring>  // For strchr()
 
 OppMap_t calculator::buildOpPrecedence() {
   OppMap_t opp;
@@ -87,11 +88,6 @@ void calculator::handle_op(const std::string& op,
   operatorStack->push(op);
 }
 
-bool isdelim(char c, const char* delim) {
-  while(*delim && c != *delim) ++delim;
-  return *delim;
-}
-
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                const Scope* vars, const char* delim,
@@ -105,13 +101,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   while (*expr && isblank(*expr)) ++expr;
 
-  if (*expr == '\0' || isdelim(*expr, delim)) {
+  if (*expr == '\0' || strchr(delim, *expr)) {
     throw std::invalid_argument("Cannot build a calculator from an empty expression!");
   }
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && !isdelim(*expr, delim)) {
+  while (*expr && !strchr(delim, *expr)) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
       char* nextChar = 0;

@@ -1,7 +1,9 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+
 #include "./shunting-yard.h"
+#include "./packToken.h"
 #include "./shunting-yard-exceptions.h"
 
 const packToken packToken::None = packToken(TokenNone());
