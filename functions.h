@@ -8,8 +8,10 @@
 class Function : public TokenBase {
   static TokenMap_t initialize_functions();
 
- public:
-  static TokenMap_t default_functions;
+ private:
+  // Used only to initialize
+  // default functions on program startup.
+  struct Startup;
 
  public:
   packToken (*func)(const Scope*);

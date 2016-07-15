@@ -37,6 +37,7 @@ OppMap_t calculator::buildOpPrecedence() {
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 const Scope Scope::empty = Scope();
+TokenMap_t Scope::default_global = TokenMap_t();
 
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
@@ -686,7 +687,7 @@ std::string calculator::str(TokenQueue_t rpn) {
 
 Scope::Scope(TokenMap_t* vars) {
   // Add default functions to the global namespace:
-  scope.push_front(&Function::default_functions);
+  scope.push_front(&default_global);
 
   if (vars) scope.push_front(vars);
 }

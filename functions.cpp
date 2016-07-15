@@ -6,8 +6,6 @@
 #include "./shunting-yard.h"
 #include "./functions.h"
 
-TokenMap_t Function::default_functions = Function::initialize_functions();
-
 /* * * * * Built-in Functions: * * * * */
 
 const char* text_arg[] = {"text"};
@@ -61,20 +59,21 @@ packToken default_pow(const Scope* scope) {
   return pow(number, exp);
 }
 
-/* * * * * Initializer Function: * * * * */
+/* * * * * Function Initializer Constructor: * * * * */
 
-TokenMap_t Function::initialize_functions() {
-  TokenMap_t funcs;
+struct Function::Startup {
+  Startup() {
+    TokenMap_t& global = Scope::default_global;
 
-  funcs["print"] = Function(&default_print, 1, text_arg);
-  funcs["sqrt"] = Function(&default_sqrt, 1, num_arg);
-  funcs["sin"] = Function(&default_sin, 1, num_arg);
-  funcs["cos"] = Function(&default_cos, 1, num_arg);
-  funcs["tan"] = Function(&default_tan, 1, num_arg);
-  funcs["abs"] = Function(&default_abs, 1, num_arg);
-  funcs["pow"] = Function(&default_pow, 2, pow_args);
-  return funcs;
-}
+    global["print"] = Function(&default_print, 1, text_arg);
+    global["sqrt"] = Function(&default_sqrt, 1, num_arg);
+    global["sin"] = Function(&default_sin, 1, num_arg);
+    global["cos"] = Function(&default_cos, 1, num_arg);
+    global["tan"] = Function(&default_tan, 1, num_arg);
+    global["abs"] = Function(&default_abs, 1, num_arg);
+    global["pow"] = Function(&default_pow, 2, pow_args);
+  }
+} startup;
 
 /* * * * * Tuple Functions: * * * * */
 
