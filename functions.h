@@ -14,9 +14,9 @@ class Function : public TokenBase {
  public:
   packToken (*func)(const Scope*);
   unsigned nargs;
-  std::string* arg_names;
+  const char** arg_names;
 
-  Function(packToken (*func)(const Scope*), unsigned nargs, std::string* arg_names)
+  Function(packToken (*func)(const Scope*), unsigned nargs, const char** arg_names)
            : func(func), nargs(nargs), arg_names(arg_names) { this->type = FUNC; }
 
   virtual TokenBase* clone() const {

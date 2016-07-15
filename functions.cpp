@@ -8,7 +8,7 @@ TokenMap_t Function::default_functions = Function::initialize_functions();
 
 /* * * * * Built-in Functions: * * * * */
 
-std::string text_arg[] = {"text"};
+const char* text_arg[] = {"text"};
 packToken default_print(const Scope* scope) {
   // Get a single argument:
   std::string text = scope->find("text")->asString();
@@ -17,7 +17,7 @@ packToken default_print(const Scope* scope) {
   return packToken::None;
 }
 
-std::string num_arg[] = {"number"};
+const char* num_arg[] = {"number"};
 packToken default_sqrt(const Scope* scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
@@ -50,7 +50,7 @@ packToken default_abs(const Scope* scope) {
 }
 
 
-std::string pow_args[] = {"number", "exp"};
+const char* pow_args[] = {"number", "exp"};
 packToken default_pow(const Scope* scope) {
   // Get two arguments:
   double number = scope->find("number")->asDouble();
