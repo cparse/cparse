@@ -63,7 +63,7 @@ packToken default_pow(const Scope* scope) {
 
 struct Function::Startup {
   Startup() {
-    TokenMap_t& global = Scope::default_global;
+    TokenMap_t& global = Scope::default_global();
 
     global["print"] = Function(&default_print, 1, text_arg);
     global["sqrt"] = Function(&default_sqrt, 1, num_arg);

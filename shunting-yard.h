@@ -63,7 +63,7 @@ struct RefToken : public TokenBase {
 class Scope {
  public:
   static const Scope empty;
-  static TokenMap_t default_global;
+  static TokenMap_t& default_global();
 
  public:
   typedef std::list<TokenMap_t*> Scope_t;
