@@ -118,8 +118,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
                                const Scope* vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
-  bool lastTokenWasOp = true;
+  uint8_t lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
+  char* nextChar;
 
   static char c = '\0';
   if (!delim) delim = &c;
@@ -135,26 +136,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
   while (*expr && !strchr(delim, *expr)) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
-      char* nextChar = 0;
-      double digit = strtod(expr , &nextChar);
+      double digit = strtod(expr, &nextChar);
       rpnQueue.push(new Token<double>(digit, NUM));
       expr = nextChar;
       lastTokenWasOp = false;
       lastTokenWasUnary = false;
-    } else if (isvariablechar(*expr) && lastTokenWasOp
-               && operatorStack.size() > 0 && !operatorStack.top().compare(".")) {
-      // If it is a member access key (e.g. `map.name`)
-      // parse it and add to the output queue.
-      std::stringstream ss;
-      while (isvariablechar(*expr) || isdigit(*expr)) {
-        ss << *expr;
-        ++expr;
-      }
-
-      rpnQueue.push(new Token<std::string>(ss.str(), STR));
-      lastTokenWasOp = false;
     } else if (isvariablechar(*expr)) {
-      // If the function is a variable, resolve it and
+      // If the token is a variable, resolve it and
       // add the parsed number to the output queue.
       std::stringstream ss;
       ss << *expr;
@@ -164,25 +152,28 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
       }
 
-      packToken* value = NULL;
-
-      std::string key = ss.str();
-
-      if (key == "true") {
-        value = &trueToken;
-      } else if (key == "false") {
-        value = &falseToken;
+      if (lastTokenWasOp == '.') {
+        rpnQueue.push(new Token<std::string>(ss.str(), STR));
       } else {
-        if (vars) value = vars->find(key);
-      }
+        packToken* value = NULL;
+        std::string key = ss.str();
 
-      if (value) {
-        // Save a reference token:
-        TokenBase* copy = (*value)->clone();
-        rpnQueue.push(new RefToken(key, copy, copy->type | REF));
-      } else {
-        // Save the variable name:
-        rpnQueue.push(new Token<std::string>(key, VAR));
+        if (key == "true") {
+          value = &trueToken;
+        } else if (key == "false") {
+          value = &falseToken;
+        } else {
+          if (vars) value = vars->find(key);
+        }
+
+        if (value) {
+          // Save a reference token:
+          TokenBase* copy = (*value)->clone();
+          rpnQueue.push(new RefToken(key, copy, copy->type | REF));
+        } else {
+          // Save the variable name:
+          rpnQueue.push(new Token<std::string>(key, VAR));
+        }
       }
 
       lastTokenWasOp = false;
@@ -269,8 +260,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           std::stringstream ss;
           ss << *expr;
           ++expr;
-          while (*expr && !isblank(*expr) && !isdigit(*expr)
-                 && !isvariablechar(*expr) && *expr != '(' && *expr != ')') {
+          while (*expr && ispunct(*expr) && !strchr("()_", *expr)) {
             ss << *expr;
             ++expr;
           }
@@ -284,7 +274,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
           handle_op(op, &rpnQueue, &operatorStack, opPrecedence);
 
-          lastTokenWasOp = true;
+          lastTokenWasOp = op[0];
         }
       }
     }

@@ -9,6 +9,7 @@ void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
   vars["b1"] = 0.0;
   vars["b2"] = 0.86;
+  vars["_b"] = 0;
   vars["str1"] = "foo";
   vars["str2"] = "bar";
   vars["str3"] = "foobar";
@@ -33,6 +34,7 @@ TEST_CASE("Static calculate::calculate()") {
   REQUIRE(calculator::calculate("(20+10)*3/2-3", &vars).asDouble() == Approx(42.0));
   REQUIRE(calculator::calculate("1 << 4", &vars).asDouble() == Approx(16.0));
   REQUIRE(calculator::calculate("1+(-2*3)", &vars).asDouble() == Approx(-5));
+  REQUIRE(calculator::calculate("1+_b+(-2*3)", &vars).asDouble() == Approx(-5));
 }
 
 TEST_CASE("calculate::compile() and calculate::eval()") {
