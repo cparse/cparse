@@ -59,6 +59,8 @@ int main() {
  + Binary operators. +, -, /, *, %, <<, >>, ^
  + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
  + Map of variable names.
+ + Functions. sin, cos, tan, abs, print
+ + Easy to add new operators, functions and even new types.
 
 # Adding a binary operator.
 To add a binary operator,
