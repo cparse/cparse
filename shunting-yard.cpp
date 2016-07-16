@@ -89,6 +89,20 @@ void calculator::handle_op(const std::string& op,
   operatorStack->push(op);
 }
 
+// Use this function to discard a reference to an object
+// And obtain the original TokenBase*.
+// Please note that it only deletes memory if the token
+// is of type REF.
+TokenBase* pop_reference(TokenBase* b) {
+  if (b->type & REF) {
+    TokenBase* ref = static_cast<RefToken*>(b)->value;
+    delete b;
+    return ref;
+  } else {
+    return b;
+  }
+}
+
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                const Scope* vars, const char* delim,
@@ -155,7 +169,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       if (value) {
         // Save a reference token:
         TokenBase* copy = (*value)->clone();
-        rpnQueue.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
+        rpnQueue.push(new RefToken(key, copy, copy->type | REF));
       } else {
         // Save the variable name:
         rpnQueue.push(new Token<std::string>(key, VAR));
@@ -340,27 +354,25 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       TokenBase* b_right = evaluation.top(); evaluation.pop();
       TokenBase* b_left  = evaluation.top(); evaluation.pop();
 
-      if (b_right->type & REF) {
-        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_right)->val;
-        delete b_right;
-        b_right = rvalue.value->clone();
-      } else if (b_right->type == VAR) {
+      if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
         delete b_left;
         cleanRPN(&rpn);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
+      } else {
+        b_right = pop_reference(b_right);
       }
 
       std::string r_left;
       TokenMap_t* m_left = NULL;
       if (b_left->type & REF) {
-        RefValue_t rvalue = static_cast<Token<RefValue_t>*>(b_left)->val;
-        delete b_left;
-        r_left = rvalue.name;
-        b_left = rvalue.value->clone();
-        m_left = rvalue.source_map;
+        RefToken* left = static_cast<RefToken*>(b_left);
+        r_left = left->name;
+        m_left = left->source_map;
+        b_left = left->value;
+        delete left;
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
@@ -516,7 +528,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
             type = value->type | REF;
           }
 
-          evaluation.push(new Token<RefValue_t>({right, value, left}, type));
+          evaluation.push(new RefToken(right, value, left, type));
         } else {
           cleanRPN(&rpn);
           cleanStack(evaluation);
@@ -583,7 +595,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
       if (value) {
         TokenBase* copy = (*value)->clone();
-        evaluation.push(new Token<RefValue_t>({key, copy}, copy->type | REF));
+        evaluation.push(new RefToken(key, copy, copy->type | REF));
         delete base;
       } else {
         evaluation.push(base);
@@ -593,18 +605,12 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     }
   }
 
-  TokenBase* result = evaluation.top();
-  if (result->type & REF) {
-    RefValue_t rvalue = static_cast<Token<RefValue_t>*>(result)->val;
-    delete result;
-    result = rvalue.value;
-  }
-  return packToken(result);
+  return packToken(pop_reference(evaluation.top()));
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
   while (rpn->size()) {
-    delete rpn->front();
+    delete pop_reference(rpn->front());
     rpn->pop();
   }
 }

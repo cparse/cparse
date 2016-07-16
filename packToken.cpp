@@ -149,7 +149,7 @@ std::string packToken::str(const TokenBase* base) {
   if (!base) return "undefined";
 
   if (base->type & REF) {
-    base = static_cast<const Token<RefValue_t>*>(base)->val.value;
+    base = static_cast<const RefToken*>(base)->value;
   }
 
   switch (base->type) {

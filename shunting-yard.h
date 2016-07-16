@@ -38,14 +38,20 @@ typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
-struct RefValue_t {
+struct RefToken : public TokenBase {
   std::string name;
   TokenBase* value;
   TokenMap_t* source_map;
-  RefValue_t(std::string n, TokenBase* v, TokenMap_t* m) :
-    name(n), value(v), source_map(m) {}
-  RefValue_t(std::string n, TokenBase* v) :
-    name(n), value(v), source_map(0) {}
+  RefToken(std::string n, TokenBase* v, TokenMap_t* m, uint8_t type) :
+    name(n), value(v), source_map(m) { this->type = type; }
+  RefToken(std::string n, TokenBase* v, uint8_t type) :
+    name(n), value(v), source_map(0) { this->type = type; }
+
+  virtual TokenBase* clone() const {
+    RefToken* copy = new RefToken(static_cast<const RefToken&>(*this));
+    copy->value = value->clone();
+    return copy;
+  }
 };
 
 #include "./packToken.h"
