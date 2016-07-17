@@ -13,4 +13,6 @@ again: clean all
 
 test: $(EXE); ./$(EXE)
 
+check: $(EXE); valgrind --leak-check=full ./$(EXE)
+
 clean: ; rm -f $(EXE) $(OBJ)
