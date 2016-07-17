@@ -72,7 +72,19 @@ TEST_CASE("String expressions") {
 
   REQUIRE(calculator::calculate("'foo' + \"bar\" == str3", &vars).asBool());
   REQUIRE(calculator::calculate("'foo' + \"bar\" != 'foobar\"'", &vars).asBool());
-  REQUIRE(calculator::calculate("'foo' + \"bar\\\"\" == 'foobar\"'", &vars).asBool());
+
+  // Test escaping characters:
+  REQUIRE(calculator::calculate("'foo\\'bar'").asString() == "foo'bar");
+  REQUIRE(calculator::calculate("\"foo\\\"bar\"").asString() == "foo\"bar");
+
+  // Special meaning escaped characters:
+  REQUIRE(calculator::calculate("'foo\\bar'").asString() == "foo\\bar");
+  REQUIRE(calculator::calculate("'foo\\nar'").asString() == "foo\nar");
+  REQUIRE(calculator::calculate("'foo\\tar'").asString() == "foo\tar");
+
+  // Scaping linefeed:
+  REQUIRE_THROWS(calculator::calculate("'foo\nar'"));
+  REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
 TEST_CASE("Map access expressions") {

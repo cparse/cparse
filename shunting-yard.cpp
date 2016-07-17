@@ -186,7 +186,21 @@ TokenQueue_t calculator::toRPN(const char* expr,
       ++expr;
       std::stringstream ss;
       while (*expr && *expr != quote && *expr != '\n') {
-        if (*expr == '\\') ++expr;
+        if (*expr == '\\') {
+          switch (expr[1]) {
+          case 'n':
+            expr+=2;
+            ss << '\n';
+            break;
+          case 't':
+            expr+=2;
+            ss << '\t';
+            break;
+          default:
+            if (strchr("\"'\n", expr[1])) ++expr;
+          }
+        }
+
         ss << *expr;
         ++expr;
       }
