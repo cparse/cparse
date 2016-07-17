@@ -113,6 +113,28 @@ TokenBase* pop_reference(TokenBase* b) {
   }
 }
 
+/* * * * * RAII_TokenQueue_t struct  * * * * */
+
+// Used to make sure an rpn is dealloc'd correctly
+// even when an exception is thrown.
+//
+// Note: This is needed because C++ does not
+// allow a try-finally block.
+struct calculator::RAII_TokenQueue_t : TokenQueue_t {
+  RAII_TokenQueue_t() {}
+  RAII_TokenQueue_t(const TokenQueue_t& rpn) : TokenQueue_t(rpn) {}
+  ~RAII_TokenQueue_t() { cleanRPN(this); }
+
+  RAII_TokenQueue_t(const RAII_TokenQueue_t& rpn) {
+    throw std::runtime_error("You should not copy this class!");
+  }
+  RAII_TokenQueue_t& operator=(const RAII_TokenQueue_t& rpn) {
+    throw std::runtime_error("You should not copy this class!");
+  }
+};
+
+/* * * * * calculator class * * * * */
+
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                const Scope* vars, const char* delim,
@@ -315,20 +337,11 @@ TokenQueue_t calculator::toRPN(const char* expr,
 packToken calculator::calculate(const char* expr, const Scope& vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  TokenQueue_t rpn = calculator::toRPN(expr, &vars, delim, rest);
+  RAII_TokenQueue_t rpn = calculator::toRPN(expr, &vars, delim, rest);
   packToken ret;
 
-  try {
-    ret = calculator::calculate(rpn, &vars);
-  } catch (undefined_operation e) {
-    cleanRPN(&rpn);
-    throw e;
-  } catch (std::domain_error e) {
-    cleanRPN(&rpn);
-    throw e;
-  }
+  ret = calculator::calculate(rpn, &vars);
 
-  cleanRPN(&rpn);
   return ret;
 }
 
@@ -341,7 +354,7 @@ void cleanStack(std::stack<TokenBase*> st) {
 
 packToken calculator::calculate(TokenQueue_t _rpn,
                                 const Scope* vars) {
-  TokenQueue_t rpn;
+  RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
   // safely deallocated:
@@ -363,7 +376,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       delete base;
 
       if (evaluation.size() < 2) {
-        cleanRPN(&rpn);
         cleanStack(evaluation);
         throw std::domain_error("Invalid equation.");
       }
@@ -374,7 +386,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
         delete b_left;
-        cleanRPN(&rpn);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
@@ -420,7 +431,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
             evaluation.push(b_right);
           } else {
             delete b_right;
-            cleanRPN(&rpn);
             cleanStack(evaluation);
             throw std::domain_error("No Scope available for assignment of variable `" + r_left + "`.");
           }
@@ -428,7 +438,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           packToken p_right(b_right->clone());
           delete b_right;
 
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, r_left, p_right);
         }
@@ -474,7 +483,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         } else if (!op.compare("||")) {
           evaluation.push(new Token<double>(left_i || right_i, NUM));
         } else {
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
@@ -491,7 +499,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         } else if (!op.compare("!=")) {
           evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
         } else {
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
@@ -506,7 +513,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
@@ -521,7 +527,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
         } else {
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
@@ -546,7 +551,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
           evaluation.push(new RefToken(right, value, left, type));
         } else {
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
@@ -589,7 +593,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           packToken p_right(b_right->clone());
           delete b_right;
 
-          cleanRPN(&rpn);
           cleanStack(evaluation);
           throw undefined_operation(op, left, p_right);
         }
@@ -599,7 +602,6 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
         delete b_right;
 
-        cleanRPN(&rpn);
         cleanStack(evaluation);
         throw undefined_operation(op, p_left, p_right);
       }

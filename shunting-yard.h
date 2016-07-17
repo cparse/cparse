@@ -109,6 +109,9 @@ class calculator {
                         std::stack<std::string>* operatorStack,
                         OppMap_t opPrecedence);
 
+  // Used to dealloc a TokenQueue_t safely.
+  struct RAII_TokenQueue_t;
+
  private:
   TokenQueue_t RPN;
 
