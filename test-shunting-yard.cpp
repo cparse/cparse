@@ -81,6 +81,8 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\bar'").asString() == "foo\\bar");
   REQUIRE(calculator::calculate("'foo\\nar'").asString() == "foo\nar");
   REQUIRE(calculator::calculate("'foo\\tar'").asString() == "foo\tar");
+  REQUIRE_NOTHROW(calculator::calculate("'foo\\t'"));
+  REQUIRE(calculator::calculate("'foo\\t'").asString() == "foo\t");
 
   // Scaping linefeed:
   REQUIRE_THROWS(calculator::calculate("'foo\nar'"));

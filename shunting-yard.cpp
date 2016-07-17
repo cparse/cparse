@@ -198,11 +198,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
             break;
           default:
             if (strchr("\"'\n", expr[1])) ++expr;
+            ss << *expr;
+            ++expr;
           }
+        } else {
+          ss << *expr;
+          ++expr;
         }
-
-        ss << *expr;
-        ++expr;
       }
 
       if (*expr != quote) {
