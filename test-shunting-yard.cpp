@@ -127,6 +127,9 @@ TEST_CASE("Function usage expressions") {
   REQUIRE_THROWS(calculator::calculate("foo,(10)"));
 
   REQUIRE_NOTHROW(calculator::calculate("print()"));
+
+  REQUIRE(Scope::default_global()["abs"].str() == "[Function]");
+  REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
 }
 
 TEST_CASE("Assignment expressions") {

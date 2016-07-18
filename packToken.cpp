@@ -145,11 +145,14 @@ std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
   TokenMap_t* tmap;
   TokenMap_t::iterator it;
+  bool first;
+  std::string name;
 
   if (!base) return "undefined";
 
   if (base->type & REF) {
     base = static_cast<const RefToken*>(base)->value;
+    name = static_cast<const RefToken*>(base)->name;
   }
 
   switch (base->type) {
@@ -164,6 +167,22 @@ std::string packToken::str(const TokenBase* base) {
       return ss.str();
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
+    case FUNC:
+      if (name.size()) return "[Function: " + name + "]";
+      return "[Function]";
+    case TUPLE:
+      ss << "(";
+      first = true;
+      for (const TokenBase* token : static_cast<const Tuple*>(base)->tuple) {
+        if (!first) {
+          ss << ", ";
+        } else {
+          first = false;
+        }
+        ss << str(token);
+      }
+      ss << ")";
+      return ss.str();
     case MAP:
       tmap = static_cast<const Token<TokenMap_t*>*>(base)->val;
       if (tmap->size() == 0) return "{}";
