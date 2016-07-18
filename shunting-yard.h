@@ -102,8 +102,7 @@ class calculator {
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& op,
-                           TokenQueue_t* rpnQueue, bool lastTokenWasOp,
-                           OppMap_t opPrecedence);
+                           TokenQueue_t* rpnQueue, bool lastTokenWasOp);
   static void handle_op(const std::string& op,
                         TokenQueue_t* rpnQueue,
                         std::stack<std::string>* operatorStack,

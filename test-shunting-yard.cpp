@@ -126,8 +126,7 @@ TEST_CASE("Function usage expressions") {
   REQUIRE_THROWS(calculator::calculate("foo(10),"));
   REQUIRE_THROWS(calculator::calculate("foo,(10)"));
 
-  // The test bellow will fail, TODO fix it:
-  // REQUIRE_NOTHROW(calculator::calculate("print()"));
+  REQUIRE_NOTHROW(calculator::calculate("print()"));
 }
 
 TEST_CASE("Assignment expressions") {

@@ -54,8 +54,7 @@ packToken falseToken = packToken(0);
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
-                              TokenQueue_t* rpnQueue, bool lastTokenWasOp,
-                              OppMap_t opPrecedence) {
+                              TokenQueue_t* rpnQueue, bool lastTokenWasOp) {
   if (lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
     if (!op.compare("-") || !op.compare("+")) {
@@ -259,26 +258,27 @@ TokenQueue_t calculator::toRPN(const char* expr,
         lastOp = operatorStack.size() ? operatorStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          lastTokenWasUnary = handle_unary("()", &rpnQueue,
-                                           lastTokenWasOp, opPrecedence);
+          lastTokenWasUnary = handle_unary("()", &rpnQueue, lastTokenWasOp);
           handle_op("()", &rpnQueue, &operatorStack, opPrecedence);
           // Add it as a bracket to the op stack:
         }
         operatorStack.push("(");
+        lastTokenWasOp = '(';
         ++expr;
-        lastTokenWasOp = true;
         break;
       case '[':
         // This counts as a bracket and as an operator:
-        lastTokenWasUnary = handle_unary("[]", &rpnQueue,
-                                         lastTokenWasOp, opPrecedence);
+        lastTokenWasUnary = handle_unary("[]", &rpnQueue, lastTokenWasOp);
         handle_op("[]", &rpnQueue, &operatorStack, opPrecedence);
         // Add it as a bracket to the op stack:
         operatorStack.push("[");
-        ++expr;
         lastTokenWasOp = true;
+        ++expr;
         break;
       case ')':
+        if (lastTokenWasOp == '(') {
+          rpnQueue.push(new TokenNone());
+        }
         while (operatorStack.top().compare("(")) {
           rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
           operatorStack.pop();
@@ -309,8 +309,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
           ss >> op;
 
-          lastTokenWasUnary = handle_unary(op, &rpnQueue,
-                                           lastTokenWasOp, opPrecedence);
+          lastTokenWasUnary = handle_unary(op, &rpnQueue, lastTokenWasOp);
 
           handle_op(op, &rpnQueue, &operatorStack, opPrecedence);
 

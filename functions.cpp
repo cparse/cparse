@@ -11,8 +11,13 @@
 const char* text_arg[] = {"text"};
 packToken default_print(const Scope* scope) {
   // Get a single argument:
-  std::string text = scope->find("text")->asString();
-  printf("%s\n", text.c_str());
+  packToken* p = scope->find("text");
+  if ((*p)->type == STR) {
+    std::string text = p->asString();
+    printf("%s\n", text.c_str());
+  } else {
+    printf("\n");
+  }
 
   return packToken::None;
 }
