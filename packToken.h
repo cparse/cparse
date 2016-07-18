@@ -46,7 +46,7 @@ class packToken {
   TokenMap_t* asMap() const;
 
   std::string str() const;
-  static std::string str(TokenBase* t);
+  static std::string str(const TokenBase* t);
 
  private:
   // Note:

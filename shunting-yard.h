@@ -38,14 +38,20 @@ typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
-struct RefValue_t {
+struct RefToken : public TokenBase {
   std::string name;
   TokenBase* value;
   TokenMap_t* source_map;
-  RefValue_t(std::string n, TokenBase* v, TokenMap_t* m) :
-    name(n), value(v), source_map(m) {}
-  RefValue_t(std::string n, TokenBase* v) :
-    name(n), value(v), source_map(0) {}
+  RefToken(std::string n, TokenBase* v, TokenMap_t* m, uint8_t type) :
+    name(n), value(v), source_map(m) { this->type = type; }
+  RefToken(std::string n, TokenBase* v, uint8_t type) :
+    name(n), value(v), source_map(0) { this->type = type; }
+
+  virtual TokenBase* clone() const {
+    RefToken* copy = new RefToken(static_cast<const RefToken&>(*this));
+    copy->value = value->clone();
+    return copy;
+  }
 };
 
 #include "./packToken.h"
@@ -55,6 +61,10 @@ struct RefValue_t {
 #include "./functions.h"
 
 class Scope {
+ public:
+  static const Scope empty;
+  static TokenMap_t& default_global();
+
  public:
   typedef std::list<TokenMap_t*> Scope_t;
   mutable Scope_t scope;
@@ -78,26 +88,28 @@ class calculator {
  private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
-  static Scope empty_scope;
 
  public:
-  static packToken calculate(const char* expr, const Scope& vars = empty_scope);
+  static packToken calculate(const char* expr, const Scope& vars = Scope::empty,
+                             const char* delim = 0, const char** rest = 0);
 
  private:
   static packToken calculate(TokenQueue_t RPN,
                              const Scope* vars);
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr,
-                            const Scope* vars,
+                            const Scope* vars, const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& op,
-                           TokenQueue_t* rpnQueue, bool lastTokenWasOp,
-                           OppMap_t opPrecedence);
+                           TokenQueue_t* rpnQueue, bool lastTokenWasOp);
   static void handle_op(const std::string& op,
                         TokenQueue_t* rpnQueue,
                         std::stack<std::string>* operatorStack,
                         OppMap_t opPrecedence);
+
+  // Used to dealloc a TokenQueue_t safely.
+  struct RAII_TokenQueue_t;
 
  private:
   TokenQueue_t RPN;
@@ -106,17 +118,17 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& vars = empty_scope,
+  calculator(const char* expr, const Scope& vars = Scope::empty,
+             const char* delim = 0, const char** rest = 0,
              OppMap_t opPrecedence = _opPrecedence);
   void compile(const char* expr,
-               OppMap_t opPrecedence = _opPrecedence);
-  void compile(const char* expr,
-               const Scope& vars = empty_scope,
-               OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& vars = empty_scope);
+               const Scope& vars = Scope::empty, const char* delim = 0,
+               const char** rest = 0, OppMap_t opPrecedence = _opPrecedence);
+  packToken eval(const Scope& vars = Scope::empty);
 
   // Serialization:
-  std::string str();
+  std::string str() const;
+  static std::string str(TokenQueue_t rpn);
 
   // Operators:
   calculator& operator = (const calculator& calc);

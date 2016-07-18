@@ -1,7 +1,9 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+
 #include "./shunting-yard.h"
+#include "./packToken.h"
 #include "./shunting-yard-exceptions.h"
 
 const packToken packToken::None = packToken(TokenNone());
@@ -139,31 +141,50 @@ TokenMap_t* packToken::asMap() const {
 std::string packToken::str() const {
   return packToken::str(base);
 }
-std::string packToken::str(TokenBase* base) {
+std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
   TokenMap_t* tmap;
   TokenMap_t::iterator it;
+  bool first;
+  std::string name;
 
   if (!base) return "undefined";
 
   if (base->type & REF) {
-    base = static_cast<Token<RefValue_t>*>(base)->val.value;
+    base = static_cast<const RefToken*>(base)->value;
+    name = static_cast<const RefToken*>(base)->name;
   }
 
   switch (base->type) {
     case NONE:
       return "None";
     case OP:
-      return static_cast<Token<std::string>*>(base)->val;
+      return static_cast<const Token<std::string>*>(base)->val;
     case VAR:
-      return static_cast<Token<std::string>*>(base)->val;
+      return static_cast<const Token<std::string>*>(base)->val;
     case NUM:
-      ss << static_cast<Token<double>*>(base)->val;
+      ss << static_cast<const Token<double>*>(base)->val;
       return ss.str();
     case STR:
-      return "\"" + static_cast<Token<std::string>*>(base)->val + "\"";
+      return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
+    case FUNC:
+      if (name.size()) return "[Function: " + name + "]";
+      return "[Function]";
+    case TUPLE:
+      ss << "(";
+      first = true;
+      for (const TokenBase* token : static_cast<const Tuple*>(base)->tuple) {
+        if (!first) {
+          ss << ", ";
+        } else {
+          first = false;
+        }
+        ss << str(token);
+      }
+      ss << ")";
+      return ss.str();
     case MAP:
-      tmap = static_cast<Token<TokenMap_t*>*>(base)->val;
+      tmap = static_cast<const Token<TokenMap_t*>*>(base)->val;
       if (tmap->size() == 0) return "{}";
       ss << "{";
       for (it = tmap->begin(); it != tmap->end(); ++it) {

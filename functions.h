@@ -8,15 +8,17 @@
 class Function : public TokenBase {
   static TokenMap_t initialize_functions();
 
- public:
-  static TokenMap_t default_functions;
+ private:
+  // Used only to initialize
+  // default functions on program startup.
+  struct Startup;
 
  public:
   packToken (*func)(const Scope*);
   unsigned nargs;
-  std::string* arg_names;
+  const char** arg_names;
 
-  Function(packToken (*func)(const Scope*), unsigned nargs, std::string* arg_names)
+  Function(packToken (*func)(const Scope*), unsigned nargs, const char** arg_names)
            : func(func), nargs(nargs), arg_names(arg_names) { this->type = FUNC; }
 
   virtual TokenBase* clone() const {

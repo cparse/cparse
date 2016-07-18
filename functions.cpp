@@ -2,22 +2,27 @@
 #include <cmath>
 #include <string>
 #include <stdexcept>
-#include "./shunting-yard.h"
 
-TokenMap_t Function::default_functions = Function::initialize_functions();
+#include "./shunting-yard.h"
+#include "./functions.h"
 
 /* * * * * Built-in Functions: * * * * */
 
-std::string text_arg[] = {"text"};
+const char* text_arg[] = {"text"};
 packToken default_print(const Scope* scope) {
   // Get a single argument:
-  std::string text = scope->find("text")->asString();
-  printf("%s\n", text.c_str());
+  packToken* p = scope->find("text");
+  if ((*p)->type == STR) {
+    std::string text = p->asString();
+    printf("%s\n", text.c_str());
+  } else {
+    printf("\n");
+  }
 
   return packToken::None;
 }
 
-std::string num_arg[] = {"number"};
+const char* num_arg[] = {"number"};
 packToken default_sqrt(const Scope* scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
@@ -50,7 +55,7 @@ packToken default_abs(const Scope* scope) {
 }
 
 
-std::string pow_args[] = {"number", "exp"};
+const char* pow_args[] = {"number", "exp"};
 packToken default_pow(const Scope* scope) {
   // Get two arguments:
   double number = scope->find("number")->asDouble();
@@ -59,20 +64,21 @@ packToken default_pow(const Scope* scope) {
   return pow(number, exp);
 }
 
-/* * * * * Initializer Function: * * * * */
+/* * * * * Function Initializer Constructor: * * * * */
 
-TokenMap_t Function::initialize_functions() {
-  TokenMap_t funcs;
+struct Function::Startup {
+  Startup() {
+    TokenMap_t& global = Scope::default_global();
 
-  funcs["print"] = Function(&default_print, 1, text_arg);
-  funcs["sqrt"] = Function(&default_sqrt, 1, num_arg);
-  funcs["sin"] = Function(&default_sin, 1, num_arg);
-  funcs["cos"] = Function(&default_cos, 1, num_arg);
-  funcs["tan"] = Function(&default_tan, 1, num_arg);
-  funcs["abs"] = Function(&default_abs, 1, num_arg);
-  funcs["pow"] = Function(&default_pow, 2, pow_args);
-  return funcs;
-}
+    global["print"] = Function(&default_print, 1, text_arg);
+    global["sqrt"] = Function(&default_sqrt, 1, num_arg);
+    global["sin"] = Function(&default_sin, 1, num_arg);
+    global["cos"] = Function(&default_cos, 1, num_arg);
+    global["tan"] = Function(&default_tan, 1, num_arg);
+    global["abs"] = Function(&default_abs, 1, num_arg);
+    global["pow"] = Function(&default_pow, 2, pow_args);
+  }
+} startup;
 
 /* * * * * Tuple Functions: * * * * */
 

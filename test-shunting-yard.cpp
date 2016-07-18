@@ -9,6 +9,7 @@ void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
   vars["b1"] = 0.0;
   vars["b2"] = 0.86;
+  vars["_b"] = 0;
   vars["str1"] = "foo";
   vars["str2"] = "bar";
   vars["str3"] = "foobar";
@@ -33,6 +34,7 @@ TEST_CASE("Static calculate::calculate()") {
   REQUIRE(calculator::calculate("(20+10)*3/2-3", &vars).asDouble() == Approx(42.0));
   REQUIRE(calculator::calculate("1 << 4", &vars).asDouble() == Approx(16.0));
   REQUIRE(calculator::calculate("1+(-2*3)", &vars).asDouble() == Approx(-5));
+  REQUIRE(calculator::calculate("1+_b+(-2*3)", &vars).asDouble() == Approx(-5));
 }
 
 TEST_CASE("calculate::compile() and calculate::eval()") {
@@ -70,7 +72,21 @@ TEST_CASE("String expressions") {
 
   REQUIRE(calculator::calculate("'foo' + \"bar\" == str3", &vars).asBool());
   REQUIRE(calculator::calculate("'foo' + \"bar\" != 'foobar\"'", &vars).asBool());
-  REQUIRE(calculator::calculate("'foo' + \"bar\\\"\" == 'foobar\"'", &vars).asBool());
+
+  // Test escaping characters:
+  REQUIRE(calculator::calculate("'foo\\'bar'").asString() == "foo'bar");
+  REQUIRE(calculator::calculate("\"foo\\\"bar\"").asString() == "foo\"bar");
+
+  // Special meaning escaped characters:
+  REQUIRE(calculator::calculate("'foo\\bar'").asString() == "foo\\bar");
+  REQUIRE(calculator::calculate("'foo\\nar'").asString() == "foo\nar");
+  REQUIRE(calculator::calculate("'foo\\tar'").asString() == "foo\tar");
+  REQUIRE_NOTHROW(calculator::calculate("'foo\\t'"));
+  REQUIRE(calculator::calculate("'foo\\t'").asString() == "foo\t");
+
+  // Scaping linefeed:
+  REQUIRE_THROWS(calculator::calculate("'foo\nar'"));
+  REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
 TEST_CASE("Map access expressions") {
@@ -110,8 +126,10 @@ TEST_CASE("Function usage expressions") {
   REQUIRE_THROWS(calculator::calculate("foo(10),"));
   REQUIRE_THROWS(calculator::calculate("foo,(10)"));
 
-  // The test bellow will fail, TODO fix it:
-  // REQUIRE_NOTHROW(calculator::calculate("print()"));
+  REQUIRE_NOTHROW(calculator::calculate("print()"));
+
+  REQUIRE(Scope::default_global()["abs"].str() == "[Function]");
+  REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
 }
 
 TEST_CASE("Assignment expressions") {
@@ -192,6 +210,35 @@ TEST_CASE("Scope management") {
   scope.clean();
 }
 
+// Working as a slave parser implies it will return
+// a pointer to the place it has stopped parsing
+// and accept a list of delimiters that should make it stop.
+TEST_CASE("Parsing as slave parser") {
+  const char* original_code = "a=1; b=2\n c=a+b }";
+  const char* code = original_code;
+  TokenMap_t vars;
+  calculator c1, c2, c3;
+
+  // With static function:
+  REQUIRE_NOTHROW(calculator::calculate(code, &vars, ";}\n", &code));
+  REQUIRE(code == &(original_code[3]));
+  REQUIRE(vars["a"].asDouble() == 1);
+
+  // With constructor:
+  REQUIRE_NOTHROW((c2 = calculator(++code, &vars, ";}\n", &code)));
+  REQUIRE(code == &(original_code[8]));
+
+  // With compile method:
+  REQUIRE_NOTHROW(c3.compile(++code, &vars, ";}\n", &code));
+  REQUIRE(code == &(original_code[16]));
+
+  REQUIRE_NOTHROW(c2.eval(&vars));
+  REQUIRE(vars["b"] == 2);
+
+  REQUIRE_NOTHROW(c3.eval(&vars));
+  REQUIRE(vars["c"] == 3);
+}
+
 TEST_CASE("Resource management") {
   calculator C1, C2("1 + 1");
 
@@ -208,6 +255,9 @@ TEST_CASE("Exception management") {
   calculator ecalc;
   ecalc.compile("a+b+del", &emap);
   emap["del"] = 30;
+
+  REQUIRE_THROWS(calculator(""));
+  REQUIRE_THROWS(calculator("      "));
 
   REQUIRE_THROWS(ecalc.eval());
   REQUIRE_NOTHROW(ecalc.eval(&emap));
