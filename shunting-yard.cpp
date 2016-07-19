@@ -143,10 +143,15 @@ TokenQueue_t calculator::toRPN(const char* expr,
   bool lastTokenWasUnary = false;
   char* nextChar;
 
+  // Used to make sure the expression won't
+  // end inside a bracket evaluation just because
+  // found a delimiter like '\n' or ')'
+  int bracketLevel = 0;
+
   static char c = '\0';
   if (!delim) delim = &c;
 
-  while (*expr && isblank(*expr)) ++expr;
+  while (*expr && isspace(*expr) && !strchr(delim, *expr)) ++expr;
 
   if (*expr == '\0' || strchr(delim, *expr)) {
     throw std::invalid_argument("Cannot build a calculator from an empty expression!");
@@ -154,7 +159,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && !strchr(delim, *expr)) {
+  while (*expr && (bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
       double digit = strtod(expr, &nextChar);
@@ -264,6 +269,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
         operatorStack.push("(");
         lastTokenWasOp = '(';
+        ++bracketLevel;
         ++expr;
         break;
       case '[':
@@ -273,6 +279,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         // Add it as a bracket to the op stack:
         operatorStack.push("[");
         lastTokenWasOp = true;
+        ++bracketLevel;
         ++expr;
         break;
       case ')':
@@ -284,6 +291,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           operatorStack.pop();
         }
         operatorStack.pop();
+        --bracketLevel;
         ++expr;
         break;
       case ']':
@@ -292,6 +300,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           operatorStack.pop();
         }
         operatorStack.pop();
+        --bracketLevel;
         ++expr;
         break;
       default:
@@ -317,7 +326,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
       }
     }
-    while (*expr && isblank(*expr)) ++expr;
+    // Ignore spaces but stop on delimiter if not inside brackets.
+    while (*expr && isspace(*expr)
+           && (bracketLevel || !strchr(delim, *expr))) ++expr;
   }
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):

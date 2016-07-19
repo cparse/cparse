@@ -237,6 +237,21 @@ TEST_CASE("Parsing as slave parser") {
 
   REQUIRE_NOTHROW(c3.eval(&vars));
   REQUIRE(vars["c"] == 3);
+
+  // Testing with delimiter between brackets of the expression:
+  const char* if_code = "if ( a+(b*c) == 3 ) { ... }";
+  const char* multiline = "a = (\n  1,\n  2,\n  3\n)\n print(a);";
+
+  code = if_code;
+  REQUIRE_NOTHROW(calculator::calculate(if_code+4, &vars, ")", &code));
+  REQUIRE(code == &(if_code[18]));
+
+  code = multiline;
+  REQUIRE_NOTHROW(calculator::calculate(multiline, &vars, "\n;", &code));
+  REQUIRE(code == &(multiline[21]));
+
+  const char* error_test = "a = (;  1,;  2,; 3;)\n print(a);";
+  REQUIRE_THROWS(calculator::calculate(error_test, &vars, "\n;", &code));
 }
 
 TEST_CASE("Resource management") {
