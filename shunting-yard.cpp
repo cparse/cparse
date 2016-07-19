@@ -680,7 +680,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, &vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(const Scope& vars) {
+packToken calculator::eval(const Scope& vars) const {
   return calculate(this->RPN, &vars);
 }
 
