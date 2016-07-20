@@ -145,6 +145,7 @@ std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
   TokenMap_t* tmap;
   TokenMap_t::iterator it;
+  const Function* func;
   bool first;
   std::string name;
 
@@ -168,6 +169,8 @@ std::string packToken::str(const TokenBase* base) {
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
     case FUNC:
+      func = static_cast<const Function*>(base);
+      if (func->name.size()) return "[Function: " + func->name + "]";
       if (name.size()) return "[Function: " + name + "]";
       return "[Function]";
     case TUPLE:

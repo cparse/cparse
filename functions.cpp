@@ -70,13 +70,13 @@ struct Function::Startup {
   Startup() {
     TokenMap_t& global = Scope::default_global();
 
-    global["print"] = Function(&default_print, 1, text_arg);
-    global["sqrt"] = Function(&default_sqrt, 1, num_arg);
-    global["sin"] = Function(&default_sin, 1, num_arg);
-    global["cos"] = Function(&default_cos, 1, num_arg);
-    global["tan"] = Function(&default_tan, 1, num_arg);
-    global["abs"] = Function(&default_abs, 1, num_arg);
-    global["pow"] = Function(&default_pow, 2, pow_args);
+    global["print"] = Function(&default_print, 1, text_arg, "print");
+    global["sqrt"] = Function(&default_sqrt, 1, num_arg, "sqrt");
+    global["sin"] = Function(&default_sin, 1, num_arg, "sin");
+    global["cos"] = Function(&default_cos, 1, num_arg, "cos");
+    global["tan"] = Function(&default_tan, 1, num_arg, "tan");
+    global["abs"] = Function(&default_abs, 1, num_arg, "abs");
+    global["pow"] = Function(&default_pow, 2, pow_args, "pow");
   }
 } startup;
 
