@@ -14,9 +14,9 @@ class packToken {
   static const packToken None;
 
  public:
-  packToken() : base(0) {}
+  packToken() : base(new TokenNone()) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
-  packToken(const packToken& t) : base(t.base ? t.base->clone() : 0) {}
+  packToken(const packToken& t) : base(t.base->clone()) {}
   packToken& operator=(const packToken& t);
 
   template<class C>
@@ -26,7 +26,7 @@ class packToken {
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
   packToken(TokenMap_t* tmap) : base(new Token<TokenMap_t*>(tmap, MAP)) {}
-  ~packToken() {if (base) delete base;}
+  ~packToken() { delete base; }
 
   packToken& operator=(int t);
   packToken& operator=(double t);
