@@ -596,7 +596,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           // Add args to scope:
           vars->push(&local);
           // Execute the function:
-          packToken ret = left.func(vars);
+          packToken ret = left.exec(vars);
           // Drop the local scope:
           vars->pop();
 
