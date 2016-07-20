@@ -130,6 +130,14 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE(Scope::default_global()["abs"].str() == "[Function: abs]");
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
+
+  REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
+  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
+  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
+
+  vars["a"] = 0;
+  REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
+  REQUIRE(vars["a"] == 3);
 }
 
 TEST_CASE("Assignment expressions") {

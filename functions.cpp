@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
 #include <string>
 #include <stdexcept>
@@ -20,6 +21,24 @@ packToken default_print(const Scope* scope) {
   }
 
   return packToken::None;
+}
+
+const char* value_arg[] = {"value"};
+packToken default_eval(const Scope* scope) {
+  std::string code = scope->find("value")->asString();
+  // Evaluate it as a calculator expression:
+  return calculator::calculate(code.c_str(), *scope);
+}
+packToken default_float(const Scope* scope) {
+  packToken* tok = scope->find("value");
+  // Return it as double:
+  return atof(tok->asString().c_str());
+}
+packToken default_str(const Scope* scope) {
+  // Return its string representation:
+  packToken* tok = scope->find("value");
+  if ((*tok)->type == STR) return *tok;
+  return tok->str();
 }
 
 const char* num_arg[] = {"number"};
@@ -77,6 +96,9 @@ struct Function::Startup {
     global["tan"] = Function(&default_tan, 1, num_arg, "tan");
     global["abs"] = Function(&default_abs, 1, num_arg, "abs");
     global["pow"] = Function(&default_pow, 2, pow_args, "pow");
+    global["float"] = Function(&default_float, 1, value_arg, "float");
+    global["str"] = Function(&default_str, 1, value_arg, "str");
+    global["eval"] = Function(&default_eval, 1, value_arg, "eval");
   }
 } startup;
 
