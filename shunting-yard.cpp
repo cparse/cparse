@@ -359,7 +359,7 @@ packToken calculator::calculate(const char* expr, const Scope& vars,
 
 void cleanStack(std::stack<TokenBase*> st) {
   while (st.size() > 0) {
-    delete st.top();
+    delete pop_reference(st.top());
     st.pop();
   }
 }
@@ -397,7 +397,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
-        delete b_left;
+        delete pop_reference(b_left);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
@@ -595,8 +595,15 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
           // Add args to scope:
           vars->push(&local);
-          // Execute the function:
-          packToken ret = left.exec(vars);
+          packToken ret;
+          try {
+            // Execute the function:
+            ret = left.exec(vars);
+          } catch (...) {
+            cleanStack(evaluation);
+            vars->pop();
+            throw;
+          }
           // Drop the local scope:
           vars->pop();
 
@@ -710,7 +717,7 @@ std::string calculator::str(TokenQueue_t rpn) {
 
   ss << "calculator { RPN: [ ";
   while (rpn.size()) {
-    ss << packToken(rpn.front()->clone()).str();
+    ss << packToken(pop_reference(rpn.front()->clone())).str();
     rpn.pop();
 
     ss << (rpn.size() ? ", ":"");
