@@ -259,7 +259,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
+        lastType = rpnQueue.size() ? rpnQueue.back()->type : NONE;
         lastOp = operatorStack.size() ? operatorStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
