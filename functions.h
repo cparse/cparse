@@ -24,7 +24,7 @@ class Function : public TokenBase {
            : func(func), nargs(nargs), arg_names(arg_names), name(name) { this->type = FUNC; }
   virtual ~Function() {}
 
-  virtual packToken exec(const Scope* scope) { return func(scope); };
+  virtual packToken exec(const Scope* scope) { return func(scope); }
 
   virtual TokenBase* clone() const {
     return new Function(static_cast<const Function&>(*this));
