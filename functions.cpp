@@ -1,7 +1,9 @@
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
 #include <string>
 #include <stdexcept>
+#include <cerrno>
 
 #include "./shunting-yard.h"
 #include "./functions.h"
@@ -20,6 +22,36 @@ packToken default_print(const Scope* scope) {
   }
 
   return packToken::None;
+}
+
+const char* value_arg[] = {"value"};
+packToken default_eval(const Scope* scope) {
+  std::string code = scope->find("value")->asString();
+  // Evaluate it as a calculator expression:
+  return calculator::calculate(code.c_str(), *scope);
+}
+packToken default_float(const Scope* scope) {
+  packToken* tok = scope->find("value");
+  if ((*tok)->type == NUM) return *tok;
+
+  // Convert it to double:
+  char* rest;
+  const std::string& str = tok->asString();
+  errno = 0;
+  double ret = strtod(str.c_str(), &rest);
+
+  if (str == rest) {
+    throw std::runtime_error("Could not convert \"" + str + "\" to float!");
+  } else if (errno) {
+    std::range_error("Value too big or too small to fit a Double!");
+  }
+  return ret;
+}
+packToken default_str(const Scope* scope) {
+  // Return its string representation:
+  packToken* tok = scope->find("value");
+  if ((*tok)->type == STR) return *tok;
+  return tok->str();
 }
 
 const char* num_arg[] = {"number"};
@@ -54,7 +86,6 @@ packToken default_abs(const Scope* scope) {
   return std::abs(number);
 }
 
-
 const char* pow_args[] = {"number", "exp"};
 packToken default_pow(const Scope* scope) {
   // Get two arguments:
@@ -64,21 +95,36 @@ packToken default_pow(const Scope* scope) {
   return pow(number, exp);
 }
 
-/* * * * * Function Initializer Constructor: * * * * */
+/* * * * * class CppFunction * * * * */
 
-struct Function::Startup {
+CppFunction::CppFunction(packToken (*func)(const Scope*), unsigned int nargs,
+            const char** args, std::string name)
+            : func(func) {
+  this->name = name;
+  // Add all strings to args list:
+  for (unsigned int i = 0; i < nargs; ++i) {
+    this->_args.push_back(args[i]);
+  }
+}
+
+/* * * * * CppFunction Initializer Constructor: * * * * */
+
+struct CppFunction::Startup {
   Startup() {
     TokenMap_t& global = Scope::default_global();
 
-    global["print"] = Function(&default_print, 1, text_arg);
-    global["sqrt"] = Function(&default_sqrt, 1, num_arg);
-    global["sin"] = Function(&default_sin, 1, num_arg);
-    global["cos"] = Function(&default_cos, 1, num_arg);
-    global["tan"] = Function(&default_tan, 1, num_arg);
-    global["abs"] = Function(&default_abs, 1, num_arg);
-    global["pow"] = Function(&default_pow, 2, pow_args);
+    global["print"] = CppFunction(&default_print, 1, text_arg, "print");
+    global["sqrt"] = CppFunction(&default_sqrt, 1, num_arg, "sqrt");
+    global["sin"] = CppFunction(&default_sin, 1, num_arg, "sin");
+    global["cos"] = CppFunction(&default_cos, 1, num_arg, "cos");
+    global["tan"] = CppFunction(&default_tan, 1, num_arg, "tan");
+    global["abs"] = CppFunction(&default_abs, 1, num_arg, "abs");
+    global["pow"] = CppFunction(&default_pow, 2, pow_args, "pow");
+    global["float"] = CppFunction(&default_float, 1, value_arg, "float");
+    global["str"] = CppFunction(&default_str, 1, value_arg, "str");
+    global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
   }
-} startup;
+} CppFunction_startup;
 
 /* * * * * Tuple Functions: * * * * */
 
@@ -106,7 +152,7 @@ TokenBase* Tuple::pop_front() {
   return value;
 }
 
-unsigned Tuple::size() {
+unsigned int Tuple::size() {
   return tuple.size();
 }
 
