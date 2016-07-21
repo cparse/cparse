@@ -143,10 +143,15 @@ TokenQueue_t calculator::toRPN(const char* expr,
   bool lastTokenWasUnary = false;
   char* nextChar;
 
+  // Used to make sure the expression won't
+  // end inside a bracket evaluation just because
+  // found a delimiter like '\n' or ')'
+  int bracketLevel = 0;
+
   static char c = '\0';
   if (!delim) delim = &c;
 
-  while (*expr && isblank(*expr)) ++expr;
+  while (*expr && isspace(*expr) && !strchr(delim, *expr)) ++expr;
 
   if (*expr == '\0' || strchr(delim, *expr)) {
     throw std::invalid_argument("Cannot build a calculator from an empty expression!");
@@ -154,7 +159,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && !strchr(delim, *expr)) {
+  while (*expr && (bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
       double digit = strtod(expr, &nextChar);
@@ -254,7 +259,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = rpnQueue.size() ? rpnQueue.front()->type : NONE;
+        lastType = rpnQueue.size() ? rpnQueue.back()->type : NONE;
         lastOp = operatorStack.size() ? operatorStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
@@ -264,6 +269,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
         operatorStack.push("(");
         lastTokenWasOp = '(';
+        ++bracketLevel;
         ++expr;
         break;
       case '[':
@@ -273,6 +279,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         // Add it as a bracket to the op stack:
         operatorStack.push("[");
         lastTokenWasOp = true;
+        ++bracketLevel;
         ++expr;
         break;
       case ')':
@@ -284,6 +291,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           operatorStack.pop();
         }
         operatorStack.pop();
+        --bracketLevel;
         ++expr;
         break;
       case ']':
@@ -292,6 +300,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           operatorStack.pop();
         }
         operatorStack.pop();
+        --bracketLevel;
         ++expr;
         break;
       default:
@@ -317,7 +326,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
       }
     }
-    while (*expr && isblank(*expr)) ++expr;
+    // Ignore spaces but stop on delimiter if not inside brackets.
+    while (*expr && isspace(*expr)
+           && (bracketLevel || !strchr(delim, *expr))) ++expr;
   }
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
@@ -348,7 +359,7 @@ packToken calculator::calculate(const char* expr, const Scope& vars,
 
 void cleanStack(std::stack<TokenBase*> st) {
   while (st.size() > 0) {
-    delete st.top();
+    delete pop_reference(st.top());
     st.pop();
   }
 }
@@ -386,7 +397,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
-        delete b_left;
+        delete pop_reference(b_left);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
@@ -556,8 +567,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == FUNC) {
-        Function left = *static_cast<Function*>(b_left);
-        delete b_left;
+        Function* f_left = static_cast<Function*>(b_left);
 
         if (!op.compare("()")) {
           // Collect the parameter tuple:
@@ -571,7 +581,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
           // Build the local namespace:
           TokenMap_t local;
-          for (unsigned i = 0; i < left.nargs; ++i) {
+          for (const std::string& name : f_left->args()) {
             packToken value;
             if (right.size()) {
               value = packToken(right.pop_front());
@@ -579,23 +589,33 @@ packToken calculator::calculate(TokenQueue_t _rpn,
               value = packToken::None;
             }
 
-            local.insert(std::pair<std::string, packToken>(left.arg_names[i], value));
+            local.insert(std::pair<std::string, packToken>(name, value));
           }
 
           // Add args to scope:
           vars->push(&local);
-          // Execute the function:
-          packToken ret = left.func(vars);
+          packToken ret;
+          try {
+            // Execute the function:
+            ret = f_left->exec(vars);
+          } catch (...) {
+            cleanStack(evaluation);
+            vars->pop();
+            delete f_left;
+            throw;
+          }
           // Drop the local scope:
           vars->pop();
+          delete f_left;
 
           evaluation.push(ret->clone());
         } else {
           packToken p_right(b_right->clone());
+          packToken p_left(b_left->clone());
           delete b_right;
 
           cleanStack(evaluation);
-          throw undefined_operation(op, left, p_right);
+          throw undefined_operation(op, p_left, p_right);
         }
       } else {
         packToken p_left(b_left->clone());
@@ -669,7 +689,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, &vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(const Scope& vars) {
+packToken calculator::eval(const Scope& vars) const {
   return calculate(this->RPN, &vars);
 }
 
@@ -699,7 +719,7 @@ std::string calculator::str(TokenQueue_t rpn) {
 
   ss << "calculator { RPN: [ ";
   while (rpn.size()) {
-    ss << packToken(rpn.front()->clone()).str();
+    ss << packToken(pop_reference(rpn.front()->clone())).str();
     rpn.pop();
 
     ss << (rpn.size() ? ", ":"");

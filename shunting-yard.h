@@ -124,7 +124,7 @@ class calculator {
   void compile(const char* expr,
                const Scope& vars = Scope::empty, const char* delim = 0,
                const char** rest = 0, OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& vars = Scope::empty);
+  packToken eval(const Scope& vars = Scope::empty) const;
 
   // Serialization:
   std::string str() const;

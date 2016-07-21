@@ -128,8 +128,22 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE_NOTHROW(calculator::calculate("print()"));
 
-  REQUIRE(Scope::default_global()["abs"].str() == "[Function]");
+  REQUIRE(Scope::default_global()["abs"].str() == "[Function: abs]");
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
+
+  REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
+  REQUIRE(calculator::calculate("float(10)").asDouble() == 10);
+  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
+  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
+
+  vars["a"] = 0;
+  REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
+  REQUIRE(vars["a"] == 3);
+
+  TokenMap_t m;
+  vars["m"] = &m;
+  REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
+  REQUIRE_THROWS(calculator::calculate("float('not a number')"));
 }
 
 TEST_CASE("Assignment expressions") {
@@ -237,6 +251,21 @@ TEST_CASE("Parsing as slave parser") {
 
   REQUIRE_NOTHROW(c3.eval(&vars));
   REQUIRE(vars["c"] == 3);
+
+  // Testing with delimiter between brackets of the expression:
+  const char* if_code = "if ( a+(b*c) == 3 ) { ... }";
+  const char* multiline = "a = (\n  1,\n  2,\n  3\n)\n print(a);";
+
+  code = if_code;
+  REQUIRE_NOTHROW(calculator::calculate(if_code+4, &vars, ")", &code));
+  REQUIRE(code == &(if_code[18]));
+
+  code = multiline;
+  REQUIRE_NOTHROW(calculator::calculate(multiline, &vars, "\n;", &code));
+  REQUIRE(code == &(multiline[21]));
+
+  const char* error_test = "a = (;  1,;  2,; 3;)\n print(a);";
+  REQUIRE_THROWS(calculator::calculate(error_test, &vars, "\n;", &code));
 }
 
 TEST_CASE("Resource management") {
@@ -278,4 +307,8 @@ TEST_CASE("Exception management") {
   v1["map"] = &v2;
   // Mismatched types, no supported operators.
   REQUIRE_THROWS(calculator("map == 0").eval(&v1));
+
+  // This test attempts to cause a memory leak:
+  // To see if it still works run with `make check`
+  REQUIRE_THROWS(calculator::calculate("a+2*no_such_variable", &vars));
 }
