@@ -3,6 +3,7 @@
 #include <cmath>
 #include <string>
 #include <stdexcept>
+#include <cerrno>
 
 #include "./shunting-yard.h"
 #include "./functions.h"
@@ -31,8 +32,20 @@ packToken default_eval(const Scope* scope) {
 }
 packToken default_float(const Scope* scope) {
   packToken* tok = scope->find("value");
-  // Return it as double:
-  return atof(tok->asString().c_str());
+  if ((*tok)->type == NUM) return *tok;
+
+  // Convert it to double:
+  char* rest;
+  const std::string& str = tok->asString();
+  errno = 0;
+  double ret = strtod(str.c_str(), &rest);
+
+  if (str == rest) {
+    throw std::runtime_error("Could not convert \"" + str + "\" to float!");
+  } else if (errno) {
+    std::range_error("Value too big or too small to fit a Double!");
+  }
+  return ret;
 }
 packToken default_str(const Scope* scope) {
   // Return its string representation:

@@ -132,12 +132,18 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
 
   REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
+  REQUIRE(calculator::calculate("float(10)").asDouble() == 10);
   REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
   REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
 
   vars["a"] = 0;
   REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
   REQUIRE(vars["a"] == 3);
+
+  TokenMap_t m;
+  vars["m"] = &m;
+  REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
+  REQUIRE_THROWS(calculator::calculate("float('not a number')"));
 }
 
 TEST_CASE("Assignment expressions") {
@@ -301,4 +307,8 @@ TEST_CASE("Exception management") {
   v1["map"] = &v2;
   // Mismatched types, no supported operators.
   REQUIRE_THROWS(calculator("map == 0").eval(&v1));
+
+  // This test attempts to cause a memory leak:
+  // To see if it still works run with `make check`
+  REQUIRE_THROWS(calculator::calculate("a+2*no_such_variable", &vars));
 }
