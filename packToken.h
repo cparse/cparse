@@ -51,7 +51,7 @@ class packToken {
  public:
   // This constructor makes sure the TokenBase*
   // will be deleted when the packToken destructor is called.
-  // 
+  //
   // If you still plan to use your TokenBase* use instead:
   //
   // - packToken(token->clone())

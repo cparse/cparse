@@ -102,7 +102,7 @@ CppFunction::CppFunction(packToken (*func)(const Scope*), uint nargs,
             : func(func) {
   this->name = name;
   // Add all strings to args list:
-  for(uint i=0; i < nargs; ++i) {
+  for (uint i = 0; i < nargs; ++i) {
     this->_args.push_back(args[i]);
   }
 }

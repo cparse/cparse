@@ -33,7 +33,7 @@ class CppFunction : public Function {
   CppFunction(packToken (*func)(const Scope*), uint nargs,
               const char** args, std::string name = "");
 
-  virtual const argsList args() const { return _args; };
+  virtual const argsList args() const { return _args; }
   virtual packToken exec(const Scope* scope) const { return func(scope); }
 
   virtual TokenBase* clone() const {
