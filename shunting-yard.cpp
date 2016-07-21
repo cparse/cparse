@@ -567,8 +567,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == FUNC) {
-        Function left = *static_cast<Function*>(b_left);
-        delete b_left;
+        Function* f_left = static_cast<Function*>(b_left);
 
         if (!op.compare("()")) {
           // Collect the parameter tuple:
@@ -582,7 +581,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
           // Build the local namespace:
           TokenMap_t local;
-          for (unsigned i = 0; i < left.nargs; ++i) {
+          for (const std::string& name : f_left->args()) {
             packToken value;
             if (right.size()) {
               value = packToken(right.pop_front());
@@ -590,7 +589,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
               value = packToken::None;
             }
 
-            local.insert(std::pair<std::string, packToken>(left.arg_names[i], value));
+            local.insert(std::pair<std::string, packToken>(name, value));
           }
 
           // Add args to scope:
@@ -598,22 +597,25 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           packToken ret;
           try {
             // Execute the function:
-            ret = left.exec(vars);
+            ret = f_left->exec(vars);
           } catch (...) {
             cleanStack(evaluation);
             vars->pop();
+            delete f_left;
             throw;
           }
           // Drop the local scope:
           vars->pop();
+          delete f_left;
 
           evaluation.push(ret->clone());
         } else {
           packToken p_right(b_right->clone());
+          packToken p_left(b_left->clone());
           delete b_right;
 
           cleanStack(evaluation);
-          throw undefined_operation(op, left, p_right);
+          throw undefined_operation(op, p_left, p_right);
         }
       } else {
         packToken p_left(b_left->clone());

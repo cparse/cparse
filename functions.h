@@ -6,28 +6,38 @@
 #include <string>
 
 class Function : public TokenBase {
-  static TokenMap_t initialize_functions();
+ public:
+  typedef std::list<std::string> argsList;
 
+ public:
+  std::string name;
+
+  Function() { this->type = FUNC; }
+  virtual ~Function() {}
+
+  virtual const argsList args() const = 0;
+  virtual packToken exec(const Scope* scope) const = 0;
+  virtual TokenBase* clone() const = 0;
+};
+
+class CppFunction : public Function {
  private:
   // Used only to initialize
-  // default functions on program startup.
+  // builtin functions at startup.
   struct Startup;
 
  public:
   packToken (*func)(const Scope*);
-  uint nargs;
-  const char** arg_names;
-  std::string name;
+  argsList _args;
 
-  Function(packToken (*func)(const Scope*), unsigned nargs,
-           const char** arg_names, std::string name = "")
-           : func(func), nargs(nargs), arg_names(arg_names), name(name) { this->type = FUNC; }
-  virtual ~Function() {}
+  CppFunction(packToken (*func)(const Scope*), uint nargs,
+              const char** args, std::string name = "");
 
-  virtual packToken exec(const Scope* scope) { return func(scope); }
+  virtual const argsList args() const { return _args; };
+  virtual packToken exec(const Scope* scope) const { return func(scope); }
 
   virtual TokenBase* clone() const {
-    return new Function(static_cast<const Function&>(*this));
+    return new CppFunction(static_cast<const CppFunction&>(*this));
   }
 };
 
@@ -48,7 +58,7 @@ class Tuple : public TokenBase {
  public:
   void push_back(const TokenBase* tb);
   TokenBase* pop_front();
-  unsigned size();
+  uint size();
 
  private:
   Tuple_t copyTuple(const Tuple_t& t);
