@@ -48,22 +48,15 @@ class packToken {
   std::string str() const;
   static std::string str(const TokenBase* t);
 
- private:
-  // Note:
+ public:
   // This constructor makes sure the TokenBase*
   // will be deleted when the packToken destructor is called.
+  // 
+  // If you still plan to use your TokenBase* use instead:
   //
-  // Do not delete the TokenBase* by yourself after
-  // building a packToken!
+  // - packToken(token->clone())
   //
-  // If you want to copy the TokenBase do instead:
-  // packToken(token->clone())
   explicit packToken(TokenBase* t) : base(t) {}
-
-  // This constructor should only be called
-  // from inside the calculator os Scope classes:
-  friend class calculator;
-  friend class Scope;
 };
 
 // To allow cout to print it:
