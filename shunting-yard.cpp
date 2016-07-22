@@ -110,7 +110,7 @@ TokenBase* resolve_reference(TokenBase* b, const Scope* scope = 0) {
     // Grab the possible values:
     RefToken* ref = static_cast<RefToken*>(b);
 
-    // TODO VinGarcia: For now we need the scope and the name.
+    // TODO(VinGarcia): For now we need the scope and the name.
     // to get the up to date value of the variable.
     // But this might mean we will get the value of some other
     // variable that happens to have the same name and be on
