@@ -15,10 +15,9 @@ packToken default_print(const Scope* scope) {
   // Get a single argument:
   packToken* p = scope->find("text");
   if ((*p)->type == STR) {
-    std::string text = p->asString();
-    printf("%s\n", text.c_str());
+    printf("%s\n", p->asString().c_str());
   } else {
-    printf("\n");
+    printf("%s\n", p->str().c_str());
   }
 
   return packToken::None;
