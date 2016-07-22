@@ -20,7 +20,7 @@ OppMap_t calculator::buildOpPrecedence() {
   // precedence order as described on cppreference website:
   // http://en.cppreference.com/w/cpp/language/operator_precedence
   opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
-  opp["^"]  = 3;
+  opp["**"]  = 3;
   opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
   opp["+"]  = 6; opp["-"]  = 6;
   opp["<<"] = 7; opp[">>"] = 7;
@@ -475,7 +475,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           evaluation.push(new Token<double>(left / right, NUM));
         } else if (!op.compare("<<")) {
           evaluation.push(new Token<double>(left_i << right_i, NUM));
-        } else if (!op.compare("^")) {
+        } else if (!op.compare("**")) {
           evaluation.push(new Token<double>(pow(left, right), NUM));
         } else if (!op.compare(">>")) {
           evaluation.push(new Token<double>(left_i >> right_i, NUM));
