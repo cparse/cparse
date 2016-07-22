@@ -145,6 +145,12 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE_NOTHROW(calculator::calculate("pow(1,-10)"));
   REQUIRE_NOTHROW(calculator::calculate("pow(1,+10)"));
+
+  vars["base"] = 2;
+  c.compile("pow(base,2)", &vars);
+  vars["base"] = 3;
+  REQUIRE(c.eval().asDouble() == 4);
+  REQUIRE(c.eval(&vars).asDouble() == 9);
 }
 
 TEST_CASE("Assignment expressions") {

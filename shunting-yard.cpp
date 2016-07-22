@@ -103,11 +103,37 @@ void calculator::handle_op(const std::string& op,
 // And obtain the original TokenBase*.
 // Please note that it only deletes memory if the token
 // is of type REF.
-TokenBase* pop_reference(TokenBase* b) {
+TokenBase* resolve_reference(TokenBase* b, const Scope* scope = 0) {
+  TokenBase* value;
+
   if (b->type & REF) {
-    TokenBase* ref = static_cast<RefToken*>(b)->value;
-    delete b;
-    return ref;
+    // Grab the possible values:
+    RefToken* ref = static_cast<RefToken*>(b);
+
+    // TODO VinGarcia: For now we need the scope and the name.
+    // to get the up to date value of the variable.
+    // But this might mean we will get the value of some other
+    // variable that happens to have the same name and be on
+    // the scope.
+    //
+    // The better solution would be to get it from:
+    //
+    //   ref->source[name]
+    //
+    // But we can't be sure ref still exists until we implement
+    // a reference counting system.
+    packToken* r_value = scope ? scope->find(ref->name) : 0;
+
+    // Resolve which value to use:
+    if (r_value) {
+      value = (*r_value)->clone();
+      delete ref->value;
+      delete ref;
+    } else {
+      value = ref->value;
+      delete ref;
+    }
+    return value;
   } else {
     return b;
   }
@@ -362,7 +388,7 @@ packToken calculator::calculate(const char* expr, const Scope& vars,
 
 void cleanStack(std::stack<TokenBase*> st) {
   while (st.size() > 0) {
-    delete pop_reference(st.top());
+    delete resolve_reference(st.top());
     st.pop();
   }
 }
@@ -400,11 +426,11 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
-        delete pop_reference(b_left);
+        delete resolve_reference(b_left);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
-        b_right = pop_reference(b_right);
+        b_right = resolve_reference(b_right, vars);
       }
 
       std::string r_left;
@@ -413,8 +439,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         RefToken* left = static_cast<RefToken*>(b_left);
         r_left = left->name;
         m_left = left->source_map;
-        b_left = left->value;
-        delete left;
+        b_left = resolve_reference(left, vars);
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
@@ -647,12 +672,12 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     }
   }
 
-  return packToken(pop_reference(evaluation.top()));
+  return packToken(resolve_reference(evaluation.top(), vars));
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
   while (rpn->size()) {
-    delete pop_reference(rpn->front());
+    delete resolve_reference(rpn->front());
     rpn->pop();
   }
 }
@@ -722,7 +747,7 @@ std::string calculator::str(TokenQueue_t rpn) {
 
   ss << "calculator { RPN: [ ";
   while (rpn.size()) {
-    ss << packToken(pop_reference(rpn.front()->clone())).str();
+    ss << packToken(resolve_reference(rpn.front()->clone())).str();
     rpn.pop();
 
     ss << (rpn.size() ? ", ":"");
