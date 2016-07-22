@@ -142,6 +142,9 @@ TEST_CASE("Function usage expressions") {
   vars["m"] = &m;
   REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
   REQUIRE_THROWS(calculator::calculate("float('not a number')"));
+
+  REQUIRE_NOTHROW(calculator::calculate("pow(1,-10)"));
+  REQUIRE_NOTHROW(calculator::calculate("pow(1,+10)"));
 }
 
 TEST_CASE("Assignment expressions") {
