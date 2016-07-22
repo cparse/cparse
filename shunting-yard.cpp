@@ -51,6 +51,7 @@ TokenMap_t& Scope::default_global() {
 
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
+packToken noneToken = TokenNone();
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
@@ -184,10 +185,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
         packToken* value = NULL;
         std::string key = ss.str();
 
-        if (key == "true") {
+        if (key == "True") {
           value = &trueToken;
-        } else if (key == "false") {
+        } else if (key == "False") {
           value = &falseToken;
+        } else if (key == "None") {
+          value = &noneToken;
         } else {
           if (vars) value = vars->find(key);
         }

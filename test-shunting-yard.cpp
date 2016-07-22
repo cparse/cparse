@@ -58,10 +58,10 @@ TEST_CASE("Boolean expressions") {
   REQUIRE(calculator::calculate("3 == 3").asBool());
   REQUIRE_FALSE(calculator::calculate("3 != 3").asBool());
 
-  REQUIRE(calculator::calculate("(3 && true) == true").asBool());
-  REQUIRE_FALSE(calculator::calculate("(3 && 0) == true").asBool());
-  REQUIRE(calculator::calculate("(3 || 0) == true").asBool());
-  REQUIRE_FALSE(calculator::calculate("(false || 0) == true").asBool());
+  REQUIRE(calculator::calculate("(3 && True) == True").asBool());
+  REQUIRE_FALSE(calculator::calculate("(3 && 0) == True").asBool());
+  REQUIRE(calculator::calculate("(3 || 0) == True").asBool());
+  REQUIRE_FALSE(calculator::calculate("(False || 0) == True").asBool());
 }
 
 TEST_CASE("String expressions") {
