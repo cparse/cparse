@@ -160,6 +160,8 @@ TEST_CASE("Assignment expressions") {
   REQUIRE_NOTHROW(calculator::calculate("a = b = 20", &vars));
   REQUIRE_NOTHROW(calculator::calculate("a = b = c = d = 30", &vars));
   REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", &vars) == true);
+
+  REQUIRE_NOTHROW(calculator::calculate("teste='b'"));
 }
 
 TEST_CASE("Assignment expressions on maps") {
