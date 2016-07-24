@@ -16,7 +16,7 @@ class Function : public TokenBase {
   virtual ~Function() {}
 
   virtual const argsList args() const = 0;
-  virtual packToken exec(const Scope* scope) const = 0;
+  virtual packToken exec(TokenMap* scope) const = 0;
   virtual TokenBase* clone() const = 0;
 };
 
@@ -27,14 +27,14 @@ class CppFunction : public Function {
   struct Startup;
 
  public:
-  packToken (*func)(const Scope*);
+  packToken (*func)(TokenMap*);
   argsList _args;
 
-  CppFunction(packToken (*func)(const Scope*), unsigned int nargs,
+  CppFunction(packToken (*func)(TokenMap*), unsigned int nargs,
               const char** args, std::string name = "");
 
   virtual const argsList args() const { return _args; }
-  virtual packToken exec(const Scope* scope) const { return func(scope); }
+  virtual packToken exec(TokenMap* scope) const { return func(scope); }
 
   virtual TokenBase* clone() const {
     return new CppFunction(static_cast<const CppFunction&>(*this));

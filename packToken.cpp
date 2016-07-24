@@ -61,28 +61,28 @@ packToken& packToken::operator[](const std::string& key) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<TokenMap*>*>(base)->val)[key];
 }
 const packToken& packToken::operator[](const std::string& key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<TokenMap*>*>(base)->val)[key];
 }
 packToken& packToken::operator[](const char* key) {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<TokenMap*>*>(base)->val)[key];
 }
 const packToken& packToken::operator[](const char* key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<TokenMap*>*>(base)->val)[key];
 }
 
 bool packToken::asBool() const {
@@ -119,12 +119,12 @@ std::string packToken::asString() const {
   return static_cast<Token<std::string>*>(base)->val;
 }
 
-TokenMap_t* packToken::asMap() const {
+TokenMap* packToken::asMap() const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return static_cast<Token<TokenMap_t*>*>(base)->val;
+  return static_cast<Token<TokenMap*>*>(base)->val;
 }
 
 std::string packToken::str() const {
@@ -132,8 +132,8 @@ std::string packToken::str() const {
 }
 std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
-  TokenMap_t* tmap;
-  TokenMap_t::iterator it;
+  TokenMap::TokenMap_t* tmap;
+  TokenMap::TokenMap_t::iterator it;
   const Function* func;
   bool first;
   std::string name;
@@ -176,7 +176,7 @@ std::string packToken::str(const TokenBase* base) {
       ss << ")";
       return ss.str();
     case MAP:
-      tmap = static_cast<const Token<TokenMap_t*>*>(base)->val;
+      tmap = &(static_cast<const Token<TokenMap*>*>(base)->val->map);
       if (tmap->size() == 0) return "{}";
       ss << "{";
       for (it = tmap->begin(); it != tmap->end(); ++it) {

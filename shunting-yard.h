@@ -34,15 +34,15 @@ struct TokenNone : public TokenBase {
 
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
-typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
+class TokenMap;
 
 struct RefToken : public TokenBase {
   std::string name;
   TokenBase* value;
-  TokenMap_t* source_map;
-  RefToken(std::string n, TokenBase* v, TokenMap_t* m, uint8_t type) :
+  TokenMap* source_map;
+  RefToken(std::string n, TokenBase* v, TokenMap* m, uint8_t type) :
     name(n), value(v), source_map(m) { this->type = type; }
   RefToken(std::string n, TokenBase* v, uint8_t type) :
     name(n), value(v), source_map(0) { this->type = type; }
@@ -60,28 +60,40 @@ struct RefToken : public TokenBase {
 // as well as some built-in functions:
 #include "./functions.h"
 
-class Scope {
- public:
-  static const Scope empty;
-  static TokenMap_t& default_global();
+struct TokenMap {
+  typedef std::map<std::string, packToken> TokenMap_t;
+
+  // Static factories:
+  static TokenMap empty;
+  static TokenMap& base_map();
+  static TokenMap& default_global();
 
  public:
-  typedef std::list<TokenMap_t*> Scope_t;
-  mutable Scope_t scope;
+  TokenMap_t map;
+  TokenMap* parent;
 
-  Scope(TokenMap_t* vars);
-  Scope() : Scope(NULL) {}
+ public:
+  TokenMap(TokenMap* parent = &TokenMap::default_global()) : parent(parent) {}
 
-  packToken* find(std::string key) const;
-  void assign(std::string key, TokenBase* value) const;
+ public:
+  packToken* find(std::string key);
+  const packToken* find(std::string key) const;
+  void assign(std::string key, TokenBase* value);
+  void insert(std::string key, TokenBase* value);
 
-  void push(TokenMap_t* vars) const;
-  void push(Scope vars) const;
-  void pop() const;
-  void pop(unsigned N) const;
+  TokenMap getChild();
 
-  void clean() const;
+  packToken& operator[](const std::string& str);
+
+  void erase(std::string key);
+
+  void clean();
   unsigned size() const;
+};
+
+// Build a TokenMap which is not a child of default_global()
+struct Object : public TokenMap {
+  Object() : TokenMap(TokenMap::base_map()) {}
 };
 
 class calculator {
@@ -90,15 +102,14 @@ class calculator {
   static OppMap_t buildOpPrecedence();
 
  public:
-  static packToken calculate(const char* expr, const Scope& vars = Scope::empty,
+  static packToken calculate(const char* expr, TokenMap* vars = &TokenMap::empty,
                              const char* delim = 0, const char** rest = 0);
 
  private:
-  static packToken calculate(TokenQueue_t RPN,
-                             const Scope* vars);
+  static packToken calculate(TokenQueue_t RPN, TokenMap* vars);
   static void cleanRPN(TokenQueue_t* rpn);
-  static TokenQueue_t toRPN(const char* expr,
-                            const Scope* vars, const char* delim = 0, const char** rest = 0,
+  static TokenQueue_t toRPN(const char* expr, TokenMap* vars,
+                            const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& op,
@@ -118,13 +129,13 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& vars = Scope::empty,
+  calculator(const char* expr, TokenMap* vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
              OppMap_t opPrecedence = _opPrecedence);
-  void compile(const char* expr,
-               const Scope& vars = Scope::empty, const char* delim = 0,
-               const char** rest = 0, OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& vars = Scope::empty) const;
+  void compile(const char* expr, TokenMap* vars = &TokenMap::empty,
+               const char* delim = 0, const char** rest = 0,
+               OppMap_t opPrecedence = _opPrecedence);
+  packToken eval(TokenMap* vars = &TokenMap::empty) const;
 
   // Serialization:
   std::string str() const;

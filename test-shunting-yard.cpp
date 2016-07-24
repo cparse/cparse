@@ -3,7 +3,8 @@
 
 #include "./shunting-yard.h"
 
-TokenMap_t vars, tmap, key3, emap;
+TokenMap vars, emap;
+Object tmap, key3;
 
 void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
@@ -102,7 +103,7 @@ TEST_CASE("Map access expressions") {
 }
 
 TEST_CASE("Function usage expressions") {
-  TokenMap_t vars;
+  TokenMap vars;
   vars["pi"] = 3.141592653589793;
   vars["a"] = -4;
 
@@ -126,7 +127,7 @@ TEST_CASE("Function usage expressions") {
   REQUIRE_THROWS(calculator::calculate("foo(10),"));
   REQUIRE_THROWS(calculator::calculate("foo,(10)"));
 
-  REQUIRE(Scope::default_global()["abs"].str() == "[Function: abs]");
+  REQUIRE(TokenMap::default_global()["abs"].str() == "[Function: abs]");
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
 
   REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
@@ -138,7 +139,7 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
   REQUIRE(vars["a"] == 3);
 
-  TokenMap_t m;
+  Object m;
   vars["m"] = &m;
   REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
   REQUIRE_THROWS(calculator::calculate("float('not a number')"));
@@ -172,7 +173,7 @@ TEST_CASE("Assignment expressions") {
 }
 
 TEST_CASE("Assignment expressions on maps") {
-  TokenMap_t asn_map;
+  Object asn_map;
   vars["m"] = &asn_map;
   calculator::calculate("m['asn'] = 10", &vars);
 
@@ -194,43 +195,28 @@ TEST_CASE("Assignment expressions on maps") {
 
 TEST_CASE("Scope management") {
   calculator c("pi+b1+b2");
-  Scope scope;
+  TokenMap parent;
+  parent["pi"] = 3.14;
+  parent["b1"] = 0;
+  parent["b2"] = 0.86;
 
-  // Add vars to scope:
-  scope.push(&vars);
-  REQUIRE(c.eval(scope).asDouble() == Approx(4));
+  TokenMap child = parent.getChild();
 
-  tmap["b2"] = 1.0;
-  scope.push(&tmap);
-  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
+  // Check scope extension:
+  REQUIRE(c.eval(&child).asDouble() == Approx(4));
 
-  Scope scope_bkp = scope;
-
-  // Remove vars from scope:
-  scope.pop();
-  scope.pop();
-
-  scope.pop();  // Final pop for default functions.
-
-  // Test what happens when you try to drop more namespaces than possible:
-  REQUIRE_THROWS(scope.pop());
-
-  // Load Saved Scope
-  scope = scope_bkp;
-  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
+  child["b2"] = 1.0;
+  REQUIRE(c.eval(&child).asDouble() == Approx(4.14));
 
   // Testing with 3 namespaces:
-  TokenMap_t vmap;
+  TokenMap vmap = child.getChild();
   vmap["b1"] = -1.14;
-  scope.push(&vmap);
-  REQUIRE(c.eval(scope).asDouble() == Approx(3.0));
+  REQUIRE(c.eval(&vmap).asDouble() == Approx(3.0));
 
-  scope_bkp = scope;
-  calculator c2("pi+b1+b2", scope_bkp);
+  TokenMap copy = vmap;
+  calculator c2("pi+b1+b2", &copy);
   REQUIRE(c2.eval().asDouble() == Approx(3.0));
-  REQUIRE(calculator::calculate("pi+b1+b2", scope_bkp).asDouble() == Approx(3.0));
-
-  scope.clean();
+  REQUIRE(calculator::calculate("pi+b1+b2", &copy).asDouble() == Approx(3.0));
 }
 
 // Working as a slave parser implies it will return
@@ -239,7 +225,7 @@ TEST_CASE("Scope management") {
 TEST_CASE("Parsing as slave parser") {
   const char* original_code = "a=1; b=2\n c=a+b }";
   const char* code = original_code;
-  TokenMap_t vars;
+  TokenMap vars;
   calculator c1, c2, c3;
 
   // With static function:
@@ -312,7 +298,8 @@ TEST_CASE("Exception management") {
   REQUIRE_NOTHROW(calculator c5("10 + -10"));
   REQUIRE_THROWS(calculator c5("c.[10]"));
 
-  TokenMap_t v1, v2;
+  TokenMap v1;
+  Object v2;
   v1["map"] = &v2;
   // Mismatched types, no supported operators.
   REQUIRE_THROWS(calculator("map == 0").eval(&v1));
