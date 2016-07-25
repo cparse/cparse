@@ -383,11 +383,11 @@ packToken calculator::calculate(const char* expr, TokenMap* vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
-  packToken ret;
+  TokenBase* ret;
 
   ret = calculator::calculate(rpn, vars);
 
-  return ret;
+  return packToken(resolve_reference(ret));
 }
 
 void cleanStack(std::stack<TokenBase*> st) {
@@ -397,8 +397,8 @@ void cleanStack(std::stack<TokenBase*> st) {
   }
 }
 
-packToken calculator::calculate(TokenQueue_t _rpn,
-                                TokenMap* vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn,
+                                 TokenMap* vars) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -674,7 +674,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     }
   }
 
-  return packToken(resolve_reference(evaluation.top(), vars));
+  return evaluation.top();
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
@@ -719,8 +719,13 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(TokenMap* vars) const {
-  return calculate(this->RPN, vars);
+packToken calculator::eval(TokenMap* vars, bool keep_refs) const {
+  TokenBase* value = calculate(this->RPN, vars);
+  if (keep_refs) {
+    return packToken(value);
+  } else {
+    return packToken(resolve_reference(value));
+  }
 }
 
 calculator& calculator::operator=(const calculator& calc) {

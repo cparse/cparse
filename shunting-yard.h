@@ -106,7 +106,7 @@ class calculator {
                              const char* delim = 0, const char** rest = 0);
 
  private:
-  static packToken calculate(TokenQueue_t RPN, TokenMap* vars);
+  static TokenBase* calculate(TokenQueue_t RPN, TokenMap* vars);
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr, TokenMap* vars,
                             const char* delim = 0, const char** rest = 0,
@@ -135,7 +135,7 @@ class calculator {
   void compile(const char* expr, TokenMap* vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0,
                OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(TokenMap* vars = &TokenMap::empty) const;
+  packToken eval(TokenMap* vars = &TokenMap::empty, bool keep_refs=false) const;
 
   // Serialization:
   std::string str() const;
