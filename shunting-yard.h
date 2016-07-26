@@ -7,7 +7,19 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE, REF = 0x10 };
+enum tokType {
+  // Base types:
+  NONE, OP, VAR, NUM, STR, FUNC,
+
+  // Complex types:
+  IT = 0x20,     // Everything with the bit 0x20 set is an iterator.
+  TUPLE = 0x21,  // == 0x20 + 0x01 => Tuples are iterators.
+  LIST = 0x22,   // == 0x20 + 0x01 => Lists are iterators.
+  MAP = 0x60,    // == 0x20 + 0x40 => Maps are Iterators
+                 // Everything with the bit 0x40 set is a MAP.
+  REF = 0x80
+};
+
 typedef unsigned char uint8_t;
 
 struct TokenBase {
