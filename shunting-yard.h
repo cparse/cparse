@@ -135,7 +135,7 @@ class calculator {
   void compile(const char* expr, TokenMap* vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0,
                OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(TokenMap* vars = &TokenMap::empty, bool keep_refs=false) const;
+  packToken eval(TokenMap* vars = &TokenMap::empty, bool keep_refs = false) const;
 
   // Serialization:
   std::string str() const;
