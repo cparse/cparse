@@ -94,6 +94,14 @@ packToken default_pow(TokenMap* scope) {
   return pow(number, exp);
 }
 
+/* * * * * Type-specific default functions * * * */
+
+const char* no_arg[] = {""};
+packToken string_len(TokenMap* scope) {
+  std::string str = scope->find("this")->asString();
+  return static_cast<int>(str.size());
+}
+
 /* * * * * class CppFunction * * * * */
 
 CppFunction::CppFunction(packToken (*func)(TokenMap*), unsigned int nargs,
@@ -122,6 +130,9 @@ struct CppFunction::Startup {
     global["float"] = CppFunction(&default_float, 1, value_arg, "float");
     global["str"] = CppFunction(&default_str, 1, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
+
+    typeMap_t& type_map = calculator::type_attribute_map();
+    type_map[STR]["len"] = CppFunction(&string_len, 0, no_arg, "len");
   }
 } CppFunction_startup;
 

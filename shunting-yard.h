@@ -108,10 +108,15 @@ struct Object : public TokenMap {
   Object() : TokenMap(TokenMap::base_map()) {}
 };
 
+typedef std::map<uint8_t, Object> typeMap_t;
+
 class calculator {
  private:
   static OppMap_t _opPrecedence;
   static OppMap_t buildOpPrecedence();
+
+ public:
+  static typeMap_t& type_attribute_map();
 
  public:
   static packToken calculate(const char* expr, TokenMap* vars = &TokenMap::empty,

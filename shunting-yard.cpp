@@ -53,6 +53,11 @@ TokenMap& TokenMap::default_global() {
 }
 TokenMap TokenMap::empty = TokenMap();
 
+typeMap_t& calculator::type_attribute_map() {
+  static typeMap_t type_map;
+  return type_map;
+}
+
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
@@ -487,6 +492,48 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(op, r_left, p_right);
         }
+      } else if (b_left->type == MAP && b_right->type == STR) {
+        TokenMap* left = static_cast<Token<TokenMap*>*>(b_left)->val;
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        if (!op.compare("[]") || !op.compare(".")) {
+          packToken* p_value = left->find(right);
+          TokenBase* value;
+
+          if (p_value) {
+            value = (*p_value)->clone();
+          } else {
+            value = new TokenNone();
+          }
+
+          evaluation.push(new RefToken(right, value, left));
+        } else {
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+      // Resolve build-in operations for non-map types, e.g.: 'str'.len()
+      } else if (!op.compare(".") && b_right->type == STR) {
+        Object& left = calculator::type_attribute_map()[b_left->type];
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_right;
+
+        packToken* attr = left.find(right);
+        if (attr) {
+          TokenBase* value = (*attr)->clone();
+          packToken source = packToken(b_left);
+
+          // Note: If attr is a function, it will receive have
+          // scope["this"] == source, so it can make changes on this object.
+          // Or just read some information for example: its length.
+          evaluation.push(new RefToken(right, value, source));
+        } else {
+          packToken p_left = packToken(b_left->clone());
+          delete b_left;
+          cleanStack(evaluation);
+          throw undefined_operation(op, p_left, right);
+        }
       } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
         double right = static_cast<Token<double>*>(b_right)->val;
@@ -572,27 +619,6 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         if (!op.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type == MAP && b_right->type == STR) {
-        TokenMap* left = static_cast<Token<TokenMap*>*>(b_left)->val;
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
-        delete b_left;
-        delete b_right;
-
-        if (!op.compare("[]") || !op.compare(".")) {
-          packToken* p_value = left->find(right);
-          TokenBase* value;
-
-          if (p_value) {
-            value = (*p_value)->clone();
-          } else {
-            value = new TokenNone();
-          }
-
-          evaluation.push(new RefToken(right, value, left));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);

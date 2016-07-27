@@ -154,6 +154,13 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(c.eval(&vars).asDouble() == 9);
 }
 
+TEST_CASE("Type specific functions") {
+  TokenMap vars;
+  vars["s"] = "string";
+
+  REQUIRE(calculator::calculate("s.len()", &vars).asDouble() == 6);
+}
+
 TEST_CASE("Assignment expressions") {
   calculator::calculate("assignment = 10", &vars);
 
