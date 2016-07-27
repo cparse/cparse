@@ -108,35 +108,37 @@ void calculator::handle_op(const std::string& op,
 // Please note that it only deletes memory if the token
 // is of type REF.
 TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
-  TokenBase* value;
+  TokenBase* value = 0;
 
   if (b->type & REF) {
     // Grab the possible values:
     RefToken* ref = static_cast<RefToken*>(b);
 
-    // TODO(VinGarcia): For now we need the scope and the name.
-    // to get the up to date value of the variable.
-    // But this might mean we will get the value of some other
-    // variable that happens to have the same name and be on
-    // the scope.
-    //
-    // The better solution would be to get it from:
-    //
-    //   ref->source[name]
-    //
-    // But we can't be sure ref still exists until we implement
-    // a reference counting system.
-    packToken* r_value = scope ? scope->find(ref->name) : 0;
+    // TODO(VinGarcia): This system works, but is dangerous,
+    // We can't know for sure that `ref->source` still exists until
+    // we implement a reference counting system.
 
-    // Resolve which value to use:
-    if (r_value) {
-      value = (*r_value)->clone();
-      delete ref->value;
-      delete ref;
-    } else {
-      value = ref->value;
-      delete ref;
+    // Decide from where to get the updated value:
+    if (ref->key->type == STR) {
+      // If source is a map:
+      if (ref->source->type == MAP) {
+        TokenMap* map = ref->source.asMap();
+        std::string key = ref->key.asString();
+        value = (*map)[key]->clone();
+        delete ref->value;
+      } else if (scope) {
+        // Read from the scope:
+        packToken* r_value = scope ? scope->find(ref->key.asString()) : 0;
+        if (r_value) {
+          value = (*r_value)->clone();
+          delete ref->value;
+        }
+      }
     }
+
+    if (!value) value = ref->value;
+    delete ref;
+
     return value;
   } else {
     return b;
@@ -228,7 +230,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         if (value) {
           // Save a reference token:
           TokenBase* copy = (*value)->clone();
-          rpnQueue.push(new RefToken(key, copy, copy->type | REF));
+          rpnQueue.push(new RefToken(key, copy));
         } else {
           // Save the variable name:
           rpnQueue.push(new Token<std::string>(key, VAR));
@@ -437,12 +439,12 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         b_right = resolve_reference(b_right, vars);
       }
 
-      std::string r_left;
-      TokenMap* m_left = NULL;
+      packToken r_left;
+      packToken m_left;
       if (b_left->type & REF) {
         RefToken* left = static_cast<RefToken*>(b_left);
-        r_left = left->name;
-        m_left = left->source_map;
+        r_left = left->key;
+        m_left = left->source;
         b_left = resolve_reference(left, vars);
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
@@ -465,18 +467,18 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
 
         // If the left operand has a variable name:
-        if (r_left.size() > 0) {
+        if (r_left->type == STR) {
           if (vars) {
-            if (m_left && b_right->type != NONE) {
-              (*m_left)[r_left] = packToken(b_right->clone());
+            if (m_left->type == MAP && b_right->type != NONE) {
+              m_left.asMap()->insert(r_left.asString(), packToken(b_right->clone()));
             } else {
-              vars->assign(r_left, b_right);
+              vars->assign(r_left.asString(), b_right);
             }
             evaluation.push(b_right);
           } else {
             delete b_right;
             cleanStack(evaluation);
-            throw std::domain_error("No TokenMap available for assignment of variable `" + r_left + "`.");
+            throw std::domain_error("No TokenMap available for assignment of variable `" + r_left.asString() + "`.");
           }
         } else {
           packToken p_right(b_right->clone());
@@ -584,16 +586,13 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           packToken* p_value = left->find(right);
           TokenBase* value;
 
-          uint8_t type;
           if (p_value) {
             value = (*p_value)->clone();
-            type = value->type | REF;
           } else {
             value = new TokenNone();
-            type = NONE | REF;
           }
 
-          evaluation.push(new RefToken(right, value, left, type));
+          evaluation.push(new RefToken(right, value, left));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
@@ -664,7 +663,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
 
       if (value) {
         TokenBase* copy = (*value)->clone();
-        evaluation.push(new RefToken(key, copy, copy->type | REF));
+        evaluation.push(new RefToken(key, copy));
         delete base;
       } else {
         evaluation.push(base);
@@ -806,7 +805,7 @@ void TokenMap::assign(std::string key, TokenBase* value) {
 }
 
 void TokenMap::insert(std::string key, TokenBase* value) {
-  map.insert({key, packToken(value->clone())});
+  (*this)[key] = packToken(value->clone());
 }
 
 packToken& TokenMap::operator[](const std::string& key) {

@@ -50,14 +50,16 @@ typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 class TokenMap;
 
+#include "./packToken.h"
+
 struct RefToken : public TokenBase {
-  std::string name;
+  packToken key;
   TokenBase* value;
-  TokenMap* source_map;
-  RefToken(std::string n, TokenBase* v, TokenMap* m, uint8_t type) :
-    name(n), value(v), source_map(m) { this->type = type; }
-  RefToken(std::string n, TokenBase* v, uint8_t type) :
-    name(n), value(v), source_map(0) { this->type = type; }
+  packToken source;
+  RefToken(packToken k, TokenBase* v, packToken m) :
+    key(k), value(v), source(m) { this->type = v->type | REF; }
+  RefToken(packToken k, TokenBase* v) :
+    key(k), value(v), source(packToken::None) { this->type = v->type | REF; }
 
   virtual TokenBase* clone() const {
     RefToken* copy = new RefToken(static_cast<const RefToken&>(*this));
@@ -65,8 +67,6 @@ struct RefToken : public TokenBase {
     return copy;
   }
 };
-
-#include "./packToken.h"
 
 // Define the `Function` class
 // as well as some built-in functions:
