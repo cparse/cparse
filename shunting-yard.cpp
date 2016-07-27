@@ -625,6 +625,12 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
             local.insert(name, value);
           }
 
+          if (m_left->type != NONE) {
+            local["this"] = m_left;
+          } else {
+            local["this"] = vars;
+          }
+
           // Add args to scope:
           packToken ret;
           try {
