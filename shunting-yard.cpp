@@ -178,7 +178,7 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               TokenMap* vars, const char* delim,
+                               packMap vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   uint8_t lastTokenWasOp = true;
@@ -390,7 +390,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, TokenMap* vars,
+packToken calculator::calculate(const char* expr, packMap vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
@@ -408,7 +408,7 @@ void cleanStack(std::stack<TokenBase*> st) {
   }
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap* vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -640,7 +640,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap* vars) {
           delete b_right;
 
           // Build the local namespace:
-          TokenMap local = vars->getChild();
+          packMap local = TokenMap(vars);
           for (const std::string& name : f_left->args()) {
             packToken value;
             if (right.size()) {
@@ -651,20 +651,20 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap* vars) {
 
             // Use insert to make sure it is declared
             // on the most local scope, and not on any of its parents
-            local.insert(name, value);
+            local->insert(name, value);
           }
 
           if (m_left->type != NONE) {
-            local["this"] = m_left;
+            (*local)["this"] = m_left;
           } else {
-            local["this"] = packMap(vars);
+            (*local)["this"] = packMap(vars);
           }
 
           // Add args to scope:
           packToken ret;
           try {
             // Execute the function:
-            ret = f_left->exec(&local);
+            ret = f_left->exec(local);
           } catch (...) {
             cleanStack(evaluation);
             delete f_left;
@@ -739,13 +739,13 @@ calculator::calculator(const calculator& calc) {
 // Work as a sub-parser:
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
-calculator::calculator(const char* expr, TokenMap* vars,
-                            const char* delim, const char** rest, OppMap_t opPrecedence) {
+calculator::calculator(const char* expr, packMap vars,
+                       const char* delim, const char** rest, OppMap_t opPrecedence) {
   compile(expr, vars, delim, rest, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-                         TokenMap* vars, const char* delim,
+                         packMap vars, const char* delim,
                          const char** rest, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
@@ -753,7 +753,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(TokenMap* vars, bool keep_refs) const {
+packToken calculator::eval(packMap vars, bool keep_refs) const {
   TokenBase* value = calculate(this->RPN, vars);
   if (keep_refs) {
     return packToken(value);

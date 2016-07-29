@@ -67,7 +67,7 @@ template<class T> class pack {
   // This constructor should not be used frequently
   // It won't delete the pointer, but will
   // update the reference counter anyway, so its inefficient.
-  explicit pack(T* t) : ref(build(t, false)) {}
+  pack(T* t) : ref(build(t, false)) {}
 
   // Copy assignment operator
   pack<T>& operator=(pack<T> p) {

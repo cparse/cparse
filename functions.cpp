@@ -11,7 +11,7 @@
 /* * * * * Built-in Functions: * * * * */
 
 const char* text_arg[] = {"text"};
-packToken default_print(TokenMap* scope) {
+packToken default_print(packMap scope) {
   // Get a single argument:
   packToken* p = scope->find("text");
   if ((*p)->type == STR) {
@@ -24,12 +24,12 @@ packToken default_print(TokenMap* scope) {
 }
 
 const char* value_arg[] = {"value"};
-packToken default_eval(TokenMap* scope) {
+packToken default_eval(packMap scope) {
   std::string code = scope->find("value")->asString();
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
-packToken default_float(TokenMap* scope) {
+packToken default_float(packMap scope) {
   packToken* tok = scope->find("value");
   if ((*tok)->type == NUM) return *tok;
 
@@ -46,7 +46,7 @@ packToken default_float(TokenMap* scope) {
   }
   return ret;
 }
-packToken default_str(TokenMap* scope) {
+packToken default_str(packMap scope) {
   // Return its string representation:
   packToken* tok = scope->find("value");
   if ((*tok)->type == STR) return *tok;
@@ -54,31 +54,31 @@ packToken default_str(TokenMap* scope) {
 }
 
 const char* num_arg[] = {"number"};
-packToken default_sqrt(TokenMap* scope) {
+packToken default_sqrt(packMap scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
 
   return sqrt(number);
 }
-packToken default_sin(TokenMap* scope) {
+packToken default_sin(packMap scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
 
   return sin(number);
 }
-packToken default_cos(TokenMap* scope) {
+packToken default_cos(packMap scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
 
   return cos(number);
 }
-packToken default_tan(TokenMap* scope) {
+packToken default_tan(packMap scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
 
   return tan(number);
 }
-packToken default_abs(TokenMap* scope) {
+packToken default_abs(packMap scope) {
   // Get a single argument:
   double number = scope->find("number")->asDouble();
 
@@ -86,7 +86,7 @@ packToken default_abs(TokenMap* scope) {
 }
 
 const char* pow_args[] = {"number", "exp"};
-packToken default_pow(TokenMap* scope) {
+packToken default_pow(packMap scope) {
   // Get two arguments:
   double number = scope->find("number")->asDouble();
   double exp = scope->find("exp")->asDouble();
@@ -97,14 +97,14 @@ packToken default_pow(TokenMap* scope) {
 /* * * * * Type-specific default functions * * * */
 
 const char* no_arg[] = {""};
-packToken string_len(TokenMap* scope) {
+packToken string_len(packMap scope) {
   std::string str = scope->find("this")->asString();
   return static_cast<int>(str.size());
 }
 
 /* * * * * class CppFunction * * * * */
 
-CppFunction::CppFunction(packToken (*func)(TokenMap*), unsigned int nargs,
+CppFunction::CppFunction(packToken (*func)(packMap), unsigned int nargs,
             const char** args, std::string name)
             : func(func) {
   this->name = name;
