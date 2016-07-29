@@ -196,6 +196,9 @@ TEST_CASE("Assignment expressions on maps") {
 
   REQUIRE_NOTHROW(calculator::calculate("m.m = m", &vars));
   REQUIRE(calculator::calculate("10 + (a = m.a = m.m.b)", &vars) == 40);
+
+  REQUIRE_NOTHROW(calculator::calculate("m.m = None", &vars));
+  REQUIRE(calculator::calculate("m.m", &vars)->type == NONE);
 }
 
 TEST_CASE("Scope management") {

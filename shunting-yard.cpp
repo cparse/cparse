@@ -476,18 +476,18 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap* vars) {
 
         // If the left operand has a variable name:
         if (r_left->type == STR) {
-          if (vars) {
-            if (m_left->type == MAP && b_right->type != NONE) {
-              m_left.asMap()->insert(r_left.asString(), packToken(b_right->clone()));
-            } else {
-              vars->assign(r_left.asString(), b_right);
-            }
-            evaluation.push(b_right);
+          if (m_left->type == MAP) {
+            m_left.asMap()->insert(r_left.asString(),
+                                   packToken(b_right->clone()));
+          } else if (vars) {
+            vars->assign(r_left.asString(), b_right);
           } else {
             delete b_right;
             cleanStack(evaluation);
             throw std::domain_error("No TokenMap available for assignment of variable `" + r_left.asString() + "`.");
           }
+
+          evaluation.push(b_right);
         } else {
           packToken p_right(b_right->clone());
           delete b_right;
