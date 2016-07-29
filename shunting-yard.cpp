@@ -51,7 +51,7 @@ TokenMap& TokenMap::default_global() {
   static TokenMap global_map(base_map());
   return global_map;
 }
-TokenMap TokenMap::empty = TokenMap();
+TokenMap TokenMap::empty = TokenMap(&default_global());
 
 typeMap_t& calculator::type_attribute_map() {
   static typeMap_t type_map;
@@ -127,13 +127,17 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
     if (ref->key->type == STR) {
       // If source is a map:
       if (ref->source->type == MAP) {
-        TokenMap* map = ref->source.asMap();
+        packMap map = ref->source.asMap();
         std::string key = ref->key.asString();
-        value = (*map)[key]->clone();
-        delete ref->value;
-      } else if (scope) {
+        if (map->map.count(key)) {
+          value = (*map)[key]->clone();
+          delete ref->value;
+        }
+      }
+
+      if (!value && scope) {
         // Read from the scope:
-        packToken* r_value = scope ? scope->find(ref->key.asString()) : 0;
+        packToken* r_value = scope->find(ref->key.asString());
         if (r_value) {
           value = (*r_value)->clone();
           delete ref->value;
@@ -404,8 +408,7 @@ void cleanStack(std::stack<TokenBase*> st) {
   }
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn,
-                                 TokenMap* vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap* vars) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -493,7 +496,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           throw undefined_operation(op, r_left, p_right);
         }
       } else if (b_left->type == MAP && b_right->type == STR) {
-        TokenMap* left = static_cast<Token<TokenMap*>*>(b_left)->val;
+        packMap left = static_cast<Token<packMap>*>(b_left)->val;
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
         delete b_left;
         delete b_right;
@@ -515,7 +518,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
         }
       // Resolve build-in operations for non-map types, e.g.: 'str'.len()
       } else if (!op.compare(".") && b_right->type == STR) {
-        Object& left = calculator::type_attribute_map()[b_left->type];
+        TokenMap& left = calculator::type_attribute_map()[b_left->type];
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
 
@@ -654,7 +657,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn,
           if (m_left->type != NONE) {
             local["this"] = m_left;
           } else {
-            local["this"] = vars;
+            local["this"] = packMap(vars);
           }
 
           // Add args to scope:
@@ -851,12 +854,3 @@ TokenMap TokenMap::getChild() {
 void TokenMap::erase(std::string key) {
   map.erase(key);
 }
-
-void TokenMap::clean() {
-  map = TokenMap_t();
-}
-
-uint TokenMap::size() const {
-  return map.size();
-}
-

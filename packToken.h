@@ -3,8 +3,6 @@
 
 #include <string>
 
-class TokenMap;
-
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
   TokenBase* base;
@@ -24,7 +22,7 @@ class packToken {
   packToken(double d) : base(new Token<double>(d, NUM)) {}
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
-  packToken(TokenMap* tmap) : base(new Token<TokenMap*>(tmap, MAP)) {}
+  packToken(const packMap& map) : base(new Token<packMap>(map, MAP)) {}
   ~packToken() { delete base; }
 
   packToken& operator=(int t);
@@ -42,7 +40,7 @@ class packToken {
   bool asBool() const;
   double asDouble() const;
   std::string asString() const;
-  TokenMap* asMap() const;
+  packMap asMap() const;
 
   std::string str() const;
   static std::string str(const TokenBase* t);

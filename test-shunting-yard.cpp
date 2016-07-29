@@ -4,7 +4,7 @@
 #include "./shunting-yard.h"
 
 TokenMap vars, emap;
-Object tmap, key3;
+packMap tmap, key3;
 
 void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
@@ -17,13 +17,13 @@ void PREPARE_ENVIRONMENT() {
   vars["str4"] = "foo10";
   vars["str5"] = "10bar";
 
-  vars["map"] = &tmap;
-  tmap["key"] = "mapped value";
-  tmap["key1"] = "second mapped value";
-  tmap["key2"] = 10;
-  tmap["key3"] = &key3;
-  tmap["key3"]["map1"] = "inception1";
-  tmap["key3"]["map2"] = "inception2";
+  vars["map"] = tmap;
+  (*tmap)["key"] = "mapped value";
+  (*tmap)["key1"] = "second mapped value";
+  (*tmap)["key2"] = 10;
+  (*tmap)["key3"] = key3;
+  (*tmap)["key3"]["map1"] = "inception1";
+  (*tmap)["key3"]["map2"] = "inception2";
 
   emap["a"] = 10;
   emap["b"] = 20;
@@ -103,7 +103,7 @@ TEST_CASE("Map access expressions") {
 }
 
 TEST_CASE("Function usage expressions") {
-  TokenMap vars;
+  GlobalScope vars;
   vars["pi"] = 3.141592653589793;
   vars["a"] = -4;
 
@@ -139,8 +139,7 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
   REQUIRE(vars["a"] == 3);
 
-  Object m;
-  vars["m"] = &m;
+  vars["m"] = packMap();
   REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
   REQUIRE_THROWS(calculator::calculate("float('not a number')"));
 
@@ -180,8 +179,7 @@ TEST_CASE("Assignment expressions") {
 }
 
 TEST_CASE("Assignment expressions on maps") {
-  Object asn_map;
-  vars["m"] = &asn_map;
+  vars["m"] = packMap();
   calculator::calculate("m['asn'] = 10", &vars);
 
   // Assigning to an unexistent variable works.
@@ -306,8 +304,7 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(calculator c5("c.[10]"));
 
   TokenMap v1;
-  Object v2;
-  v1["map"] = &v2;
+  v1["map"] = packMap();
   // Mismatched types, no supported operators.
   REQUIRE_THROWS(calculator("map == 0").eval(&v1));
 

@@ -48,7 +48,14 @@ class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
+
+// The pack template manages
+// reference counting.
+#include "pack.h"
+
 class TokenMap;
+// A packMap can be built from a map.
+typedef pack<TokenMap> packMap;
 
 #include "./packToken.h"
 
@@ -68,6 +75,8 @@ struct RefToken : public TokenBase {
   }
 };
 
+struct TokenMap;
+
 // Define the `Function` class
 // as well as some built-in functions:
 #include "./functions.h"
@@ -85,7 +94,7 @@ struct TokenMap {
   TokenMap* parent;
 
  public:
-  TokenMap(TokenMap* parent = &TokenMap::default_global()) : parent(parent) {}
+  TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
 
  public:
   packToken* find(std::string key);
@@ -98,17 +107,14 @@ struct TokenMap {
   packToken& operator[](const std::string& str);
 
   void erase(std::string key);
-
-  void clean();
-  unsigned size() const;
 };
 
-// Build a TokenMap which is not a child of default_global()
-struct Object : public TokenMap {
-  Object() : TokenMap(TokenMap::base_map()) {}
+// Build a TokenMap which is a child of default_global()
+struct GlobalScope : public TokenMap {
+  GlobalScope() : TokenMap(TokenMap::default_global()) {}
 };
 
-typedef std::map<uint8_t, Object> typeMap_t;
+typedef std::map<uint8_t, TokenMap> typeMap_t;
 
 class calculator {
  private:
