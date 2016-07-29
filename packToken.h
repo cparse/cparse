@@ -39,8 +39,8 @@ class packToken {
 
   bool asBool() const;
   double asDouble() const;
-  std::string asString() const;
-  packMap asMap() const;
+  std::string& asString() const;
+  packMap& asMap() const;
 
   std::string str() const;
   static std::string str(const TokenBase* t);

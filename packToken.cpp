@@ -111,7 +111,7 @@ double packToken::asDouble() const {
   return static_cast<Token<double>*>(base)->val;
 }
 
-std::string packToken::asString() const {
+std::string& packToken::asString() const {
   if (base->type != STR && base->type != VAR && base->type != OP) {
     throw bad_cast(
       "The Token is not a string!");
@@ -119,7 +119,7 @@ std::string packToken::asString() const {
   return static_cast<Token<std::string>*>(base)->val;
 }
 
-packMap packToken::asMap() const {
+packMap& packToken::asMap() const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
