@@ -51,7 +51,7 @@ typedef std::list<TokenBase*> Tuple_t;
 
 // The pack template manages
 // reference counting.
-#include "pack.h"
+#include "./pack.h"
 
 class TokenMap;
 // A packMap can be built from a map.

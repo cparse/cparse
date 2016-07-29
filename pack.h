@@ -1,8 +1,9 @@
 #include <iostream>
+#include <utility>
 #include <list>
 
-#ifndef __PACK_H__
-#define __PACK_H__
+#ifndef PACK_H_
+#define PACK_H_
 
 // Pack a pointer to be automatically deleted:
 template<class T> class pack {
@@ -27,12 +28,11 @@ template<class T> class pack {
   Ref_t ref;
 
  protected:
-
   void dropRef() {
     --(ref->count);
 
     // If the reference count gets to 0:
-    if(ref->count == 0) {
+    if (ref->count == 0) {
       if (ref->_delete) {
         delete ref->obj;
       }
@@ -81,4 +81,5 @@ template<class T> class pack {
   T* get() const { return ref->obj; }
 };
 
-#endif
+#endif  // PACK_H_
+
