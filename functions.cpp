@@ -123,11 +123,28 @@ packToken default_pow(packMap scope) {
   return pow(number, exp);
 }
 
-/* * * * * Type-specific default functions * * * */
+/* * * * * Type-specific default functions * * * * */
 
 packToken string_len(packMap scope) {
   std::string str = scope->find("this")->asString();
   return static_cast<int>(str.size());
+}
+
+/* * * * * default constructor functions * * * * */
+
+packToken default_list(packMap scope) {
+  // Get the arguments:
+  packList list = scope->find("arglist")->asList();
+
+  if (list->list.size() == 1 && list->list[0]->type == TUPLE) {
+    return packToken(new Token<packList>(TokenList(list->list[0]), LIST));
+  } else {
+    return list;
+  }
+}
+
+packToken default_map(packMap scope) {
+  return packMap();
 }
 
 /* * * * * class CppFunction * * * * */
@@ -159,6 +176,10 @@ struct CppFunction::Startup {
     global["float"] = CppFunction(&default_float, 1, value_arg, "float");
     global["str"] = CppFunction(&default_str, 1, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
+
+    // Default constructors:
+    global["list"] = CppFunction(&default_list, 0, no_args, "list");
+    global["map"] = CppFunction(&default_map, 0, no_args, "map");
 
     typeMap_t& type_map = calculator::type_attribute_map();
     type_map[STR]["len"] = CppFunction(&string_len, 0, no_args, "len");

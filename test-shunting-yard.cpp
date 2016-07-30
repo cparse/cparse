@@ -143,6 +143,18 @@ TEST_CASE("List usage expressions") {
   REQUIRE_THROWS(calculator::calculate("concat[-10]", &vars));
 }
 
+TEST_CASE("List and map constructors usage") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("my_map = map()", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list = list()", &vars));
+
+  REQUIRE(vars["my_map"]->type == MAP);
+  REQUIRE(vars["my_list"]->type == LIST);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list = list(1,'2',None,map(),list('sub_list'))", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
+}
+
 TEST_CASE("Function usage expressions") {
   GlobalScope vars;
   vars["pi"] = 3.141592653589793;
