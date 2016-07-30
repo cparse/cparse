@@ -47,6 +47,18 @@ packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
 
+/* * * * * packMap Class * * * * */
+
+packToken* packMap::next() { return ref->obj->next(); }
+void packMap::reset() { ref->obj->reset(); }
+
+/* * * * * packList Class * * * * */
+
+packToken* packList::next() { return ref->obj->next(); }
+void packList::reset() { ref->obj->reset(); }
+
+/* * * * * calculator Class * * * * */
+
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
                               TokenQueue_t* rpnQueue, bool lastTokenWasOp) {

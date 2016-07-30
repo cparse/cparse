@@ -7,13 +7,35 @@
 #include <vector>
 #include <string>
 
-// Iterator super class.
-struct Iterator {
-  // Return the next position of the iterator.
-  // When it reaches the end it should return NULL
-  // and reset the iterator automatically.
-  virtual packToken* next() = 0;
-  virtual void reset() = 0;
+class Tuple : public TokenBase {
+ public:
+  typedef std::list<TokenBase*> Tuple_t;
+
+ public:
+  Tuple_t tuple;
+
+ public:
+  Tuple() {}
+  Tuple(const TokenBase* a);
+  Tuple(const TokenBase* a, const TokenBase* b);
+  Tuple(const Tuple& t) : tuple(copyTuple(t.tuple)) { this->type = TUPLE; }
+  ~Tuple() { cleanTuple(&tuple); }
+
+ public:
+  void push_back(const TokenBase* tb);
+  TokenBase* pop_front();
+  unsigned int size();
+
+ private:
+  Tuple_t copyTuple(const Tuple_t& t);
+  void cleanTuple(Tuple_t* t);
+
+ public:
+  Tuple& operator=(const Tuple& t);
+
+  virtual TokenBase* clone() const {
+    return new Tuple(static_cast<const Tuple&>(*this));
+  }
 };
 
 struct TokenMap : public Iterator {
