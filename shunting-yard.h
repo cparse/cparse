@@ -61,6 +61,13 @@ typedef pack<TokenList> packList;
 
 #include "./packToken.h"
 
+// Define the Tuple, TokenMap and TokenList classes:
+#include "./objects.h"
+
+// Define the `Function` class
+// as well as some built-in functions:
+#include "./functions.h"
+
 struct RefToken : public TokenBase {
   packToken key;
   TokenBase* value;
@@ -76,13 +83,6 @@ struct RefToken : public TokenBase {
     return copy;
   }
 };
-
-// Define the `Function` class
-// as well as some built-in functions:
-#include "./functions.h"
-
-// Define the TokenMap and TokenList classes:
-#include "./objects.h"
 
 typedef std::map<uint8_t, TokenMap> typeMap_t;
 
