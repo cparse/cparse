@@ -1,7 +1,11 @@
-#include <list>
 
 #ifndef OBJECTS_H_
 #define OBJECTS_H_
+
+#include <map>
+#include <list>
+#include <vector>
+#include <string>
 
 struct TokenMap {
   typedef std::map<std::string, packToken> TokenMap_t;

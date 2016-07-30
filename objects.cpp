@@ -29,7 +29,7 @@ const char* push_args[] = {"item"};
 packToken list_push(packMap scope) {
   packToken* list = scope->find("this");
   packToken* token = scope->find("item");
-  
+
   // If "this" is not a list it will throw here:
   list->asList()->list.push_back(*token);
 

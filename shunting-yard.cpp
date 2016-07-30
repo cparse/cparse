@@ -634,7 +634,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         delete b_right;
 
         if (!op.compare("[]")) {
-          long index = static_cast<long>(right);
+          int64_t index = static_cast<int64_t>(right);
 
           if (index < 0) {
             // Reverse index, i.e. list[-1] = list[list.size()-1]

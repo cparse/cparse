@@ -19,7 +19,7 @@ class packToken {
   template<class C>
   packToken(C c, tokType type) : base(new Token<C>(c, type)) {}
   packToken(int d) : base(new Token<double>(d, NUM)) {}
-  packToken(long l) : base(new Token<double>(l, NUM)) {}
+  packToken(int64_t l) : base(new Token<double>(l, NUM)) {}
   packToken(size_t s) : base(new Token<double>(s, NUM)) {}
   packToken(double d) : base(new Token<double>(d, NUM)) {}
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
