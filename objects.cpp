@@ -1,7 +1,29 @@
 #include "./shunting-yard.h"
 
-#include "./token-list.h"
+#include "./objects.h"
 #include "./functions.h"
+
+/* * * * * Initialize TokenMap * * * * */
+
+// Using the "Construct On First Use Idiom"
+// to avoid the "static initialization order fiasco",
+// for more information read:
+//
+// - https://isocpp.org/wiki/faq/ctors#static-init-order
+//
+TokenMap& TokenMap::base_map() {
+  static TokenMap global_map(0);
+  return global_map;
+}
+
+TokenMap& TokenMap::default_global() {
+  static TokenMap global_map(base_map());
+  return global_map;
+}
+
+TokenMap TokenMap::empty = TokenMap(&default_global());
+
+/* * * * * TokenList built-in functions * * * * */
 
 const char* push_args[] = {"item"};
 packToken list_push(packMap scope) {
@@ -42,6 +64,8 @@ packToken list_len(packMap scope) {
   return list->list.size();
 }
 
+/* * * * * Initialize TokenList functions * * * * */
+
 struct TokenList::Startup {
   Startup() {
     TokenMap& base = calculator::type_attribute_map()[LIST];
@@ -50,6 +74,8 @@ struct TokenList::Startup {
     base["len"] = CppFunction(list_len, 0, list_no_args, "len");
   }
 } list_startup;
+
+/* * * * * TokenList iterator implemented functions * * * * */
 
 packToken* TokenList::next() {
   if (i < list.size()) {

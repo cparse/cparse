@@ -81,42 +81,8 @@ struct RefToken : public TokenBase {
 // as well as some built-in functions:
 #include "./functions.h"
 
-struct TokenMap {
-  typedef std::map<std::string, packToken> TokenMap_t;
-
-  // Static factories:
-  static TokenMap empty;
-  static TokenMap& base_map();
-  static TokenMap& default_global();
-
- public:
-  TokenMap_t map;
-  TokenMap* parent;
-
- public:
-  TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
-  virtual ~TokenMap() {}
-
- public:
-  packToken* find(std::string key);
-  const packToken* find(std::string key) const;
-  void assign(std::string key, TokenBase* value);
-  void insert(std::string key, TokenBase* value);
-
-  TokenMap getChild();
-
-  packToken& operator[](const std::string& str);
-
-  void erase(std::string key);
-};
-
-// Build a TokenMap which is a child of default_global()
-struct GlobalScope : public TokenMap {
-  GlobalScope() : TokenMap(TokenMap::default_global()) {}
-};
-
-// Define the TokenList class
-#include "./token-list.h"
+// Define the TokenMap and TokenList classes:
+#include "./objects.h"
 
 typedef std::map<uint8_t, TokenMap> typeMap_t;
 

@@ -37,27 +37,12 @@ OppMap_t calculator::buildOpPrecedence() {
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 
-// Using the "Construct On First Use Idiom"
-// to avoid the "static initialization order fiasco",
-// for more information read:
-//
-// - https://isocpp.org/wiki/faq/ctors#static-init-order
-//
-TokenMap& TokenMap::base_map() {
-  static TokenMap global_map(0);
-  return global_map;
-}
-TokenMap& TokenMap::default_global() {
-  static TokenMap global_map(base_map());
-  return global_map;
-}
-TokenMap TokenMap::empty = TokenMap(&default_global());
-
 typeMap_t& calculator::type_attribute_map() {
   static typeMap_t type_map;
   return type_map;
 }
 
+// Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
