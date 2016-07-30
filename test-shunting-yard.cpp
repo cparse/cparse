@@ -3,7 +3,8 @@
 
 #include "./shunting-yard.h"
 
-TokenMap_t vars, tmap, key3, emap;
+TokenMap vars, emap;
+packMap tmap, key3;
 
 void PREPARE_ENVIRONMENT() {
   vars["pi"] = 3.14;
@@ -16,13 +17,13 @@ void PREPARE_ENVIRONMENT() {
   vars["str4"] = "foo10";
   vars["str5"] = "10bar";
 
-  vars["map"] = &tmap;
-  tmap["key"] = "mapped value";
-  tmap["key1"] = "second mapped value";
-  tmap["key2"] = 10;
-  tmap["key3"] = &key3;
-  tmap["key3"]["map1"] = "inception1";
-  tmap["key3"]["map2"] = "inception2";
+  vars["map"] = tmap;
+  (*tmap)["key"] = "mapped value";
+  (*tmap)["key1"] = "second mapped value";
+  (*tmap)["key2"] = 10;
+  (*tmap)["key3"] = key3;
+  (*tmap)["key3"]["map1"] = "inception1";
+  (*tmap)["key3"]["map2"] = "inception2";
 
   emap["a"] = 10;
   emap["b"] = 20;
@@ -58,10 +59,10 @@ TEST_CASE("Boolean expressions") {
   REQUIRE(calculator::calculate("3 == 3").asBool());
   REQUIRE_FALSE(calculator::calculate("3 != 3").asBool());
 
-  REQUIRE(calculator::calculate("(3 && true) == true").asBool());
-  REQUIRE_FALSE(calculator::calculate("(3 && 0) == true").asBool());
-  REQUIRE(calculator::calculate("(3 || 0) == true").asBool());
-  REQUIRE_FALSE(calculator::calculate("(false || 0) == true").asBool());
+  REQUIRE(calculator::calculate("(3 && True) == True").asBool());
+  REQUIRE_FALSE(calculator::calculate("(3 && 0) == True").asBool());
+  REQUIRE(calculator::calculate("(3 || 0) == True").asBool());
+  REQUIRE_FALSE(calculator::calculate("(False || 0) == True").asBool());
 }
 
 TEST_CASE("String expressions") {
@@ -101,8 +102,61 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"no_key\"]", &vars) == packToken::None);
 }
 
+TEST_CASE("List usage expressions") {
+  TokenMap vars;
+  vars["my_list"] = packList();
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(1)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(2)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(3)", &vars));
+
+  REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 3);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.pop(1)", &vars));
+
+  REQUIRE(vars["my_list"].str() == "[ 1, 3 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.pop()", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 1);
+
+  vars["list"] = packList();
+  REQUIRE_NOTHROW(calculator::calculate("list.push(4).push(5).push(6)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(2).push(3)", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
+  REQUIRE(vars["list"].str() == "[ 4, 5, 6 ]");
+
+  REQUIRE_NOTHROW(calculator::calculate("concat = my_list + list", &vars));
+  REQUIRE(vars["concat"].str() == "[ 1, 2, 3, 4, 5, 6 ]");
+  REQUIRE(calculator::calculate("concat.len()", &vars).asDouble() == 6);
+
+  // Reverse index like python:
+  REQUIRE_NOTHROW(calculator::calculate("concat[-2] = 10", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("concat[2] = '3'", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("concat[3] = None", &vars));
+  REQUIRE(vars["concat"].str() == "[ 1, 2, \"3\", None, 10, 6 ]");
+
+  // List index out of range:
+  REQUIRE_THROWS(calculator::calculate("concat[10]", &vars));
+  REQUIRE_THROWS(calculator::calculate("concat[-10]", &vars));
+}
+
+TEST_CASE("List and map constructors usage") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("my_map = map()", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list = list()", &vars));
+
+  REQUIRE(vars["my_map"]->type == MAP);
+  REQUIRE(vars["my_list"]->type == LIST);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list = list(1,'2',None,map(),list('sub_list'))", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
+}
+
 TEST_CASE("Function usage expressions") {
-  TokenMap_t vars;
+  GlobalScope vars;
   vars["pi"] = 3.141592653589793;
   vars["a"] = -4;
 
@@ -126,9 +180,7 @@ TEST_CASE("Function usage expressions") {
   REQUIRE_THROWS(calculator::calculate("foo(10),"));
   REQUIRE_THROWS(calculator::calculate("foo,(10)"));
 
-  REQUIRE_NOTHROW(calculator::calculate("print()"));
-
-  REQUIRE(Scope::default_global()["abs"].str() == "[Function: abs]");
+  REQUIRE(TokenMap::default_global()["abs"].str() == "[Function: abs]");
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
 
   REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
@@ -140,10 +192,31 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(calculator::calculate(" eval('a = 3') ", &vars).asDouble() == 3);
   REQUIRE(vars["a"] == 3);
 
-  TokenMap_t m;
-  vars["m"] = &m;
+  vars["m"] = packMap();
   REQUIRE_THROWS(calculator::calculate("1 + float(m) * 3", &vars));
   REQUIRE_THROWS(calculator::calculate("float('not a number')"));
+
+  REQUIRE_NOTHROW(calculator::calculate("pow(1,-10)"));
+  REQUIRE_NOTHROW(calculator::calculate("pow(1,+10)"));
+
+  vars["base"] = 2;
+  c.compile("pow(base,2)", &vars);
+  vars["base"] = 3;
+  REQUIRE(c.eval().asDouble() == 4);
+  REQUIRE(c.eval(&vars).asDouble() == 9);
+}
+
+TEST_CASE("Multiple argument functions") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("total = sum(1,2,3,4)", &vars));
+  REQUIRE(vars["total"].asDouble() == 10);
+}
+
+TEST_CASE("Type specific functions") {
+  TokenMap vars;
+  vars["s"] = "string";
+
+  REQUIRE(calculator::calculate("s.len()", &vars).asDouble() == 6);
 }
 
 TEST_CASE("Assignment expressions") {
@@ -160,11 +233,12 @@ TEST_CASE("Assignment expressions") {
   REQUIRE_NOTHROW(calculator::calculate("a = b = 20", &vars));
   REQUIRE_NOTHROW(calculator::calculate("a = b = c = d = 30", &vars));
   REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", &vars) == true);
+
+  REQUIRE_NOTHROW(calculator::calculate("teste='b'"));
 }
 
 TEST_CASE("Assignment expressions on maps") {
-  TokenMap_t asn_map;
-  vars["m"] = &asn_map;
+  vars["m"] = packMap();
   calculator::calculate("m['asn'] = 10", &vars);
 
   // Assigning to an unexistent variable works.
@@ -181,47 +255,35 @@ TEST_CASE("Assignment expressions on maps") {
 
   REQUIRE_NOTHROW(calculator::calculate("m.m = m", &vars));
   REQUIRE(calculator::calculate("10 + (a = m.a = m.m.b)", &vars) == 40);
+
+  REQUIRE_NOTHROW(calculator::calculate("m.m = None", &vars));
+  REQUIRE(calculator::calculate("m.m", &vars)->type == NONE);
 }
 
 TEST_CASE("Scope management") {
   calculator c("pi+b1+b2");
-  Scope scope;
+  TokenMap parent;
+  parent["pi"] = 3.14;
+  parent["b1"] = 0;
+  parent["b2"] = 0.86;
 
-  // Add vars to scope:
-  scope.push(&vars);
-  REQUIRE(c.eval(scope).asDouble() == Approx(4));
+  TokenMap child = parent.getChild();
 
-  tmap["b2"] = 1.0;
-  scope.push(&tmap);
-  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
+  // Check scope extension:
+  REQUIRE(c.eval(&child).asDouble() == Approx(4));
 
-  Scope scope_bkp = scope;
-
-  // Remove vars from scope:
-  scope.pop();
-  scope.pop();
-
-  scope.pop();  // Final pop for default functions.
-
-  // Test what happens when you try to drop more namespaces than possible:
-  REQUIRE_THROWS(scope.pop());
-
-  // Load Saved Scope
-  scope = scope_bkp;
-  REQUIRE(c.eval(scope).asDouble() == Approx(4.14));
+  child["b2"] = 1.0;
+  REQUIRE(c.eval(&child).asDouble() == Approx(4.14));
 
   // Testing with 3 namespaces:
-  TokenMap_t vmap;
+  TokenMap vmap = child.getChild();
   vmap["b1"] = -1.14;
-  scope.push(&vmap);
-  REQUIRE(c.eval(scope).asDouble() == Approx(3.0));
+  REQUIRE(c.eval(&vmap).asDouble() == Approx(3.0));
 
-  scope_bkp = scope;
-  calculator c2("pi+b1+b2", scope_bkp);
+  TokenMap copy = vmap;
+  calculator c2("pi+b1+b2", &copy);
   REQUIRE(c2.eval().asDouble() == Approx(3.0));
-  REQUIRE(calculator::calculate("pi+b1+b2", scope_bkp).asDouble() == Approx(3.0));
-
-  scope.clean();
+  REQUIRE(calculator::calculate("pi+b1+b2", &copy).asDouble() == Approx(3.0));
 }
 
 // Working as a slave parser implies it will return
@@ -230,7 +292,7 @@ TEST_CASE("Scope management") {
 TEST_CASE("Parsing as slave parser") {
   const char* original_code = "a=1; b=2\n c=a+b }";
   const char* code = original_code;
-  TokenMap_t vars;
+  TokenMap vars;
   calculator c1, c2, c3;
 
   // With static function:
@@ -303,8 +365,8 @@ TEST_CASE("Exception management") {
   REQUIRE_NOTHROW(calculator c5("10 + -10"));
   REQUIRE_THROWS(calculator c5("c.[10]"));
 
-  TokenMap_t v1, v2;
-  v1["map"] = &v2;
+  TokenMap v1;
+  v1["map"] = packMap();
   // Mismatched types, no supported operators.
   REQUIRE_THROWS(calculator("map == 0").eval(&v1));
 

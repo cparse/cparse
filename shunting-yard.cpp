@@ -20,7 +20,7 @@ OppMap_t calculator::buildOpPrecedence() {
   // precedence order as described on cppreference website:
   // http://en.cppreference.com/w/cpp/language/operator_precedence
   opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
-  opp["^"]  = 3;
+  opp["**"]  = 3;
   opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
   opp["+"]  = 6; opp["-"]  = 6;
   opp["<<"] = 7; opp[">>"] = 7;
@@ -37,20 +37,15 @@ OppMap_t calculator::buildOpPrecedence() {
 // Builds the opPrecedence map only once:
 OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 
-// Using the "Construct On First Use Idiom"
-// to avoid the "static initialization order fiasco",
-// for more information read:
-//
-// - https://isocpp.org/wiki/faq/ctors#static-init-order
-//
-const Scope Scope::empty = Scope();
-TokenMap_t& Scope::default_global() {
-  static TokenMap_t global_map;
-  return global_map;
+typeMap_t& calculator::type_attribute_map() {
+  static typeMap_t type_map;
+  return type_map;
 }
 
+// Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
+packToken noneToken = TokenNone();
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
@@ -102,11 +97,46 @@ void calculator::handle_op(const std::string& op,
 // And obtain the original TokenBase*.
 // Please note that it only deletes memory if the token
 // is of type REF.
-TokenBase* pop_reference(TokenBase* b) {
+TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
+  TokenBase* value = 0;
+
   if (b->type & REF) {
-    TokenBase* ref = static_cast<RefToken*>(b)->value;
-    delete b;
-    return ref;
+    // Grab the possible values:
+    RefToken* ref = static_cast<RefToken*>(b);
+
+    // Decide from where to get the updated value:
+    if (ref->key->type == STR) {
+      // If source is a map:
+      if (ref->source->type == MAP) {
+        packMap map = ref->source.asMap();
+        std::string key = ref->key.asString();
+        if (map->map.count(key)) {
+          value = (*map)[key]->clone();
+          delete ref->value;
+        }
+      }
+
+      if (!value && scope) {
+        // Read from the scope:
+        packToken* r_value = scope->find(ref->key.asString());
+        if (r_value) {
+          value = (*r_value)->clone();
+          delete ref->value;
+        }
+      }
+    } else if (ref->key->type == NUM && ref->source->type == LIST) {
+      packList list = ref->source.asList();
+      size_t index = static_cast<size_t>(ref->key.asDouble());
+      if (index < list->list.size()) {
+        value = (*list)[index]->clone();
+        delete ref->value;
+      }
+    }
+
+    if (!value) value = ref->value;
+    delete ref;
+
+    return value;
   } else {
     return b;
   }
@@ -136,7 +166,7 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               const Scope* vars, const char* delim,
+                               packMap vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   uint8_t lastTokenWasOp = true;
@@ -184,10 +214,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
         packToken* value = NULL;
         std::string key = ss.str();
 
-        if (key == "true") {
+        if (key == "True") {
           value = &trueToken;
-        } else if (key == "false") {
+        } else if (key == "False") {
           value = &falseToken;
+        } else if (key == "None") {
+          value = &noneToken;
         } else {
           if (vars) value = vars->find(key);
         }
@@ -195,7 +227,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         if (value) {
           // Save a reference token:
           TokenBase* copy = (*value)->clone();
-          rpnQueue.push(new RefToken(key, copy, copy->type | REF));
+          rpnQueue.push(new RefToken(key, copy));
         } else {
           // Save the variable name:
           rpnQueue.push(new Token<std::string>(key, VAR));
@@ -285,6 +317,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       case ')':
         if (lastTokenWasOp == '(') {
           rpnQueue.push(new TokenNone());
+          lastTokenWasOp = false;
         }
         while (operatorStack.top().compare("(")) {
           rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
@@ -309,7 +342,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           std::stringstream ss;
           ss << *expr;
           ++expr;
-          while (*expr && ispunct(*expr) && !strchr("()_", *expr)) {
+          while (*expr && ispunct(*expr) && !strchr("+-'\"()_", *expr)) {
             ss << *expr;
             ++expr;
           }
@@ -346,26 +379,25 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, const Scope& vars,
+packToken calculator::calculate(const char* expr, packMap vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
-  RAII_TokenQueue_t rpn = calculator::toRPN(expr, &vars, delim, rest);
-  packToken ret;
+  RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
+  TokenBase* ret;
 
-  ret = calculator::calculate(rpn, &vars);
+  ret = calculator::calculate(rpn, vars);
 
-  return ret;
+  return packToken(resolve_reference(ret));
 }
 
 void cleanStack(std::stack<TokenBase*> st) {
   while (st.size() > 0) {
-    delete pop_reference(st.top());
+    delete resolve_reference(st.top());
     st.pop();
   }
 }
 
-packToken calculator::calculate(TokenQueue_t _rpn,
-                                const Scope* vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -397,21 +429,20 @@ packToken calculator::calculate(TokenQueue_t _rpn,
       if (b_right->type == VAR) {
         std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
         delete b_right;
-        delete pop_reference(b_left);
+        delete resolve_reference(b_left);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
-        b_right = pop_reference(b_right);
+        b_right = resolve_reference(b_right, vars);
       }
 
-      std::string r_left;
-      TokenMap_t* m_left = NULL;
+      packToken r_left;
+      packToken m_left;
       if (b_left->type & REF) {
         RefToken* left = static_cast<RefToken*>(b_left);
-        r_left = left->name;
-        m_left = left->source_map;
-        b_left = left->value;
-        delete left;
+        r_left = left->key;
+        m_left = left->source;
+        b_left = resolve_reference(left, vars);
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
@@ -433,25 +464,81 @@ packToken calculator::calculate(TokenQueue_t _rpn,
         delete b_left;
 
         // If the left operand has a variable name:
-        if (r_left.size() > 0) {
-          if (vars) {
-            if (m_left && b_right->type != NONE) {
-              (*m_left)[r_left] = packToken(b_right->clone());
-            } else {
-              vars->assign(r_left, b_right);
-            }
-            evaluation.push(b_right);
+        if (r_left->type == STR) {
+          if (m_left->type == MAP) {
+            packMap& map = m_left.asMap();
+            std::string& key = r_left.asString();
+            (*map)[key] = packToken(b_right->clone());
+          } else if (vars) {
+            vars->assign(r_left.asString(), b_right);
           } else {
             delete b_right;
             cleanStack(evaluation);
-            throw std::domain_error("No Scope available for assignment of variable `" + r_left + "`.");
+            throw std::domain_error("Could not assign variable `" + r_left.asString() + "`!");
           }
+
+          evaluation.push(b_right);
+        // If the left operand has an index number:
+        } else if (r_left->type == NUM) {
+          if (m_left->type == LIST) {
+            packList& list = m_left.asList();
+            size_t index = static_cast<size_t>(r_left.asDouble());
+            (*list)[index] = packToken(b_right->clone());
+          } else {
+            delete b_right;
+            cleanStack(evaluation);
+            throw std::domain_error("Left operand of assignment is not a list!");
+          }
+
+          evaluation.push(b_right);
         } else {
           packToken p_right(b_right->clone());
           delete b_right;
 
           cleanStack(evaluation);
           throw undefined_operation(op, r_left, p_right);
+        }
+      } else if (b_left->type == MAP && b_right->type == STR) {
+        packMap left = static_cast<Token<packMap>*>(b_left)->val;
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        if (!op.compare("[]") || !op.compare(".")) {
+          packToken* p_value = left->find(right);
+          TokenBase* value;
+
+          if (p_value) {
+            value = (*p_value)->clone();
+          } else {
+            value = new TokenNone();
+          }
+
+          evaluation.push(new RefToken(right, value, left));
+        } else {
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+      // Resolve build-in operations for non-map types, e.g.: 'str'.len()
+      } else if (!op.compare(".") && b_right->type == STR) {
+        TokenMap& left = calculator::type_attribute_map()[b_left->type];
+        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+        delete b_right;
+
+        packToken* attr = left.find(right);
+        if (attr) {
+          TokenBase* value = (*attr)->clone();
+          packToken source = packToken(b_left);
+
+          // Note: If attr is a function, it will receive have
+          // scope["this"] == source, so it can make changes on this object.
+          // Or just read some information for example: its length.
+          evaluation.push(new RefToken(right, value, source));
+        } else {
+          packToken p_left = packToken(b_left->clone());
+          delete b_left;
+          cleanStack(evaluation);
+          throw undefined_operation(op, p_left, right);
         }
       } else if (b_left->type == NUM && b_right->type == NUM) {
         double left = static_cast<Token<double>*>(b_left)->val;
@@ -472,7 +559,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           evaluation.push(new Token<double>(left / right, NUM));
         } else if (!op.compare("<<")) {
           evaluation.push(new Token<double>(left_i << right_i, NUM));
-        } else if (!op.compare("^")) {
+        } else if (!op.compare("**")) {
           evaluation.push(new Token<double>(pow(left, right), NUM));
         } else if (!op.compare(">>")) {
           evaluation.push(new Token<double>(left_i >> right_i, NUM));
@@ -542,26 +629,48 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
-      } else if (b_left->type == MAP && b_right->type == STR) {
-        TokenMap_t* left = static_cast<Token<TokenMap_t*>*>(b_left)->val;
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
+      } else if (b_left->type == LIST && b_right->type == NUM) {
+        packList left = static_cast<Token<packList>*>(b_left)->val;
+        double right = static_cast<Token<double>*>(b_right)->val;
+        delete b_right;
+
+        if (!op.compare("[]")) {
+          int64_t index = static_cast<int64_t>(right);
+
+          if (index < 0) {
+            // Reverse index, i.e. list[-1] = list[list.size()-1]
+            index += left->list.size();
+          }
+
+          if (index < 0 || static_cast<size_t>(index) >= left->list.size()) {
+            delete b_left;
+            cleanStack(evaluation);
+            throw std::domain_error("List index out of range!");
+          }
+
+          TokenBase* value = left->list[index]->clone();
+
+          evaluation.push(new RefToken(index, value, packToken(b_left)));
+        } else {
+          delete b_left;
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+      } else if (b_left->type == LIST && b_right->type == LIST) {
+        packList left = static_cast<Token<packList>*>(b_left)->val;
+        packList right = static_cast<Token<packList>*>(b_right)->val;
         delete b_left;
         delete b_right;
 
-        if (!op.compare("[]") || !op.compare(".")) {
-          TokenMap_t::iterator it = left->find(right);
+        if (!op.compare("+")) {
+          // Copy the first list into a new packList:
+          packList result = TokenList(*left);
 
-          TokenBase* value;
-          uint8_t type;
-          if (it == left->end()) {
-            value = new TokenNone();
-            type = NONE | REF;
-          } else {
-            value = it->second->clone();
-            type = value->type | REF;
+          for (packToken& p : right->list) {
+            result->list.push_back(p);
           }
 
-          evaluation.push(new RefToken(right, value, left, type));
+          evaluation.push(new Token<packList>(result, LIST));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
@@ -580,7 +689,8 @@ packToken calculator::calculate(TokenQueue_t _rpn,
           delete b_right;
 
           // Build the local namespace:
-          TokenMap_t local;
+          packMap local = TokenMap(vars);
+
           for (const std::string& name : f_left->args()) {
             packToken value;
             if (right.size()) {
@@ -589,23 +699,34 @@ packToken calculator::calculate(TokenQueue_t _rpn,
               value = packToken::None;
             }
 
-            local.insert(std::pair<std::string, packToken>(name, value));
+            // Use insert to make sure it is declared
+            // on the most local scope, and not on any of its parents
+            local->insert(name, value);
+          }
+
+          packList largs;
+          // Collect any extra arguments:
+          while (right.size()) {
+            largs->list.push_back(packToken(right.pop_front()));
+          }
+          (*local)["arglist"] = largs;
+
+          if (m_left->type != NONE) {
+            (*local)["this"] = m_left;
+          } else {
+            (*local)["this"] = packMap(vars);
           }
 
           // Add args to scope:
-          vars->push(&local);
           packToken ret;
           try {
             // Execute the function:
-            ret = f_left->exec(vars);
+            ret = f_left->exec(local);
           } catch (...) {
             cleanStack(evaluation);
-            vars->pop();
             delete f_left;
             throw;
           }
-          // Drop the local scope:
-          vars->pop();
           delete f_left;
 
           evaluation.push(ret->clone());
@@ -634,7 +755,7 @@ packToken calculator::calculate(TokenQueue_t _rpn,
 
       if (value) {
         TokenBase* copy = (*value)->clone();
-        evaluation.push(new RefToken(key, copy, copy->type | REF));
+        evaluation.push(new RefToken(key, copy));
         delete base;
       } else {
         evaluation.push(base);
@@ -644,12 +765,12 @@ packToken calculator::calculate(TokenQueue_t _rpn,
     }
   }
 
-  return packToken(pop_reference(evaluation.top()));
+  return evaluation.top();
 }
 
 void calculator::cleanRPN(TokenQueue_t* rpn) {
   while (rpn->size()) {
-    delete pop_reference(rpn->front());
+    delete resolve_reference(rpn->front());
     rpn->pop();
   }
 }
@@ -675,22 +796,27 @@ calculator::calculator(const calculator& calc) {
 // Work as a sub-parser:
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
-calculator::calculator(const char* expr, const Scope& vars,
-                            const char* delim, const char** rest, OppMap_t opPrecedence) {
+calculator::calculator(const char* expr, packMap vars,
+                       const char* delim, const char** rest, OppMap_t opPrecedence) {
   compile(expr, vars, delim, rest, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-                         const Scope& vars, const char* delim,
+                         packMap vars, const char* delim,
                          const char** rest, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, &vars, delim, rest, opPrecedence);
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(const Scope& vars) const {
-  return calculate(this->RPN, &vars);
+packToken calculator::eval(packMap vars, bool keep_refs) const {
+  TokenBase* value = calculate(this->RPN, vars);
+  if (keep_refs) {
+    return packToken(value);
+  } else {
+    return packToken(resolve_reference(value));
+  }
 }
 
 calculator& calculator::operator=(const calculator& calc) {
@@ -719,7 +845,7 @@ std::string calculator::str(TokenQueue_t rpn) {
 
   ss << "calculator { RPN: [ ";
   while (rpn.size()) {
-    ss << packToken(pop_reference(rpn.front()->clone())).str();
+    ss << packToken(resolve_reference(rpn.front()->clone())).str();
     rpn.pop();
 
     ss << (rpn.size() ? ", ":"");
@@ -728,35 +854,37 @@ std::string calculator::str(TokenQueue_t rpn) {
   return ss.str();
 }
 
-/* * * * * Scope Class: * * * * */
+/* * * * * TokenMap Class: * * * * */
 
-Scope::Scope(TokenMap_t* vars) {
-  // Add default functions to the global namespace:
-  scope.push_front(&default_global());
+packToken* TokenMap::find(std::string key) {
+  TokenMap_t::iterator it = map.find(key);
 
-  if (vars) scope.push_front(vars);
-}
-
-packToken* Scope::find(std::string key) const {
-  packToken* value = NULL;
-
-  Scope_t::iterator s_it = scope.begin();
-  for (; s_it != scope.end(); s_it++) {
-    TokenMap_t::iterator it = (*s_it)->find(key);
-    if (it != (*s_it)->end()) {
-      value = &(it->second);
-      break;
-    }
+  if (it != map.end()) {
+    return &it->second;
+  } else if (parent) {
+    return parent->find(key);
+  } else {
+    return 0;
   }
-
-  return value;
 }
 
-void Scope::assign(std::string key, TokenBase* value) const {
+const packToken* TokenMap::find(std::string key) const {
+  TokenMap_t::const_iterator it = map.find(key);
+
+  if (it != map.end()) {
+    return &it->second;
+  } else if (parent) {
+    return parent->find(key);
+  } else {
+    return 0;
+  }
+}
+
+void TokenMap::assign(std::string key, TokenBase* value) {
   if (value) {
     value = value->clone();
   } else {
-    throw std::invalid_argument("Scope assignment expected a non NULL argument as value!");
+    throw std::invalid_argument("TokenMap assignment expected a non NULL argument as value!");
   }
 
   packToken* variable = find(key);
@@ -764,42 +892,22 @@ void Scope::assign(std::string key, TokenBase* value) const {
   if (variable) {
     (*variable) = packToken(value);
   } else {
-    // Insert it on the most local context
-    if (scope.size() == 0) {
-      throw std::range_error("Cannot insert a variable into an empty scope!");
-    }
-    scope.front()->insert(std::pair<std::string, packToken>(key, packToken(value)));
+    map[key] = packToken(value);
   }
 }
 
-void Scope::push(TokenMap_t* vars) const {
-  if (vars) scope.push_front(vars);
+void TokenMap::insert(std::string key, TokenBase* value) {
+  (*this)[key] = packToken(value->clone());
 }
 
-void Scope::push(Scope other) const {
-  Scope_t::reverse_iterator s_it = other.scope.rbegin();
-  for (; s_it != other.scope.rend(); s_it++) {
-    push(*s_it);
-  }
+packToken& TokenMap::operator[](const std::string& key) {
+  return map[key];
 }
 
-void Scope::pop() const {
-  if (scope.size() == 0)
-    throw std::range_error("Calculator::drop_namespace(): No namespace left to drop!");
-  scope.pop_front();
+TokenMap TokenMap::getChild() {
+  return TokenMap(this);
 }
 
-// Pop the N top elements:
-void Scope::pop(unsigned N) const {
-  for (unsigned i=0; i < N; i++) {
-    pop();
-  }
-}
-
-void Scope::clean() const {
-  scope = Scope_t();
-}
-
-unsigned Scope::size() const {
-  return scope.size();
+void TokenMap::erase(std::string key) {
+  map.erase(key);
 }

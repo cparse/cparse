@@ -61,28 +61,28 @@ packToken& packToken::operator[](const std::string& key) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<packMap>*>(base)->val)[key];
 }
 const packToken& packToken::operator[](const std::string& key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<packMap>*>(base)->val)[key];
 }
 packToken& packToken::operator[](const char* key) {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<packMap>*>(base)->val)[key];
 }
 const packToken& packToken::operator[](const char* key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<TokenMap_t*>*>(base)->val)[key];
+  return (*static_cast<Token<packMap>*>(base)->val)[key];
 }
 
 bool packToken::asBool() const {
@@ -111,7 +111,7 @@ double packToken::asDouble() const {
   return static_cast<Token<double>*>(base)->val;
 }
 
-std::string packToken::asString() const {
+std::string& packToken::asString() const {
   if (base->type != STR && base->type != VAR && base->type != OP) {
     throw bad_cast(
       "The Token is not a string!");
@@ -119,21 +119,33 @@ std::string packToken::asString() const {
   return static_cast<Token<std::string>*>(base)->val;
 }
 
-TokenMap_t* packToken::asMap() const {
+packMap& packToken::asMap() const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return static_cast<Token<TokenMap_t*>*>(base)->val;
+  return static_cast<Token<packMap>*>(base)->val;
+}
+
+packList& packToken::asList() const {
+  if (base->type != LIST) {
+    throw bad_cast(
+      "The Token is not a list!");
+  }
+  return static_cast<Token<packList>*>(base)->val;
 }
 
 std::string packToken::str() const {
   return packToken::str(base);
 }
+
 std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
-  TokenMap_t* tmap;
-  TokenMap_t::iterator it;
+  TokenMap::TokenMap_t* tmap;
+  TokenMap::TokenMap_t::iterator m_it;
+
+  TokenList::TokenList_t* tlist;
+  TokenList::TokenList_t::iterator l_it;
   const Function* func;
   bool first;
   std::string name;
@@ -142,7 +154,7 @@ std::string packToken::str(const TokenBase* base) {
 
   if (base->type & REF) {
     base = static_cast<const RefToken*>(base)->value;
-    name = static_cast<const RefToken*>(base)->name;
+    name = static_cast<const RefToken*>(base)->key.str();
   }
 
   switch (base->type) {
@@ -176,14 +188,24 @@ std::string packToken::str(const TokenBase* base) {
       ss << ")";
       return ss.str();
     case MAP:
-      tmap = static_cast<const Token<TokenMap_t*>*>(base)->val;
+      tmap = &(static_cast<const Token<packMap>*>(base)->val->map);
       if (tmap->size() == 0) return "{}";
       ss << "{";
-      for (it = tmap->begin(); it != tmap->end(); ++it) {
-        ss << (it == tmap->begin() ? "" : ",");
-        ss << " \"" << it->first << "\": " << it->second.str();
+      for (m_it = tmap->begin(); m_it != tmap->end(); ++m_it) {
+        ss << (m_it == tmap->begin() ? "" : ",");
+        ss << " \"" << m_it->first << "\": " << m_it->second.str();
       }
       ss << " }";
+      return ss.str();
+    case LIST:
+      tlist = &(static_cast<const Token<packList>*>(base)->val->list);
+      if (tlist->size() == 0) return "[]";
+      ss << "[";
+      for (l_it = tlist->begin(); l_it != tlist->end(); ++l_it) {
+        ss << (l_it == tlist->begin() ? "" : ",");
+        ss << " " << l_it->str();
+      }
+      ss << " ]";
       return ss.str();
     default:
       return "unknown_type";

@@ -7,7 +7,19 @@
 #include <queue>
 #include <list>
 
-enum tokType { NONE, OP, VAR, NUM, STR, MAP, FUNC, TUPLE, REF = 0x10 };
+enum tokType {
+  // Base types:
+  NONE, OP, VAR, NUM, STR, FUNC,
+
+  // Complex types:
+  IT = 0x20,     // Everything with the bit 0x20 set is an iterator.
+  TUPLE = 0x21,  // == 0x20 + 0x01 => Tuples are iterators.
+  LIST = 0x22,   // == 0x20 + 0x01 => Lists are iterators.
+  MAP = 0x60,    // == 0x20 + 0x40 => Maps are Iterators
+                 // Everything with the bit 0x40 set is a MAP.
+  REF = 0x80
+};
+
 typedef unsigned char uint8_t;
 
 struct TokenBase {
@@ -34,18 +46,29 @@ struct TokenNone : public TokenBase {
 
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
-typedef std::map<std::string, packToken> TokenMap_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
+// The pack template manages
+// reference counting.
+#include "./pack.h"
+
+class TokenMap;
+typedef pack<TokenMap> packMap;
+
+class TokenList;
+typedef pack<TokenList> packList;
+
+#include "./packToken.h"
+
 struct RefToken : public TokenBase {
-  std::string name;
+  packToken key;
   TokenBase* value;
-  TokenMap_t* source_map;
-  RefToken(std::string n, TokenBase* v, TokenMap_t* m, uint8_t type) :
-    name(n), value(v), source_map(m) { this->type = type; }
-  RefToken(std::string n, TokenBase* v, uint8_t type) :
-    name(n), value(v), source_map(0) { this->type = type; }
+  packToken source;
+  RefToken(packToken k, TokenBase* v, packToken m) :
+    key(k), value(v), source(m) { this->type = v->type | REF; }
+  RefToken(packToken k, TokenBase* v) :
+    key(k), value(v), source(packToken::None) { this->type = v->type | REF; }
 
   virtual TokenBase* clone() const {
     RefToken* copy = new RefToken(static_cast<const RefToken&>(*this));
@@ -54,35 +77,14 @@ struct RefToken : public TokenBase {
   }
 };
 
-#include "./packToken.h"
-
 // Define the `Function` class
 // as well as some built-in functions:
 #include "./functions.h"
 
-class Scope {
- public:
-  static const Scope empty;
-  static TokenMap_t& default_global();
+// Define the TokenMap and TokenList classes:
+#include "./objects.h"
 
- public:
-  typedef std::list<TokenMap_t*> Scope_t;
-  mutable Scope_t scope;
-
-  Scope(TokenMap_t* vars);
-  Scope() : Scope(NULL) {}
-
-  packToken* find(std::string key) const;
-  void assign(std::string key, TokenBase* value) const;
-
-  void push(TokenMap_t* vars) const;
-  void push(Scope vars) const;
-  void pop() const;
-  void pop(unsigned N) const;
-
-  void clean() const;
-  unsigned size() const;
-};
+typedef std::map<uint8_t, TokenMap> typeMap_t;
 
 class calculator {
  private:
@@ -90,15 +92,17 @@ class calculator {
   static OppMap_t buildOpPrecedence();
 
  public:
-  static packToken calculate(const char* expr, const Scope& vars = Scope::empty,
+  static typeMap_t& type_attribute_map();
+
+ public:
+  static packToken calculate(const char* expr, packMap vars = &TokenMap::empty,
                              const char* delim = 0, const char** rest = 0);
 
  private:
-  static packToken calculate(TokenQueue_t RPN,
-                             const Scope* vars);
+  static TokenBase* calculate(TokenQueue_t RPN, packMap vars);
   static void cleanRPN(TokenQueue_t* rpn);
-  static TokenQueue_t toRPN(const char* expr,
-                            const Scope* vars, const char* delim = 0, const char** rest = 0,
+  static TokenQueue_t toRPN(const char* expr, packMap vars,
+                            const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = _opPrecedence);
 
   static bool handle_unary(const std::string& op,
@@ -118,13 +122,13 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, const Scope& vars = Scope::empty,
+  calculator(const char* expr, packMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
              OppMap_t opPrecedence = _opPrecedence);
-  void compile(const char* expr,
-               const Scope& vars = Scope::empty, const char* delim = 0,
-               const char** rest = 0, OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(const Scope& vars = Scope::empty) const;
+  void compile(const char* expr, packMap vars = &TokenMap::empty,
+               const char* delim = 0, const char** rest = 0,
+               OppMap_t opPrecedence = _opPrecedence);
+  packToken eval(packMap vars = &TokenMap::empty, bool keep_refs = false) const;
 
   // Serialization:
   std::string str() const;
