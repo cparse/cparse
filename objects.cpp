@@ -75,6 +75,23 @@ struct TokenList::Startup {
   }
 } list_startup;
 
+/* * * * * TokenMap iterator implemented functions * * * * */
+
+packToken* TokenMap::next() {
+  if (last) delete last;
+  if (it != map.end()) {
+    last = new packToken(it->first);
+    ++it;
+    return last;
+  } else {
+    it = map.begin();
+    last = 0;
+    return NULL;
+  }
+}
+
+void TokenMap::reset() { last = 0; it = map.begin(); }
+
 /* * * * * TokenList iterator implemented functions * * * * */
 
 packToken* TokenList::next() {

@@ -7,7 +7,16 @@
 #include <vector>
 #include <string>
 
-struct TokenMap {
+// Iterator super class.
+struct Iterator {
+  // Return the next position of the iterator.
+  // When it reaches the end it should return NULL
+  // and reset the iterator automatically.
+  virtual packToken* next() = 0;
+  virtual void reset() = 0;
+};
+
+struct TokenMap : public Iterator {
   typedef std::map<std::string, packToken> TokenMap_t;
 
   // Static factories:
@@ -18,6 +27,12 @@ struct TokenMap {
  public:
   TokenMap_t map;
   TokenMap* parent;
+
+ public:
+  TokenMap_t::iterator it;
+  packToken* last = 0;
+  packToken* next();
+  void reset();
 
  public:
   TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
@@ -42,7 +57,7 @@ struct GlobalScope : public TokenMap {
 };
 
 
-class TokenList {
+class TokenList : public Iterator {
   uint i = 0;
 
   // Used to initialize the default list functions.
