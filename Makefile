@@ -1,5 +1,5 @@
 EXE = test-shunting-yard
-SRC = $(EXE).cpp shunting-yard.cpp packToken.cpp functions.cpp catch.cpp
+SRC = $(EXE).cpp shunting-yard.cpp packToken.cpp functions.cpp token-list.cpp catch.cpp
 OBJ = $(SRC:.cpp=.o)
 
 CXX ?= g++

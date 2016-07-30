@@ -54,8 +54,10 @@ typedef std::list<TokenBase*> Tuple_t;
 #include "./pack.h"
 
 class TokenMap;
-// A packMap can be built from a map.
 typedef pack<TokenMap> packMap;
+
+class TokenList;
+typedef pack<TokenList> packList;
 
 #include "./packToken.h"
 
@@ -75,8 +77,6 @@ struct RefToken : public TokenBase {
   }
 };
 
-struct TokenMap;
-
 // Define the `Function` class
 // as well as some built-in functions:
 #include "./functions.h"
@@ -95,6 +95,7 @@ struct TokenMap {
 
  public:
   TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
+  virtual ~TokenMap() {}
 
  public:
   packToken* find(std::string key);
@@ -113,6 +114,9 @@ struct TokenMap {
 struct GlobalScope : public TokenMap {
   GlobalScope() : TokenMap(TokenMap::default_global()) {}
 };
+
+// Define the TokenList class
+#include "./token-list.h"
 
 typedef std::map<uint8_t, TokenMap> typeMap_t;
 

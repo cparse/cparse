@@ -102,6 +102,47 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"no_key\"]", &vars) == packToken::None);
 }
 
+TEST_CASE("List usage expressions") {
+  TokenMap vars;
+  vars["my_list"] = packList();
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(1)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(2)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(3)", &vars));
+
+  REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 3);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.pop(1)", &vars));
+
+  REQUIRE(vars["my_list"].str() == "[ 1, 3 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_list.pop()", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1 ]");
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 1);
+
+  vars["list"] = packList();
+  REQUIRE_NOTHROW(calculator::calculate("list.push(4).push(5).push(6)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list.push(2).push(3)", &vars));
+  REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
+  REQUIRE(vars["list"].str() == "[ 4, 5, 6 ]");
+
+  REQUIRE_NOTHROW(calculator::calculate("concat = my_list + list", &vars));
+  REQUIRE(vars["concat"].str() == "[ 1, 2, 3, 4, 5, 6 ]");
+  REQUIRE(calculator::calculate("concat.len()", &vars).asDouble() == 6);
+
+  // Reverse index like python:
+  REQUIRE_NOTHROW(calculator::calculate("concat[-2] = 10", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("concat[2] = '3'", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("concat[3] = None", &vars));
+  REQUIRE(vars["concat"].str() == "[ 1, 2, \"3\", None, 10, 6 ]");
+
+  // List index out of range:
+  REQUIRE_THROWS(calculator::calculate("concat[10]", &vars));
+  REQUIRE_THROWS(calculator::calculate("concat[-10]", &vars));
+}
+
 TEST_CASE("Function usage expressions") {
   GlobalScope vars;
   vars["pi"] = 3.141592653589793;

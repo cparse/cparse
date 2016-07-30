@@ -119,10 +119,6 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
     // Grab the possible values:
     RefToken* ref = static_cast<RefToken*>(b);
 
-    // TODO(VinGarcia): This system works, but is dangerous,
-    // We can't know for sure that `ref->source` still exists until
-    // we implement a reference counting system.
-
     // Decide from where to get the updated value:
     if (ref->key->type == STR) {
       // If source is a map:
@@ -142,6 +138,13 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
           value = (*r_value)->clone();
           delete ref->value;
         }
+      }
+    } else if (ref->key->type == NUM && ref->source->type == LIST) {
+      packList list = ref->source.asList();
+      size_t index = static_cast<size_t>(ref->key.asDouble());
+      if (index < list->list.size()) {
+        value = (*list)[index]->clone();
+        delete ref->value;
       }
     }
 
@@ -477,14 +480,28 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         // If the left operand has a variable name:
         if (r_left->type == STR) {
           if (m_left->type == MAP) {
-            m_left.asMap()->insert(r_left.asString(),
-                                   packToken(b_right->clone()));
+            packMap& map = m_left.asMap();
+            std::string& key = r_left.asString();
+            (*map)[key] = packToken(b_right->clone());
           } else if (vars) {
             vars->assign(r_left.asString(), b_right);
           } else {
             delete b_right;
             cleanStack(evaluation);
-            throw std::domain_error("No TokenMap available for assignment of variable `" + r_left.asString() + "`.");
+            throw std::domain_error("Could not assign variable `" + r_left.asString() + "`!");
+          }
+
+          evaluation.push(b_right);
+        // If the left operand has an index number:
+        } else if (r_left->type == NUM) {
+          if (m_left->type == LIST) {
+            packList& list = m_left.asList();
+            size_t index = static_cast<size_t>(r_left.asDouble());
+            (*list)[index] = packToken(b_right->clone());
+          } else {
+            delete b_right;
+            cleanStack(evaluation);
+            throw std::domain_error("Left operand of assignment is not a list!");
           }
 
           evaluation.push(b_right);
@@ -622,6 +639,52 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         if (!op.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
+        } else {
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+      } else if (b_left->type == LIST && b_right->type == NUM) {
+        packList left = static_cast<Token<packList>*>(b_left)->val;
+        double right = static_cast<Token<double>*>(b_right)->val;
+        delete b_right;
+
+        if (!op.compare("[]")) {
+          long index = static_cast<long>(right);
+
+          if (index < 0) {
+            // Reverse index, i.e. list[-1] = list[list.size()-1]
+            index += left->list.size();
+          }
+
+          if (index < 0 || static_cast<size_t>(index) >= left->list.size()) {
+            delete b_left;
+            cleanStack(evaluation);
+            throw std::domain_error("List index out of range!");
+          }
+
+          TokenBase* value = left->list[index]->clone();
+
+          evaluation.push(new RefToken(index, value, packToken(b_left)));
+        } else {
+          delete b_left;
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+      } else if (b_left->type == LIST && b_right->type == LIST) {
+        packList left = static_cast<Token<packList>*>(b_left)->val;
+        packList right = static_cast<Token<packList>*>(b_right)->val;
+        delete b_left;
+        delete b_right;
+
+        if (!op.compare("+")) {
+          // Copy the first list into a new packList:
+          packList result = TokenList(*left);
+
+          for (packToken& p : right->list) {
+            result->list.push_back(p);
+          }
+
+          evaluation.push(new Token<packList>(result, LIST));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
