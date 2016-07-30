@@ -4,23 +4,52 @@
 #include <string>
 #include <stdexcept>
 #include <cerrno>
+#include <iostream>
 
 #include "./shunting-yard.h"
 #include "./functions.h"
 
 /* * * * * Built-in Functions: * * * * */
 
-const char* text_arg[] = {"text"};
+const char* no_args[] = {""};
 packToken default_print(packMap scope) {
-  // Get a single argument:
-  packToken* p = scope->find("text");
-  if ((*p)->type == STR) {
-    printf("%s\n", p->asString().c_str());
-  } else {
-    printf("%s\n", p->str().c_str());
+  // Get the argument list:
+  packList list = scope->find("arglist")->asList();
+
+  bool first = true;
+  for (packToken item : list->list) {
+    if (first) {
+      first = false;
+    } else {
+      std::cout << " ";
+    }
+
+    if (item->type == STR) {
+      std::cout << item.asString();
+    } else {
+      std::cout << item.str();
+    }
   }
 
+  std::cout << std::endl;
+
   return packToken::None;
+}
+
+packToken default_sum(packMap scope) {
+  // Get the arguments:
+  packList list = scope->find("arglist")->asList();
+
+  if (list->list.size() == 1 && list->list.front()->type == LIST) {
+    list = list->list.front().asList();
+  }
+
+  double sum = 0;
+  for (packToken num : list->list) {
+    sum += num.asDouble();
+  }
+
+  return sum;
 }
 
 const char* value_arg[] = {"value"};
@@ -96,7 +125,6 @@ packToken default_pow(packMap scope) {
 
 /* * * * * Type-specific default functions * * * */
 
-const char* no_arg[] = {""};
 packToken string_len(packMap scope) {
   std::string str = scope->find("this")->asString();
   return static_cast<int>(str.size());
@@ -120,7 +148,8 @@ struct CppFunction::Startup {
   Startup() {
     TokenMap& global = TokenMap::default_global();
 
-    global["print"] = CppFunction(&default_print, 1, text_arg, "print");
+    global["print"] = CppFunction(&default_print, 0, no_args, "print");
+    global["sum"] = CppFunction(&default_sum, 0, no_args, "sum");
     global["sqrt"] = CppFunction(&default_sqrt, 1, num_arg, "sqrt");
     global["sin"] = CppFunction(&default_sin, 1, num_arg, "sin");
     global["cos"] = CppFunction(&default_cos, 1, num_arg, "cos");
@@ -132,7 +161,7 @@ struct CppFunction::Startup {
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
 
     typeMap_t& type_map = calculator::type_attribute_map();
-    type_map[STR]["len"] = CppFunction(&string_len, 0, no_arg, "len");
+    type_map[STR]["len"] = CppFunction(&string_len, 0, no_args, "len");
   }
 } CppFunction_startup;
 

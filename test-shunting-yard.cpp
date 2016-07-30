@@ -194,6 +194,12 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(c.eval(&vars).asDouble() == 9);
 }
 
+TEST_CASE("Multiple argument functions") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("total = sum(1,2,3,4)", &vars));
+  REQUIRE(vars["total"].asDouble() == 10);
+}
+
 TEST_CASE("Type specific functions") {
   TokenMap vars;
   vars["s"] = "string";

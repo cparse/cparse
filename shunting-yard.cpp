@@ -702,6 +702,13 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
             local->insert(name, value);
           }
 
+          packList largs;
+          // Collect any extra arguments:
+          while (right.size()) {
+            largs->list.push_back(packToken(right.pop_front()));
+          }
+          (*local)["arglist"] = largs;
+
           if (m_left->type != NONE) {
             (*local)["this"] = m_left;
           } else {
