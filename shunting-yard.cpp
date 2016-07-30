@@ -317,6 +317,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       case ')':
         if (lastTokenWasOp == '(') {
           rpnQueue.push(new TokenNone());
+          lastTokenWasOp = false;
         }
         while (operatorStack.top().compare("(")) {
           rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
@@ -689,6 +690,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
 
           // Build the local namespace:
           packMap local = TokenMap(vars);
+
           for (const std::string& name : f_left->args()) {
             packToken value;
             if (right.size()) {
