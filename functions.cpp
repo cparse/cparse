@@ -58,6 +58,7 @@ packToken default_eval(packMap scope) {
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
+
 packToken default_float(packMap scope) {
   packToken* tok = scope->find("value");
   if ((*tok)->type == NUM) return *tok;
@@ -75,11 +76,28 @@ packToken default_float(packMap scope) {
   }
   return ret;
 }
+
 packToken default_str(packMap scope) {
   // Return its string representation:
   packToken* tok = scope->find("value");
   if ((*tok)->type == STR) return *tok;
   return tok->str();
+}
+
+packToken default_type(packMap scope) {
+  packToken* tok = scope->find("value");
+  switch ((*tok)->type) {
+  case NONE: return "none";
+  case VAR: return "variable";
+  case NUM: return "number";
+  case STR: return "string";
+  case FUNC: return "function";
+  case IT: return "iterable";
+  case TUPLE: return "tuple";
+  case LIST: return "list";
+  case MAP: return "map";
+  default: return "unknown_type";
+  }
 }
 
 const char* num_arg[] = {"number"};
@@ -176,6 +194,7 @@ struct CppFunction::Startup {
     global["float"] = CppFunction(&default_float, 1, value_arg, "float");
     global["str"] = CppFunction(&default_str, 1, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
+    global["type"] = CppFunction(&default_type, 1, value_arg, "type");
 
     // Default constructors:
     global["list"] = CppFunction(&default_list, 0, no_args, "list");
