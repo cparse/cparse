@@ -69,7 +69,7 @@ struct TokenMap : public Iterable {
   struct MapIterator : public Iterator {
     const TokenMap_t& map;
     TokenMap_t::const_iterator it = map.begin();
-    packToken* last = 0;
+    packToken last;
 
     MapIterator(const TokenMap_t& map) : map(map) {}
 

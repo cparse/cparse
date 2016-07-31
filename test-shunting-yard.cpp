@@ -168,6 +168,58 @@ TEST_CASE("List and map constructors usage") {
   REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
 }
 
+TEST_CASE("Test list iterable behavior") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("L = list(1,2,3)", &vars));
+  Iterator* it;
+  REQUIRE_NOTHROW(it = vars["L"].asList()->getIterator());
+  packToken* next;
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 1);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 2);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 3);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next == 0);
+
+  delete it;
+}
+
+TEST_CASE("Test map iterable behavior") {
+  GlobalScope vars;
+  vars["M"] = packMap();
+  vars["M"]["a"] = 1;
+  vars["M"]["b"] = 2;
+  vars["M"]["c"] = 3;
+
+  Iterator* it;
+  REQUIRE_NOTHROW(it = vars["M"].asMap()->getIterator());
+  packToken* next;
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "a");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "b");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "c");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next == 0);
+
+  delete it;
+}
+
 TEST_CASE("Function usage expressions") {
   GlobalScope vars;
   vars["pi"] = 3.141592653589793;
