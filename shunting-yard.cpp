@@ -316,7 +316,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case ')':
         if (lastTokenWasOp == '(') {
-          rpnQueue.push(new TokenNone());
+          rpnQueue.push(new Tuple());
           lastTokenWasOp = false;
         }
         while (operatorStack.top().compare("(")) {
