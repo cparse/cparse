@@ -104,31 +104,13 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
     // Grab the possible values:
     RefToken* ref = static_cast<RefToken*>(b);
 
-    // Decide from where to get the updated value:
-    if (ref->key->type == STR) {
-      // If source is a map:
-      if (ref->source->type == MAP) {
-        packMap map = ref->source.asMap();
-        std::string key = ref->key.asString();
-        if (map->map.count(key)) {
-          value = (*map)[key]->clone();
-          delete ref->value;
-        }
-      }
-
-      if (!value && scope) {
-        // Read from the scope:
-        packToken* r_value = scope->find(ref->key.asString());
-        if (r_value) {
-          value = (*r_value)->clone();
-          delete ref->value;
-        }
-      }
-    } else if (ref->key->type == NUM && ref->source->type == LIST) {
-      packList list = ref->source.asList();
-      size_t index = static_cast<size_t>(ref->key.asDouble());
-      if (index < list->list.size()) {
-        value = (*list)[index]->clone();
+    // If its a local variable,
+    // and a local scope is available:
+    if (ref->source->type == NONE && scope) {
+      // Try to get the most recent value of the reference:
+      packToken* r_value = scope->find(ref->key.asString());
+      if (r_value) {
+        value = (*r_value)->clone();
         delete ref->value;
       }
     }
