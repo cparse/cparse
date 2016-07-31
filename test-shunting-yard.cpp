@@ -114,6 +114,34 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"no_key\"]", &vars) == packToken::None);
 }
 
+TEST_CASE("Prototypical inheritance tests") {
+  TokenMap vars;
+  TokenMap parent;
+  TokenMap child(&parent);
+  TokenMap grand_child(&child);
+
+  vars["a"] = 0;
+  vars["parent"] = packMap(&parent);
+  vars["child"] = packMap(&child);
+  vars["grand_child"] = packMap(&grand_child);
+
+  parent["a"] = 10;
+  parent["b"] = 20;
+  parent["c"] = 30;
+  child["b"] = 21;
+  child["c"] = 31;
+  grand_child["c"] = 32;
+
+  REQUIRE(calculator::calculate("grand_child.a - 10", &vars).asDouble() == 0);
+  REQUIRE(calculator::calculate("grand_child.b - 20", &vars).asDouble() == 1);
+  REQUIRE(calculator::calculate("grand_child.c - 30", &vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("grand_child.a = 12", &vars));
+  REQUIRE(calculator::calculate("parent.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("child.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("grand_child.a", &vars).asDouble() == 12);
+}
+
 TEST_CASE("List usage expressions") {
   TokenMap vars;
   vars["my_list"] = packList();
