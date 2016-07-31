@@ -26,6 +26,10 @@ struct syntax_error : public msg_exception {
   syntax_error(const std::string& msg) : msg_exception(msg) {}
 };
 
+struct type_error : public msg_exception {
+  type_error(const std::string& msg) : msg_exception(msg) {}
+};
+
 struct undefined_operation : public msg_exception {
   undefined_operation(const std::string& op, const packToken& left, const packToken& right)
     : msg_exception("Unexpected operation with operator '" + op + "' and operands: " + left.str() + " and " + right.str() + ".") {}

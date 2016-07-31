@@ -90,6 +90,18 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
+TEST_CASE("String formattting") {
+  REQUIRE(calculator::calculate("'the test %s working' % 'is'").asString() == "the test is working");
+  REQUIRE(calculator::calculate("'the tests %s %s' % ('are', 'working')").asString() == "the tests are working");
+
+  REQUIRE(calculator::calculate("'works %s% %s' % (100, 'now')").asString() == "works 100% now");
+
+  REQUIRE(calculator::calculate("'escape \\%s works %s' % ('now')").asString() == "escape %s works now");
+
+  REQUIRE_THROWS(calculator::calculate("'the tests %s' % ('are', 'working')"));
+  REQUIRE_THROWS(calculator::calculate("'the tests %s %s' % ('are')"));
+}
+
 TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"key\"]", &vars).asString() == "mapped value");
   REQUIRE(calculator::calculate("map[\"key\"+1]", &vars).asString() ==

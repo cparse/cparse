@@ -585,6 +585,59 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
+      } else if (b_left->type == STR && !op.compare("%")) {
+        std::string s_left = static_cast<Token<std::string>*>(b_left)->val;
+        const char* left = s_left.c_str();
+        delete b_left;
+
+        Tuple right;
+
+        if (b_right->type == TUPLE) {
+          right = *static_cast<Tuple*>(b_right);
+        } else {
+          right = Tuple(b_right);
+        }
+        delete b_right;
+
+        std::string output;
+        for (const TokenBase* token : right.tuple) {
+          // Find the next occurrence of "%s"
+          while (*left && (*left != '%' || left[1] != 's')) {
+            if (*left == '\\' && left[1] == '%') ++left;
+            output.push_back(*left);
+            ++left;
+          }
+
+          if (*left == '\0') {
+            cleanStack(evaluation);
+            throw type_error("Not all arguments converted during string formatting");
+          } else {
+            left += 2;
+          }
+
+          // Replace it by the token string representation:
+          if (token->type == STR) {
+            // Avoid using packToken::str for strings
+            // or it will enclose it quotes `"str"`
+            output += static_cast<const Token<std::string>*>(token)->val;
+          } else {
+            output += packToken::str(token);
+          }
+        }
+
+        // Find the next occurrence of "%s"
+        while (*left && (*left != '%' || left[1] != 's')) {
+          if (*left == '\\' && left[1] == '%') ++left;
+          output.push_back(*left);
+          ++left;
+        }
+
+        if (*left != '\0') {
+          cleanStack(evaluation);
+          throw type_error("Not enough arguments for format string");
+        } else {
+          evaluation.push(new Token<std::string>(output, STR));
+        }
       } else if (b_left->type == STR && b_right->type == STR) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
