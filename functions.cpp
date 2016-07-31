@@ -9,6 +9,35 @@
 #include "./shunting-yard.h"
 #include "./functions.h"
 
+/* * * * * class Function * * * * */
+packToken Function::call(packToken _this, Function* func,
+                         Tuple* args, packMap scope) {
+  // Build the local namespace:
+  packMap local = TokenMap(scope);
+
+  // Add args to local namespace:
+  for (const std::string& name : func->args()) {
+    packToken value;
+    if (args->size()) {
+      value = packToken(args->pop_front());
+    } else {
+      value = packToken::None;
+    }
+
+    (*local)[name] = value;
+  }
+
+  packList arglist;
+  // Collect any extra arguments:
+  while (args->size()) {
+    arglist->list.push_back(packToken(args->pop_front()));
+  }
+  (*local)["arglist"] = arglist;
+  (*local)["this"] = _this;
+
+  return func->exec(local);
+}
+
 /* * * * * Built-in Functions: * * * * */
 
 const char* no_args[] = {""};

@@ -6,6 +6,10 @@
 
 class Function : public TokenBase {
  public:
+  static packToken call(packToken _this, Function* func,
+                        Tuple* args, packMap scope);
+
+ public:
   typedef std::list<std::string> argsList;
 
   // Used only to initialize

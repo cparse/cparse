@@ -741,45 +741,23 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           }
           delete b_right;
 
-          // Build the local namespace:
-          packMap local = TokenMap(vars);
-
-          for (const std::string& name : f_left->args()) {
-            packToken value;
-            if (right.size()) {
-              value = packToken(right.pop_front());
-            } else {
-              value = packToken::None;
-            }
-
-            // Use insert to make sure it is declared
-            // on the most local scope, and not on any of its parents
-            local->insert(name, value);
-          }
-
-          packList largs;
-          // Collect any extra arguments:
-          while (right.size()) {
-            largs->list.push_back(packToken(right.pop_front()));
-          }
-          (*local)["arglist"] = largs;
-
+          packToken _this;
           if (m_left->type != NONE) {
-            (*local)["this"] = m_left;
+            _this = m_left;
           } else {
-            (*local)["this"] = packMap(vars);
+            _this = packMap(vars);
           }
 
-          // Add args to scope:
+          // Execute the function:
           packToken ret;
           try {
-            // Execute the function:
-            ret = f_left->exec(local);
+            ret = Function::call(_this, f_left, &right, vars);
           } catch (...) {
             cleanStack(evaluation);
             delete f_left;
             throw;
           }
+
           delete f_left;
 
           evaluation.push(ret->clone());
