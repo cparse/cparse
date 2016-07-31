@@ -59,6 +59,7 @@ typedef pack<TokenMap> packMap;
 class TokenList;
 typedef pack<TokenList> packList;
 
+class Function;
 #include "./packToken.h"
 
 // Define the Tuple, TokenMap and TokenList classes:

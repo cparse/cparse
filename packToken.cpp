@@ -135,6 +135,14 @@ packList& packToken::asList() const {
   return static_cast<Token<packList>*>(base)->val;
 }
 
+Function* packToken::asFunc() const {
+  if (base->type != FUNC) {
+    throw bad_cast(
+      "The Token is not a function!");
+  }
+  return static_cast<Function*>(base);
+}
+
 std::string packToken::str() const {
   return packToken::str(base);
 }
