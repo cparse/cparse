@@ -39,6 +39,7 @@ class packToken {
   const packToken& operator[](const std::string& key) const;
   const packToken& operator[](const char* key) const;
   operator TokenBase*() { return base; }
+  TokenBase* token() { return base; }
 
   bool asBool() const;
   double asDouble() const;
