@@ -30,7 +30,7 @@ class Tuple : public TokenBase {
   Tuple_t tuple;
 
  public:
-  Tuple() {}
+  Tuple() { this->type = TUPLE; }
   Tuple(const TokenBase* a);
   Tuple(const TokenBase* a, const TokenBase* b);
   Tuple(const Tuple& t) : tuple(copyTuple(t.tuple)) { this->type = TUPLE; }
