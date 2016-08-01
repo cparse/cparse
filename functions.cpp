@@ -139,6 +139,22 @@ packToken default_extend(packMap scope) {
   }
 }
 
+packToken default_instanceof(packMap scope) {
+  TokenMap* _super = scope->find("value")->asMap();
+  TokenMap* _this = scope->find("this")->asMap()->parent;
+
+  TokenMap* parent = _this;
+  while (parent) {
+    if (parent == _super) {
+      return true;
+    }
+
+    parent = parent->parent;
+  }
+
+  return false;
+}
+
 const char* num_arg[] = {"number"};
 packToken default_sqrt(packMap scope) {
   // Get a single argument:
@@ -239,6 +255,10 @@ struct CppFunction::Startup {
     // Default constructors:
     global["list"] = CppFunction(&default_list, 0, no_args, "list");
     global["map"] = CppFunction(&default_map, 0, no_args, "map");
+
+    TokenMap& base_map = TokenMap::base_map();
+    base_map["instanceof"] = CppFunction(&default_instanceof, 1,
+                                         value_arg, "instanceof");
 
     typeMap_t& type_map = calculator::type_attribute_map();
     type_map[STR]["len"] = CppFunction(&string_len, 0, no_args, "len");

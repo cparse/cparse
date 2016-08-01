@@ -151,6 +151,13 @@ TEST_CASE("Test usage of functions `extend` function") {
   REQUIRE_NOTHROW(calculator::calculate("b.a = 20", &vars));
   REQUIRE(calculator::calculate("a.a", &vars).asDouble() == 10);
   REQUIRE(calculator::calculate("b.a", &vars).asDouble() == 20);
+
+  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", &vars));
+  REQUIRE(calculator::calculate("a.instanceof(b)", &vars).asBool() == false);
+  REQUIRE(calculator::calculate("a.instanceof(c)", &vars).asBool() == false);
+  REQUIRE(calculator::calculate("b.instanceof(a)", &vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(a)", &vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(b)", &vars).asBool() == true);
 }
 
 TEST_CASE("List usage expressions") {
