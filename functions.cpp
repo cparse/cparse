@@ -129,6 +129,16 @@ packToken default_type(packMap scope) {
   }
 }
 
+packToken default_extend(packMap scope) {
+  packToken* tok = scope->find("value");
+
+  if ((*tok)->type == MAP) {
+    return packMap(TokenMap(tok->asMap()));
+  } else {
+    throw std::runtime_error(tok->str() + " is not extensible!");
+  }
+}
+
 const char* num_arg[] = {"number"};
 packToken default_sqrt(packMap scope) {
   // Get a single argument:
@@ -224,6 +234,7 @@ struct CppFunction::Startup {
     global["str"] = CppFunction(&default_str, 1, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
     global["type"] = CppFunction(&default_type, 1, value_arg, "type");
+    global["extend"] = CppFunction(&default_extend, 1, value_arg, "extend");
 
     // Default constructors:
     global["list"] = CppFunction(&default_list, 0, no_args, "list");

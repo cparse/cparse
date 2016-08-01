@@ -142,6 +142,17 @@ TEST_CASE("Prototypical inheritance tests") {
   REQUIRE(calculator::calculate("grand_child.a", &vars).asDouble() == 12);
 }
 
+TEST_CASE("Test usage of functions `extend` function") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("a = map()", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", &vars));
+  REQUIRE(calculator::calculate("b.a", &vars).asDouble() == 10);
+  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", &vars));
+  REQUIRE(calculator::calculate("a.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("b.a", &vars).asDouble() == 20);
+}
+
 TEST_CASE("List usage expressions") {
   TokenMap vars;
   vars["my_list"] = packList();
