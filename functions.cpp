@@ -40,7 +40,6 @@ packToken Function::call(packToken _this, Function* func,
 
 /* * * * * Built-in Functions: * * * * */
 
-const char* no_args[] = {""};
 packToken default_print(packMap scope) {
   // Get the argument list:
   packList list = scope->find("arglist")->asList();
@@ -227,9 +226,15 @@ CppFunction::CppFunction(packToken (*func)(packMap), unsigned int nargs,
             : func(func) {
   this->name = name;
   // Add all strings to args list:
-  for (unsigned int i = 0; i < nargs; ++i) {
+  for (uint32_t i = 0; i < nargs; ++i) {
     this->_args.push_back(args[i]);
   }
+}
+
+// Build a function with no named args:
+CppFunction::CppFunction(packToken (*func)(packMap), std::string name)
+                         : func(func) {
+  this->name = name;
 }
 
 /* * * * * CppFunction Initializer Constructor: * * * * */
@@ -238,8 +243,8 @@ struct CppFunction::Startup {
   Startup() {
     TokenMap& global = TokenMap::default_global();
 
-    global["print"] = CppFunction(&default_print, 0, no_args, "print");
-    global["sum"] = CppFunction(&default_sum, 0, no_args, "sum");
+    global["print"] = CppFunction(&default_print, "print");
+    global["sum"] = CppFunction(&default_sum, "sum");
     global["sqrt"] = CppFunction(&default_sqrt, 1, num_arg, "sqrt");
     global["sin"] = CppFunction(&default_sin, 1, num_arg, "sin");
     global["cos"] = CppFunction(&default_cos, 1, num_arg, "cos");
@@ -253,15 +258,15 @@ struct CppFunction::Startup {
     global["extend"] = CppFunction(&default_extend, 1, value_arg, "extend");
 
     // Default constructors:
-    global["list"] = CppFunction(&default_list, 0, no_args, "list");
-    global["map"] = CppFunction(&default_map, 0, no_args, "map");
+    global["list"] = CppFunction(&default_list, "list");
+    global["map"] = CppFunction(&default_map, "map");
 
     TokenMap& base_map = TokenMap::base_map();
     base_map["instanceof"] = CppFunction(&default_instanceof, 1,
                                          value_arg, "instanceof");
 
     typeMap_t& type_map = calculator::type_attribute_map();
-    type_map[STR]["len"] = CppFunction(&string_len, 0, no_args, "len");
+    type_map[STR]["len"] = CppFunction(&string_len, "len");
   }
 } CppFunction_startup;
 

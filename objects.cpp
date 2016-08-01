@@ -58,7 +58,6 @@ packToken list_pop(packMap scope) {
   return result;
 }
 
-const char* list_no_args[] = {""};
 packToken list_len(packMap scope) {
   packList list = scope->find("this")->asList();
   return list->list.size();
@@ -71,7 +70,7 @@ struct TokenList::Startup {
     TokenMap& base = calculator::type_attribute_map()[LIST];
     base["push"] = CppFunction(list_push, 1, push_args, "push");
     base["pop"] = CppFunction(list_pop, 1, pop_args, "pop");
-    base["len"] = CppFunction(list_len, 0, list_no_args, "len");
+    base["len"] = CppFunction(list_len, "len");
   }
 } list_startup;
 

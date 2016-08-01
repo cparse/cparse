@@ -36,6 +36,7 @@ class CppFunction : public Function {
 
   CppFunction(packToken (*func)(packMap), unsigned int nargs,
               const char** args, std::string name = "");
+  CppFunction(packToken (*func)(packMap), std::string name = "");
 
   virtual const argsList args() const { return _args; }
   virtual packToken exec(packMap scope) const { return func(scope); }
