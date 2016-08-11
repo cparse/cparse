@@ -53,8 +53,20 @@ class Tuple : public TokenBase {
   }
 };
 
-struct TokenMap : public Iterable {
-  typedef std::map<std::string, packToken> TokenMap_t;
+class TokenMap;
+typedef std::map<std::string, packToken> TokenMap_t;
+
+struct MapData_t {
+  TokenMap_t map;
+  TokenMap* parent;
+  MapData_t(TokenMap* p);
+  MapData_t(const MapData_t& other);
+  ~MapData_t();
+
+  MapData_t& operator=(const MapData_t& other);
+};
+
+struct TokenMap : public pack<MapData_t>, public TokenBase, public Iterable {
 
   // Static factories:
   static TokenMap empty;
@@ -62,10 +74,13 @@ struct TokenMap : public Iterable {
   static TokenMap& default_global();
 
  public:
-  TokenMap_t map;
-  TokenMap* parent;
+  // Attribute getters for the
+  // pack<MapData_t> super class:
+  TokenMap_t& map() const { return ref->obj->map; }
+  TokenMap* parent() const { return ref->obj->parent; }
 
  public:
+  // Implement the Iterable Interface:
   struct MapIterator : public Iterator {
     const TokenMap_t& map;
     TokenMap_t::const_iterator it = map.begin();
@@ -78,12 +93,22 @@ struct TokenMap : public Iterable {
   };
 
   Iterator* getIterator() {
-    return new MapIterator(map);
+    return new MapIterator(map());
   }
 
  public:
-  TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
+  TokenMap(TokenMap* parent = &TokenMap::base_map()) : pack(parent) {
+    // For the TokenBase super class
+    this->type = MAP;
+  }
+  TokenMap(const TokenMap& other) : pack(other) { this->type = MAP; }
   virtual ~TokenMap() {}
+
+ public:
+  // Implement the TokenBase abstract class
+  TokenBase* clone() const {
+    return new TokenMap(*this);
+  }
 
  public:
   packToken* find(std::string key);
@@ -100,9 +125,8 @@ struct TokenMap : public Iterable {
 
 // Build a TokenMap which is a child of default_global()
 struct GlobalScope : public TokenMap {
-  GlobalScope() : TokenMap(TokenMap::default_global()) {}
+  GlobalScope() : TokenMap(&TokenMap::default_global()) {}
 };
-
 
 class TokenList : public Iterable {
  public:

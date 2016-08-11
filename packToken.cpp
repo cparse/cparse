@@ -8,6 +8,8 @@
 
 const packToken packToken::None = packToken(TokenNone());
 
+packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
+
 packToken& packToken::operator=(int t) {
   delete base;
   base = new Token<double>(t, NUM);
@@ -61,28 +63,28 @@ packToken& packToken::operator[](const std::string& key) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<packMap>*>(base)->val)[key];
+  return (*static_cast<TokenMap*>(base))[key];
 }
 const packToken& packToken::operator[](const std::string& key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<packMap>*>(base)->val)[key];
+  return (*static_cast<TokenMap*>(base))[key];
 }
 packToken& packToken::operator[](const char* key) {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<packMap>*>(base)->val)[key];
+  return (*static_cast<TokenMap*>(base))[key];
 }
 const packToken& packToken::operator[](const char* key) const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return (*static_cast<Token<packMap>*>(base)->val)[key];
+  return (*static_cast<TokenMap*>(base))[key];
 }
 
 bool packToken::asBool() const {
@@ -119,12 +121,12 @@ std::string& packToken::asString() const {
   return static_cast<Token<std::string>*>(base)->val;
 }
 
-packMap& packToken::asMap() const {
+TokenMap& packToken::asMap() const {
   if (base->type != MAP) {
     throw bad_cast(
       "The Token is not a map!");
   }
-  return static_cast<Token<packMap>*>(base)->val;
+  return *static_cast<TokenMap*>(base);
 }
 
 packList& packToken::asList() const {
@@ -149,8 +151,8 @@ std::string packToken::str() const {
 
 std::string packToken::str(const TokenBase* base) {
   std::stringstream ss;
-  TokenMap::TokenMap_t* tmap;
-  TokenMap::TokenMap_t::iterator m_it;
+  TokenMap_t* tmap;
+  TokenMap_t::iterator m_it;
 
   TokenList::TokenList_t* tlist;
   TokenList::TokenList_t::iterator l_it;
@@ -196,7 +198,7 @@ std::string packToken::str(const TokenBase* base) {
       ss << ")";
       return ss.str();
     case MAP:
-      tmap = &(static_cast<const Token<packMap>*>(base)->val->map);
+      tmap = &(static_cast<const TokenMap*>(base)->map());
       if (tmap->size() == 0) return "{}";
       ss << "{";
       for (m_it = tmap->begin(); m_it != tmap->end(); ++m_it) {

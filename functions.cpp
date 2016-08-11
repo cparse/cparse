@@ -11,9 +11,9 @@
 
 /* * * * * class Function * * * * */
 packToken Function::call(packToken _this, Function* func,
-                         Tuple* args, packMap scope) {
+                         Tuple* args, TokenMap scope) {
   // Build the local namespace:
-  packMap local = TokenMap(scope);
+  TokenMap local = scope.getChild();
 
   // Add args to local namespace:
   for (const std::string& name : func->args()) {
@@ -24,7 +24,7 @@ packToken Function::call(packToken _this, Function* func,
       value = packToken::None;
     }
 
-    (*local)[name] = value;
+    local[name] = value;
   }
 
   packList arglist;
@@ -32,17 +32,17 @@ packToken Function::call(packToken _this, Function* func,
   while (args->size()) {
     arglist->list.push_back(packToken(args->pop_front()));
   }
-  (*local)["arglist"] = arglist;
-  (*local)["this"] = _this;
+  local["arglist"] = arglist;
+  local["this"] = _this;
 
   return func->exec(local);
 }
 
 /* * * * * Built-in Functions: * * * * */
 
-packToken default_print(packMap scope) {
+packToken default_print(TokenMap scope) {
   // Get the argument list:
-  packList list = scope->find("arglist")->asList();
+  packList list = scope.find("arglist")->asList();
 
   bool first = true;
   for (packToken item : list->list) {
@@ -64,9 +64,9 @@ packToken default_print(packMap scope) {
   return packToken::None;
 }
 
-packToken default_sum(packMap scope) {
+packToken default_sum(TokenMap scope) {
   // Get the arguments:
-  packList list = scope->find("arglist")->asList();
+  packList list = scope.find("arglist")->asList();
 
   if (list->list.size() == 1 && list->list.front()->type == LIST) {
     list = list->list.front().asList();
@@ -81,14 +81,14 @@ packToken default_sum(packMap scope) {
 }
 
 const char* value_arg[] = {"value"};
-packToken default_eval(packMap scope) {
-  std::string code = scope->find("value")->asString();
+packToken default_eval(TokenMap scope) {
+  std::string code = scope.find("value")->asString();
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
 
-packToken default_float(packMap scope) {
-  packToken* tok = scope->find("value");
+packToken default_float(TokenMap scope) {
+  packToken* tok = scope.find("value");
   if ((*tok)->type == NUM) return *tok;
 
   // Convert it to double:
@@ -105,15 +105,15 @@ packToken default_float(packMap scope) {
   return ret;
 }
 
-packToken default_str(packMap scope) {
+packToken default_str(TokenMap scope) {
   // Return its string representation:
-  packToken* tok = scope->find("value");
+  packToken* tok = scope.find("value");
   if ((*tok)->type == STR) return *tok;
   return tok->str();
 }
 
-packToken default_type(packMap scope) {
-  packToken* tok = scope->find("value");
+packToken default_type(TokenMap scope) {
+  packToken* tok = scope.find("value");
   switch ((*tok)->type) {
   case NONE: return "none";
   case VAR: return "variable";
@@ -128,85 +128,85 @@ packToken default_type(packMap scope) {
   }
 }
 
-packToken default_extend(packMap scope) {
-  packToken* tok = scope->find("value");
+packToken default_extend(TokenMap scope) {
+  packToken* tok = scope.find("value");
 
   if ((*tok)->type == MAP) {
-    return packMap(TokenMap(tok->asMap()));
+    return tok->asMap().getChild();
   } else {
     throw std::runtime_error(tok->str() + " is not extensible!");
   }
 }
 
-packToken default_instanceof(packMap scope) {
-  TokenMap* _super = scope->find("value")->asMap();
-  TokenMap* _this = scope->find("this")->asMap()->parent;
+packToken default_instanceof(TokenMap scope) {
+  TokenMap _super = scope.find("value")->asMap();
+  TokenMap* _this = scope.find("this")->asMap().parent();
 
   TokenMap* parent = _this;
   while (parent) {
-    if (parent == _super) {
+    if ((*parent) == _super) {
       return true;
     }
 
-    parent = parent->parent;
+    parent = parent->parent();
   }
 
   return false;
 }
 
 const char* num_arg[] = {"number"};
-packToken default_sqrt(packMap scope) {
+packToken default_sqrt(TokenMap scope) {
   // Get a single argument:
-  double number = scope->find("number")->asDouble();
+  double number = scope.find("number")->asDouble();
 
   return sqrt(number);
 }
-packToken default_sin(packMap scope) {
+packToken default_sin(TokenMap scope) {
   // Get a single argument:
-  double number = scope->find("number")->asDouble();
+  double number = scope.find("number")->asDouble();
 
   return sin(number);
 }
-packToken default_cos(packMap scope) {
+packToken default_cos(TokenMap scope) {
   // Get a single argument:
-  double number = scope->find("number")->asDouble();
+  double number = scope.find("number")->asDouble();
 
   return cos(number);
 }
-packToken default_tan(packMap scope) {
+packToken default_tan(TokenMap scope) {
   // Get a single argument:
-  double number = scope->find("number")->asDouble();
+  double number = scope.find("number")->asDouble();
 
   return tan(number);
 }
-packToken default_abs(packMap scope) {
+packToken default_abs(TokenMap scope) {
   // Get a single argument:
-  double number = scope->find("number")->asDouble();
+  double number = scope.find("number")->asDouble();
 
   return std::abs(number);
 }
 
 const char* pow_args[] = {"number", "exp"};
-packToken default_pow(packMap scope) {
+packToken default_pow(TokenMap scope) {
   // Get two arguments:
-  double number = scope->find("number")->asDouble();
-  double exp = scope->find("exp")->asDouble();
+  double number = scope.find("number")->asDouble();
+  double exp = scope.find("exp")->asDouble();
 
   return pow(number, exp);
 }
 
 /* * * * * Type-specific default functions * * * * */
 
-packToken string_len(packMap scope) {
-  std::string str = scope->find("this")->asString();
+packToken string_len(TokenMap scope) {
+  std::string str = scope.find("this")->asString();
   return static_cast<int>(str.size());
 }
 
 /* * * * * default constructor functions * * * * */
 
-packToken default_list(packMap scope) {
+packToken default_list(TokenMap scope) {
   // Get the arguments:
-  packList list = scope->find("arglist")->asList();
+  packList list = scope.find("arglist")->asList();
 
   if (list->list.size() == 1 && list->list[0]->type == TUPLE) {
     return packToken(new Token<packList>(TokenList(list->list[0]), LIST));
@@ -215,15 +215,15 @@ packToken default_list(packMap scope) {
   }
 }
 
-packToken default_map(packMap scope) {
-  return packMap();
+packToken default_map(TokenMap scope) {
+  return TokenMap();
 }
 
 /* * * * * class CppFunction * * * * */
 
-CppFunction::CppFunction(packToken (*func)(packMap), unsigned int nargs,
-            const char** args, std::string name)
-            : func(func) {
+CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
+                         const char** args, std::string name)
+                         : func(func) {
   this->name = name;
   // Add all strings to args list:
   for (uint32_t i = 0; i < nargs; ++i) {
@@ -232,7 +232,7 @@ CppFunction::CppFunction(packToken (*func)(packMap), unsigned int nargs,
 }
 
 // Build a function with no named args:
-CppFunction::CppFunction(packToken (*func)(packMap), std::string name)
+CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
                          : func(func) {
   this->name = name;
 }
