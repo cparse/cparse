@@ -31,36 +31,39 @@ packToken list_push(TokenMap scope) {
   packToken* token = scope.find("item");
 
   // If "this" is not a list it will throw here:
-  list->asList()->list.push_back(*token);
+  list->asList().list().push_back(*token);
 
   return *list;
 }
 
 const char* pop_args[] = {"pos"};
 packToken list_pop(TokenMap scope) {
-  TokenList* list = scope.find("this")->asList();
+  TokenList list = scope.find("this")->asList();
   packToken* token = scope.find("pos");
 
-  uint pos;
+  int64_t pos;
 
   if ((*token)->type == NUM) {
     pos = (uint)(token->asDouble());
+
+    // So that pop(-1) is the same as pop(last_idx):
+    if (pos < 0) pos = list.list().size()-pos;
   } else {
-    pos = list->list.size()-1;
+    pos = list.list().size()-1;
   }
 
-  packToken result = list->list[pos];
+  packToken result = list.list()[pos];
 
   // Erase the item from the list:
-  // Note that this operation is optimal if pos == list.size()
-  list->list.erase(list->list.begin() + pos);
+  // Note that this operation is optimal if pos == list.size()-1
+  list.list().erase(list.list().begin() + pos);
 
   return result;
 }
 
 packToken list_len(TokenMap scope) {
-  packList list = scope.find("this")->asList();
-  return list->list.size();
+  TokenList list = scope.find("this")->asList();
+  return list.list().size();
 }
 
 /* * * * * Initialize TokenList functions * * * * */

@@ -7,6 +7,10 @@
 #include <vector>
 #include <string>
 
+// The pack template class manages
+// reference counting.
+#include "./pack.h"
+
 // Iterator super class.
 struct Iterator {
   virtual ~Iterator() {}
@@ -67,7 +71,6 @@ struct MapData_t {
 };
 
 struct TokenMap : public pack<MapData_t>, public TokenBase, public Iterable {
-
   // Static factories:
   static TokenMap empty;
   static TokenMap& base_map();
@@ -128,10 +131,13 @@ struct GlobalScope : public TokenMap {
   GlobalScope() : TokenMap(&TokenMap::default_global()) {}
 };
 
-class TokenList : public Iterable {
+typedef std::vector<packToken> TokenList_t;
+
+class TokenList : public pack<TokenList_t>, public TokenBase, public Iterable {
  public:
-  typedef std::vector<packToken> TokenList_t;
-  TokenList_t list;
+  // Attribute getter for the
+  // pack<TokenList_t> super class:
+  TokenList_t& list() const { return *(ref->obj); }
 
   // Used to initialize the default list functions.
   struct Startup;
@@ -148,29 +154,37 @@ class TokenList : public Iterable {
   };
 
   Iterator* getIterator() {
-    return new ListIterator(&list);
+    return new ListIterator(&list());
   }
 
  public:
-  TokenList() {}
+  TokenList() { this->type = LIST; }
   TokenList(TokenBase* token) {
+    this->type = LIST;
+
     if (token->type != TUPLE) {
       throw std::invalid_argument("Invalid argument to build a list!");
     }
 
     Tuple* tuple = static_cast<Tuple*>(token);
     for (TokenBase* tb : tuple->tuple) {
-      list.push_back(packToken(tb->clone()));
+      list().push_back(packToken(tb->clone()));
     }
   }
   virtual ~TokenList() {}
 
   packToken& operator[](size_t idx) {
-    return list[idx];
+    return list()[idx];
   }
 
   packToken& operator[](double idx) {
-    return list[(size_t)idx];
+    return list()[(size_t)idx];
+  }
+
+ public:
+  // Implement the TokenBase abstract class
+  TokenBase* clone() const {
+    return new TokenList(*this);
   }
 };
 

@@ -49,15 +49,8 @@ typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
-// The pack template manages
-// reference counting.
-#include "./pack.h"
-
 class TokenMap;
-
 class TokenList;
-typedef pack<TokenList> packList;
-
 class Function;
 #include "./packToken.h"
 

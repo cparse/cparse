@@ -25,7 +25,7 @@ class packToken {
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
   packToken(const TokenMap& map);
-  packToken(const packList& list) : base(new Token<packList>(list, LIST)) {}
+  packToken(const TokenList& list);
   ~packToken() { delete base; }
 
   packToken& operator=(int t);
@@ -45,7 +45,7 @@ class packToken {
   double asDouble() const;
   std::string& asString() const;
   TokenMap& asMap() const;
-  packList& asList() const;
+  TokenList& asList() const;
   Function* asFunc() const;
 
   std::string str() const;

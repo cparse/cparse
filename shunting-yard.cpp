@@ -463,9 +463,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         // If the left operand has an index number:
         } else if (r_left->type == NUM) {
           if (m_left->type == LIST) {
-            packList& list = m_left.asList();
+            TokenList& list = m_left.asList();
             size_t index = static_cast<size_t>(r_left.asDouble());
-            (*list)[index] = packToken(b_right->clone());
+            list[index] = packToken(b_right->clone());
           } else {
             delete b_right;
             cleanStack(evaluation);
@@ -665,7 +665,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == LIST && b_right->type == NUM) {
-        packList left = static_cast<Token<packList>*>(b_left)->val;
+        TokenList left = *static_cast<TokenList*>(b_left);
         double right = static_cast<Token<double>*>(b_right)->val;
         delete b_right;
 
@@ -674,16 +674,16 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
 
           if (index < 0) {
             // Reverse index, i.e. list[-1] = list[list.size()-1]
-            index += left->list.size();
+            index += left.list().size();
           }
 
-          if (index < 0 || static_cast<size_t>(index) >= left->list.size()) {
+          if (index < 0 || static_cast<size_t>(index) >= left.list().size()) {
             delete b_left;
             cleanStack(evaluation);
             throw std::domain_error("List index out of range!");
           }
 
-          TokenBase* value = left->list[index]->clone();
+          TokenBase* value = left.list()[index]->clone();
 
           evaluation.push(new RefToken(index, value, packToken(b_left)));
         } else {
@@ -692,20 +692,22 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == LIST && b_right->type == LIST) {
-        packList left = static_cast<Token<packList>*>(b_left)->val;
-        packList right = static_cast<Token<packList>*>(b_right)->val;
+        TokenList left = *static_cast<TokenList*>(b_left);
+        TokenList right = *static_cast<TokenList*>(b_right);
         delete b_left;
         delete b_right;
 
         if (!op.compare("+")) {
-          // Copy the first list into a new packList:
-          packList result = TokenList(*left);
+          // Deep copy the first list:
+          TokenList result;
+          result.list() = left.list();
 
-          for (packToken& p : right->list) {
-            result->list.push_back(p);
+          // Insert items from the right list into the left:
+          for (packToken& p : right.list()) {
+            result.list().push_back(p);
           }
 
-          evaluation.push(new Token<packList>(result, LIST));
+          evaluation.push(new TokenList(result));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);

@@ -27,10 +27,10 @@ packToken Function::call(packToken _this, Function* func,
     local[name] = value;
   }
 
-  packList arglist;
+  TokenList arglist;
   // Collect any extra arguments:
   while (args->size()) {
-    arglist->list.push_back(packToken(args->pop_front()));
+    arglist.list().push_back(packToken(args->pop_front()));
   }
   local["arglist"] = arglist;
   local["this"] = _this;
@@ -42,10 +42,10 @@ packToken Function::call(packToken _this, Function* func,
 
 packToken default_print(TokenMap scope) {
   // Get the argument list:
-  packList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("arglist")->asList();
 
   bool first = true;
-  for (packToken item : list->list) {
+  for (packToken item : list.list()) {
     if (first) {
       first = false;
     } else {
@@ -66,14 +66,14 @@ packToken default_print(TokenMap scope) {
 
 packToken default_sum(TokenMap scope) {
   // Get the arguments:
-  packList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("arglist")->asList();
 
-  if (list->list.size() == 1 && list->list.front()->type == LIST) {
-    list = list->list.front().asList();
+  if (list.list().size() == 1 && list.list().front()->type == LIST) {
+    list = list.list().front().asList();
   }
 
   double sum = 0;
-  for (packToken num : list->list) {
+  for (packToken num : list.list()) {
     sum += num.asDouble();
   }
 
@@ -206,10 +206,11 @@ packToken string_len(TokenMap scope) {
 
 packToken default_list(TokenMap scope) {
   // Get the arguments:
-  packList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("arglist")->asList();
 
-  if (list->list.size() == 1 && list->list[0]->type == TUPLE) {
-    return packToken(new Token<packList>(TokenList(list->list[0]), LIST));
+  // If the only argument is a tuple:
+  if (list.list().size() == 1 && list.list()[0]->type == TUPLE) {
+    return TokenList(list.list()[0]);
   } else {
     return list;
   }

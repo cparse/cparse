@@ -9,6 +9,7 @@
 const packToken packToken::None = packToken(TokenNone());
 
 packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
+packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}
 
 packToken& packToken::operator=(int t) {
   delete base;
@@ -129,12 +130,12 @@ TokenMap& packToken::asMap() const {
   return *static_cast<TokenMap*>(base);
 }
 
-packList& packToken::asList() const {
+TokenList& packToken::asList() const {
   if (base->type != LIST) {
     throw bad_cast(
       "The Token is not a list!");
   }
-  return static_cast<Token<packList>*>(base)->val;
+  return *static_cast<TokenList*>(base);
 }
 
 Function* packToken::asFunc() const {
@@ -154,8 +155,8 @@ std::string packToken::str(const TokenBase* base) {
   TokenMap_t* tmap;
   TokenMap_t::iterator m_it;
 
-  TokenList::TokenList_t* tlist;
-  TokenList::TokenList_t::iterator l_it;
+  TokenList_t* tlist;
+  TokenList_t::iterator l_it;
   const Function* func;
   bool first;
   std::string name;
@@ -208,7 +209,7 @@ std::string packToken::str(const TokenBase* base) {
       ss << " }";
       return ss.str();
     case LIST:
-      tlist = &(static_cast<const Token<packList>*>(base)->val->list);
+      tlist = &(static_cast<const TokenList*>(base)->list());
       if (tlist->size() == 0) return "[]";
       ss << "[";
       for (l_it = tlist->begin(); l_it != tlist->end(); ++l_it) {

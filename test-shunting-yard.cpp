@@ -162,7 +162,7 @@ TEST_CASE("Test usage of functions `extend` function") {
 
 TEST_CASE("List usage expressions") {
   TokenMap vars;
-  vars["my_list"] = packList();
+  vars["my_list"] = TokenList();
 
   REQUIRE_NOTHROW(calculator::calculate("my_list.push(1)", vars));
   REQUIRE_NOTHROW(calculator::calculate("my_list.push(2)", vars));
@@ -180,7 +180,7 @@ TEST_CASE("List usage expressions") {
   REQUIRE(vars["my_list"].str() == "[ 1 ]");
   REQUIRE(calculator::calculate("my_list.len()", vars).asDouble() == 1);
 
-  vars["list"] = packList();
+  vars["list"] = TokenList();
   REQUIRE_NOTHROW(calculator::calculate("list.push(4).push(5).push(6)", vars));
   REQUIRE_NOTHROW(calculator::calculate("my_list.push(2).push(3)", vars));
   REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
@@ -218,7 +218,7 @@ TEST_CASE("Test list iterable behavior") {
   GlobalScope vars;
   REQUIRE_NOTHROW(calculator::calculate("L = list(1,2,3)", vars));
   Iterator* it;
-  REQUIRE_NOTHROW(it = vars["L"].asList()->getIterator());
+  REQUIRE_NOTHROW(it = vars["L"].asList().getIterator());
   packToken* next;
   REQUIRE_NOTHROW(next = it->next());
   REQUIRE(next != 0);
