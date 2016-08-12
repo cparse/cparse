@@ -32,7 +32,7 @@ packToken Function::call(packToken _this, Function* func,
   while (args->size()) {
     arglist.list().push_back(packToken(args->pop_front()));
   }
-  local["arglist"] = arglist;
+  local["args"] = arglist;
   local["this"] = _this;
 
   return func->exec(local);
@@ -42,7 +42,7 @@ packToken Function::call(packToken _this, Function* func,
 
 packToken default_print(TokenMap scope) {
   // Get the argument list:
-  TokenList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("args")->asList();
 
   bool first = true;
   for (packToken item : list.list()) {
@@ -66,7 +66,7 @@ packToken default_print(TokenMap scope) {
 
 packToken default_sum(TokenMap scope) {
   // Get the arguments:
-  TokenList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("args")->asList();
 
   if (list.list().size() == 1 && list.list().front()->type == LIST) {
     list = list.list().front().asList();
@@ -206,7 +206,7 @@ packToken string_len(TokenMap scope) {
 
 packToken default_list(TokenMap scope) {
   // Get the arguments:
-  TokenList list = scope.find("arglist")->asList();
+  TokenList list = scope.find("args")->asList();
 
   // If the only argument is a tuple:
   if (list.list().size() == 1 && list.list()[0]->type == TUPLE) {
