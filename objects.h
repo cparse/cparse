@@ -21,7 +21,7 @@ struct Iterator {
   virtual void reset() = 0;
 };
 
-struct Iterable {
+struct Iterable : public TokenBase {
   virtual ~Iterable() {}
   virtual Iterator* getIterator() = 0;
 };
@@ -70,7 +70,7 @@ struct MapData_t {
   MapData_t& operator=(const MapData_t& other);
 };
 
-struct TokenMap : public pack<MapData_t>, public TokenBase, public Iterable {
+struct TokenMap : public pack<MapData_t>, public Iterable {
   // Static factories:
   static TokenMap empty;
   static TokenMap& base_map();
@@ -133,7 +133,7 @@ struct GlobalScope : public TokenMap {
 
 typedef std::vector<packToken> TokenList_t;
 
-class TokenList : public pack<TokenList_t>, public TokenBase, public Iterable {
+class TokenList : public pack<TokenList_t>, public Iterable {
  public:
   // Attribute getter for the
   // pack<TokenList_t> super class:
