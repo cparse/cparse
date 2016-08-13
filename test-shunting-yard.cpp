@@ -508,4 +508,8 @@ TEST_CASE("Exception management") {
   // This test attempts to cause a memory leak:
   // To see if it still works run with `make check`
   REQUIRE_THROWS(calculator::calculate("a+2*no_such_variable", vars));
+
+  REQUIRE_THROWS(calculator("print('hello'))"));
+  REQUIRE_THROWS(calculator("map()['hello']]"));
+  REQUIRE_THROWS(calculator("map(['hello']]"));
 }

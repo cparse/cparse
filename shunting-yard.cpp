@@ -301,19 +301,31 @@ TokenQueue_t calculator::toRPN(const char* expr,
           rpnQueue.push(new Tuple());
           lastTokenWasOp = false;
         }
-        while (operatorStack.top().compare("(")) {
+        while (operatorStack.size() && operatorStack.top().compare("(")) {
           rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
           operatorStack.pop();
         }
+
+        if (operatorStack.size() == 0) {
+          cleanRPN(&rpnQueue);
+          throw syntax_error("Extra ')' on the expression!");
+        }
+
         operatorStack.pop();
         --bracketLevel;
         ++expr;
         break;
       case ']':
-        while (operatorStack.top().compare("[")) {
+        while (operatorStack.size() && operatorStack.top().compare("[")) {
           rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
           operatorStack.pop();
         }
+
+        if (operatorStack.size() == 0) {
+          cleanRPN(&rpnQueue);
+          throw syntax_error("Extra ']' on the expression!");
+        }
+
         operatorStack.pop();
         --bracketLevel;
         ++expr;
