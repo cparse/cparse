@@ -169,11 +169,11 @@ MapData_t::MapData_t(const MapData_t& other) {
     parent = 0;
   }
 }
-MapData_t::~MapData_t() { if(parent) delete parent; }
+MapData_t::~MapData_t() { if (parent) delete parent; }
 
 MapData_t& MapData_t::operator=(const MapData_t& other) {
   if (this != &other) {
-    if(parent) delete parent;
+    if (parent) delete parent;
     map = other.map;
     parent = other.parent;
   }
