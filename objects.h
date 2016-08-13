@@ -12,7 +12,8 @@
 #include "./pack.h"
 
 // Iterator super class.
-struct Iterator {
+struct Iterator : public TokenBase {
+  Iterator() { this->type = IT; }
   virtual ~Iterator() {}
   // Return the next position of the iterator.
   // When it reaches the end it should return NULL
@@ -93,6 +94,10 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
 
     packToken* next();
     void reset();
+
+    TokenBase* clone() const {
+      return new MapIterator(*this);
+    }
   };
 
   Iterator* getIterator() {
@@ -151,6 +156,10 @@ class TokenList : public pack<TokenList_t>, public Iterable {
 
     packToken* next();
     void reset();
+
+    TokenBase* clone() const {
+      return new ListIterator(*this);
+    }
   };
 
   Iterator* getIterator() {
