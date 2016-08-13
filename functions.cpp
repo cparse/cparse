@@ -227,8 +227,8 @@ packToken default_list(TokenMap scope) {
   // Get the arguments:
   TokenList list = scope.find("args")->asList();
 
-  // If the only argument is a tuple:
-  if (list.list().size() == 1 && list.list()[0]->type == TUPLE) {
+  // If the only argument is iterable:
+  if (list.list().size() == 1 && list.list()[0]->type & IT) {
     return TokenList(list.list()[0]);
   } else {
     return list;
