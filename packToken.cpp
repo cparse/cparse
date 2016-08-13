@@ -11,30 +11,6 @@ const packToken packToken::None = packToken(TokenNone());
 packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
 packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}
 
-packToken& packToken::operator=(int t) {
-  delete base;
-  base = new Token<int64_t>(t, INT);
-  return *this;
-}
-
-packToken& packToken::operator=(double t) {
-  delete base;
-  base = new Token<double>(t, REAL);
-  return *this;
-}
-
-packToken& packToken::operator=(const char* t) {
-  delete base;
-  base = new Token<std::string>(t, STR);
-  return *this;
-}
-
-packToken& packToken::operator=(const std::string& t) {
-  delete base;
-  base = new Token<std::string>(t, STR);
-  return *this;
-}
-
 packToken& packToken::operator=(const packToken& t) {
   delete base;
   base = t.base->clone();

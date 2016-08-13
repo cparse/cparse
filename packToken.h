@@ -29,10 +29,6 @@ class packToken {
   packToken(const TokenList& list);
   ~packToken() { delete base; }
 
-  packToken& operator=(int t);
-  packToken& operator=(double t);
-  packToken& operator=(const char* t);
-  packToken& operator=(const std::string& t);
   TokenBase* operator->() const;
   bool operator==(const packToken& t) const;
   packToken& operator[](const std::string& key);
