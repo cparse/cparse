@@ -452,7 +452,15 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
             std::string& key = r_left.asString();
             map[key] = packToken(b_right->clone());
           } else if (vars) {
-            vars.assign(r_left.asString(), b_right);
+            TokenMap* map = vars.findMap(r_left.asString());
+            if (!map || *map == TokenMap::default_global()) {
+              // Assign on the local scope.
+              // The user should not be able to implicitly overwrite
+              // variables he did not declare, since it's error prone.
+              vars[r_left.asString()] = packToken(b_right->clone());
+            } else {
+              (*map)[r_left.asString()] = packToken(b_right->clone());
+            }
           } else {
             delete b_right;
             cleanStack(evaluation);

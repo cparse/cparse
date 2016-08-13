@@ -340,6 +340,7 @@ TEST_CASE("Type specific functions") {
 }
 
 TEST_CASE("Assignment expressions") {
+  GlobalScope vars;
   calculator::calculate("assignment = 10", vars);
 
   // Assigning to an unexistent variable works.
@@ -355,6 +356,20 @@ TEST_CASE("Assignment expressions") {
   REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", vars) == true);
 
   REQUIRE_NOTHROW(calculator::calculate("teste='b'"));
+
+  // The user should not be able to explicit overwrite variables
+  // he did not declare. So by default he can't overwrite variables
+  // on the global scope:
+  REQUIRE_NOTHROW(calculator::calculate("print = 'something'", vars));
+  REQUIRE(vars["print"].asString() == "something");
+  REQUIRE(TokenMap::default_global()["print"].str() == "[Function: print]");
+
+  // But it should overwrite variables
+  // on non-local scopes as expected:
+  TokenMap child = vars.getChild();
+  REQUIRE_NOTHROW(calculator::calculate("print = 'something else'", vars));
+  REQUIRE(vars["print"].asString() == "something else");
+  REQUIRE(child["print"]->type == NONE);
 }
 
 TEST_CASE("Assignment expressions on maps") {
