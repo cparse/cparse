@@ -194,6 +194,18 @@ packToken* TokenMap::find(std::string key) {
   }
 }
 
+TokenMap* TokenMap::findMap(std::string key) {
+  TokenMap_t::iterator it = map().find(key);
+
+  if (it != map().end()) {
+    return this;
+  } else if (parent()) {
+    return parent()->findMap(key);
+  } else {
+    return 0;
+  }
+}
+
 void TokenMap::assign(std::string key, TokenBase* value) {
   if (value) {
     value = value->clone();
