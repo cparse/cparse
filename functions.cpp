@@ -89,7 +89,7 @@ packToken default_eval(TokenMap scope) {
 
 packToken default_float(TokenMap scope) {
   packToken* tok = scope.find("value");
-  if ((*tok)->type == NUM) return *tok;
+  if ((*tok)->type & NUM) return tok->asDouble();
 
   // Convert it to double:
   char* rest;
@@ -101,6 +101,24 @@ packToken default_float(TokenMap scope) {
     throw std::runtime_error("Could not convert \"" + str + "\" to float!");
   } else if (errno) {
     std::range_error("Value too big or too small to fit a Double!");
+  }
+  return ret;
+}
+
+packToken default_int(TokenMap scope) {
+  packToken* tok = scope.find("value");
+  if ((*tok)->type & NUM) return tok->asInt();
+
+  // Convert it to double:
+  char* rest;
+  const std::string& str = tok->asString();
+  errno = 0;
+  int64_t ret = strtol(str.c_str(), &rest, 10);
+
+  if (str == rest) {
+    throw std::runtime_error("Could not convert \"" + str + "\" to integer!");
+  } else if (errno) {
+    std::range_error("Value too big or too small to fit an Integer!");
   }
   return ret;
 }
@@ -117,7 +135,8 @@ packToken default_type(TokenMap scope) {
   switch ((*tok)->type) {
   case NONE: return "none";
   case VAR: return "variable";
-  case NUM: return "number";
+  case REAL: return "float";
+  case INT: return "integer";
   case STR: return "string";
   case FUNC: return "function";
   case IT: return "iterable";

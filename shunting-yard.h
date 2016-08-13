@@ -9,7 +9,12 @@
 
 enum tokType {
   // Base types:
-  NONE, OP, VAR, NUM, STR, FUNC,
+  NONE, OP, VAR, STR, FUNC,
+
+  // Numerals:
+  NUM = 0x8,  // Everything with the bit 0x8 set is a number.
+  REAL = 0x8, // == 0x8 => Real numbers.
+  INT = 0x9,  // == 0x8 + 0x1 => Integers are numbers.
 
   // Complex types:
   IT = 0x20,     // Everything with the bit 0x20 set is an iterator.

@@ -53,7 +53,7 @@ bool calculator::handle_unary(const std::string& op,
   if (lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
     if (!op.compare("-") || !op.compare("+")) {
-      rpnQueue->push(new Token<double>(0, NUM));
+      rpnQueue->push(new Token<int64_t>(0, INT));
       return true;
     } else {
       cleanRPN(rpnQueue);
@@ -174,8 +174,16 @@ TokenQueue_t calculator::toRPN(const char* expr,
   while (*expr && (bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
-      double digit = strtod(expr, &nextChar);
-      rpnQueue.push(new Token<double>(digit, NUM));
+      int64_t _int = strtol(expr, &nextChar, 10);
+
+      // If the number was not a float:
+      if (!strchr(".eE", *nextChar)) {
+        rpnQueue.push(new Token<int64_t>(_int, INT));
+      } else {
+        double digit = strtod(expr, &nextChar);
+        rpnQueue.push(new Token<double>(digit, REAL));
+      }
+
       expr = nextChar;
       lastTokenWasOp = false;
       lastTokenWasUnary = false;
@@ -481,10 +489,10 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
 
           evaluation.push(b_right);
         // If the left operand has an index number:
-        } else if (r_left->type == NUM) {
+        } else if (r_left->type & NUM) {
           if (m_left->type == LIST) {
             TokenList& list = m_left.asList();
-            size_t index = static_cast<size_t>(r_left.asDouble());
+            size_t index = r_left.asInt();
             list[index] = packToken(b_right->clone());
           } else {
             delete b_right;
@@ -542,14 +550,29 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, p_left, right);
         }
-      } else if (b_left->type == NUM && b_right->type == NUM) {
-        double left = static_cast<Token<double>*>(b_left)->val;
-        double right = static_cast<Token<double>*>(b_right)->val;
+      } else if (b_left->type & NUM && b_right->type & NUM) {
+        double left, right;
+        int64_t left_i, right_i;
+
+        // Extract integer and real values of the operators:
+        if (b_left->type == NUM) {
+          left = static_cast<Token<double>*>(b_left)->val;
+          left_i = static_cast<int64_t>(left);
+        } else {
+          left_i = static_cast<Token<int64_t>*>(b_left)->val;
+          left = static_cast<double>(left_i);
+        }
+
+        if (b_right->type == NUM) {
+          right = static_cast<Token<double>*>(b_right)->val;
+          right_i = static_cast<int64_t>(right);
+        } else {
+          right_i = static_cast<Token<int64_t>*>(b_right)->val;
+          right = static_cast<double>(right_i);
+        }
+
         delete b_left;
         delete b_right;
-
-        int left_i = static_cast<int>(left);
-        int right_i = static_cast<int>(right);
 
         if (!op.compare("+")) {
           evaluation.push(new Token<double>(left + right, NUM));
@@ -649,16 +672,23 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         if (!op.compare("+")) {
           evaluation.push(new Token<std::string>(left + right, STR));
         } else if (!op.compare("==")) {
-          evaluation.push(new Token<double>(left.compare(right) == 0, NUM));
+          evaluation.push(new Token<int64_t>(left.compare(right) == 0, INT));
         } else if (!op.compare("!=")) {
-          evaluation.push(new Token<double>(left.compare(right) != 0, NUM));
+          evaluation.push(new Token<int64_t>(left.compare(right) != 0, INT));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
-      } else if (b_left->type == STR && b_right->type == NUM) {
+      } else if (b_left->type == STR && b_right->type & NUM) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
-        double right = static_cast<Token<double>*>(b_right)->val;
+        double right;
+
+        if (b_right->type == REAL) {
+          right = static_cast<Token<double>*>(b_right)->val;
+        } else {
+          right = static_cast<Token<int64_t>*>(b_right)->val;
+        }
+
         delete b_left;
         delete b_right;
 
@@ -670,9 +700,16 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
-      } else if (b_left->type == NUM && b_right->type == STR) {
-        double left = static_cast<Token<double>*>(b_left)->val;
+      } else if (b_left->type & NUM && b_right->type == STR) {
+        double left;
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
+
+        if (b_left->type == REAL) {
+          left = static_cast<Token<double>*>(b_left)->val;
+        } else {
+          left = static_cast<Token<int64_t>*>(b_left)->val;
+        }
+
         delete b_left;
         delete b_right;
 
@@ -684,13 +721,20 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
-      } else if (b_left->type == LIST && b_right->type == NUM) {
+      } else if (b_left->type == LIST && b_right->type & NUM) {
         TokenList left = *static_cast<TokenList*>(b_left);
-        double right = static_cast<Token<double>*>(b_right)->val;
+        int64_t right = static_cast<Token<double>*>(b_right)->val;
+
+        if (b_right->type == REAL) {
+          right = static_cast<Token<double>*>(b_right)->val;
+        } else {
+          right = static_cast<Token<int64_t>*>(b_right)->val;
+        }
+
         delete b_right;
 
         if (!op.compare("[]")) {
-          int64_t index = static_cast<int64_t>(right);
+          int64_t index = right;
 
           if (index < 0) {
             // Reverse index, i.e. list[-1] = list[list.size()-1]

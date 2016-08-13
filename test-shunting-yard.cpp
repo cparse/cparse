@@ -325,7 +325,8 @@ TEST_CASE("Multiple argument functions") {
 
 TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(None)").asString() == "none");
-  REQUIRE(calculator::calculate("type(10)").asString() == "number");
+  REQUIRE(calculator::calculate("type(10.0)").asString() == "float");
+  REQUIRE(calculator::calculate("type(10)").asString() == "integer");
   REQUIRE(calculator::calculate("type('str')").asString() == "string");
   REQUIRE(calculator::calculate("type(str)").asString() == "function");
   REQUIRE(calculator::calculate("type(list())").asString() == "list");

@@ -13,13 +13,13 @@ packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}
 
 packToken& packToken::operator=(int t) {
   delete base;
-  base = new Token<double>(t, NUM);
+  base = new Token<int64_t>(t, INT);
   return *this;
 }
 
 packToken& packToken::operator=(double t) {
   delete base;
-  base = new Token<double>(t, NUM);
+  base = new Token<double>(t, REAL);
   return *this;
 }
 
@@ -43,6 +43,10 @@ packToken& packToken::operator=(const packToken& t) {
 
 // Used mainly for testing
 bool packToken::operator==(const packToken& token) const {
+  if (NUM & token.base->type & base->type) {
+    return token.asDouble() == asDouble();
+  }
+
   if (token.base->type != base->type) {
     return false;
   } else {
@@ -90,8 +94,10 @@ const packToken& packToken::operator[](const char* key) const {
 
 bool packToken::asBool() const {
   switch (base->type) {
-    case NUM:
+    case REAL:
       return static_cast<Token<double>*>(base)->val != 0;
+    case INT:
+      return static_cast<Token<int64_t>*>(base)->val != 0;
     case STR:
       return static_cast<Token<std::string>*>(base)->val != std::string();
     case MAP:
@@ -107,11 +113,27 @@ bool packToken::asBool() const {
 }
 
 double packToken::asDouble() const {
-  if (base->type != NUM) {
+  if (!(base->type & NUM)) {
     throw bad_cast(
       "The Token is not a number!");
   }
-  return static_cast<Token<double>*>(base)->val;
+  if (base->type == REAL) {
+    return static_cast<Token<double>*>(base)->val;
+  } else {
+    return static_cast<Token<int64_t>*>(base)->val;
+  }
+}
+
+int64_t packToken::asInt() const {
+  if (!(base->type & NUM)) {
+    throw bad_cast(
+      "The Token is not a number!");
+  }
+  if (base->type == REAL) {
+    return static_cast<Token<double>*>(base)->val;
+  } else {
+    return static_cast<Token<int64_t>*>(base)->val;
+  }
 }
 
 std::string& packToken::asString() const {
@@ -175,8 +197,11 @@ std::string packToken::str(const TokenBase* base) {
       return static_cast<const Token<std::string>*>(base)->val;
     case VAR:
       return static_cast<const Token<std::string>*>(base)->val;
-    case NUM:
+    case REAL:
       ss << static_cast<const Token<double>*>(base)->val;
+      return ss.str();
+    case INT:
+      ss << static_cast<const Token<int64_t>*>(base)->val;
       return ss.str();
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";

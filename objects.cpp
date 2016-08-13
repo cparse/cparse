@@ -43,8 +43,8 @@ packToken list_pop(TokenMap scope) {
 
   int64_t pos;
 
-  if ((*token)->type == NUM) {
-    pos = (uint)(token->asDouble());
+  if ((*token)->type & NUM) {
+    pos = token->asInt();
 
     // So that pop(-1) is the same as pop(last_idx):
     if (pos < 0) pos = list.list().size()-pos;
