@@ -89,7 +89,8 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
-TEST_CASE("String formattting") {
+TEST_CASE("String operations") {
+  // String formatting:
   REQUIRE(calculator::calculate("'the test %s working' % 'is'").asString() == "the test is working");
   REQUIRE(calculator::calculate("'the tests %s %s' % ('are', 'working')").asString() == "the tests are working");
 
@@ -99,6 +100,12 @@ TEST_CASE("String formattting") {
 
   REQUIRE_THROWS(calculator::calculate("'the tests %s' % ('are', 'working')"));
   REQUIRE_THROWS(calculator::calculate("'the tests %s %s' % ('are')"));
+
+  // String indexing:
+  REQUIRE(calculator::calculate("'foobar'[0]").asString() == "f");
+  REQUIRE(calculator::calculate("'foobar'[3]").asString() == "b");
+  REQUIRE(calculator::calculate("'foobar'[-1]").asString() == "r");
+  REQUIRE(calculator::calculate("'foobar'[-3]").asString() == "b");
 }
 
 TEST_CASE("Map access expressions") {

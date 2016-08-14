@@ -696,6 +696,24 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         if (!op.compare("+")) {
           ss << left << right;
           evaluation.push(new Token<std::string>(ss.str(), STR));
+        } else if (!op.compare("[]")) {
+          int64_t index = right;
+
+          if (index < 0) {
+            // Reverse index, i.e. list[-1] = list[list.size()-1]
+            index += left.size();
+          }
+
+          if (index < 0 || static_cast<size_t>(index) >= left.size()) {
+            delete b_left;
+            cleanStack(evaluation);
+            throw std::domain_error("String index out of range!");
+          }
+
+          std::string value;
+          value.push_back(left[index]);
+
+          evaluation.push(new Token<std::string>(value, STR));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
