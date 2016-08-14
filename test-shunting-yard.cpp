@@ -212,6 +212,13 @@ TEST_CASE("List and map constructors usage") {
 
   REQUIRE_NOTHROW(calculator::calculate("my_list = list(1,'2',None,map(),list('sub_list'))", vars));
   REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
+
+  // Test initialization by Iterator:
+  REQUIRE_NOTHROW(calculator::calculate("my_map  = map()", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map.a = 1", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map.b = 2", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list  = list(my_map)", vars));
+  REQUIRE(vars["my_list"].str() == "[ \"a\", \"b\" ]");
 }
 
 TEST_CASE("Test list iterable behavior") {

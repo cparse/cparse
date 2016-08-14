@@ -213,6 +213,7 @@ class TokenList : public pack<TokenList_t>, public Iterable {
     packToken* next = it->next();
     while (next) {
       list().push_back(*next);
+      next = it->next();
     }
 
     delete it;
