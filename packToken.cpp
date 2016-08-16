@@ -17,7 +17,6 @@ packToken& packToken::operator=(const packToken& t) {
   return *this;
 }
 
-// Used mainly for testing
 bool packToken::operator==(const packToken& token) const {
   if (NUM & token.base->type & base->type) {
     return token.asDouble() == asDouble();
@@ -29,6 +28,10 @@ bool packToken::operator==(const packToken& token) const {
     // Compare strings to simplify code
     return token.str().compare(str()) == 0;
   }
+}
+
+bool packToken::operator!=(const packToken& token) const {
+  return !(*this == token);
 }
 
 TokenBase* packToken::operator->() const {

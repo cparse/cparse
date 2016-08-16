@@ -62,6 +62,11 @@ TEST_CASE("Boolean expressions") {
   REQUIRE_FALSE(calculator::calculate("(3 && 0) == True").asBool());
   REQUIRE(calculator::calculate("(3 || 0) == True").asBool());
   REQUIRE_FALSE(calculator::calculate("(False || 0) == True").asBool());
+
+  REQUIRE_FALSE(calculator::calculate("10 == None").asBool());
+  REQUIRE(calculator::calculate("10 != None").asBool());
+  REQUIRE_FALSE(calculator::calculate("10 == 'str'").asBool());
+  REQUIRE(calculator::calculate("10 != 'str'").asBool());
 }
 
 TEST_CASE("String expressions") {
@@ -518,7 +523,7 @@ TEST_CASE("Exception management") {
   TokenMap v1;
   v1["map"] = TokenMap();
   // Mismatched types, no supported operators.
-  REQUIRE_THROWS(calculator("map == 0").eval(v1));
+  REQUIRE_THROWS(calculator("map * 0").eval(v1));
 
   // This test attempts to cause a memory leak:
   // To see if it still works run with `make check`

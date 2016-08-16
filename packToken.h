@@ -31,6 +31,7 @@ class packToken {
 
   TokenBase* operator->() const;
   bool operator==(const packToken& t) const;
+  bool operator!=(const packToken& t) const;
   packToken& operator[](const std::string& key);
   packToken& operator[](const char* key);
   const packToken& operator[](const std::string& key) const;

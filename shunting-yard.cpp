@@ -508,6 +508,26 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, r_left, p_right);
         }
+      } else if (!op.compare("==")) {
+        packToken left(b_left);
+        packToken right(b_right);
+
+        if (left->type == VAR || right->type == VAR) {
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+
+        evaluation.push(new Token<int64_t>(left == right, INT));
+      } else if (!op.compare("!=")) {
+        packToken left(b_left);
+        packToken right(b_right);
+
+        if (left->type == VAR || right->type == VAR) {
+          cleanStack(evaluation);
+          throw undefined_operation(op, left, right);
+        }
+
+        evaluation.push(new Token<int64_t>(left != right, INT));
       } else if (b_left->type == MAP && b_right->type == STR) {
         TokenMap left = *static_cast<TokenMap*>(b_left);
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
@@ -598,10 +618,6 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           evaluation.push(new Token<double>(left <= right, NUM));
         } else if (!op.compare(">=")) {
           evaluation.push(new Token<double>(left >= right, NUM));
-        } else if (!op.compare("==")) {
-          evaluation.push(new Token<double>(left == right, NUM));
-        } else if (!op.compare("!=")) {
-          evaluation.push(new Token<double>(left != right, NUM));
         } else if (!op.compare("&&")) {
           evaluation.push(new Token<double>(left_i && right_i, NUM));
         } else if (!op.compare("||")) {
