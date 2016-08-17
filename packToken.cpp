@@ -200,7 +200,13 @@ std::string packToken::str(const TokenBase* base) {
         }
         ss << str(token);
       }
-      ss << ")";
+      if (first) {
+        // Its an empty tuple:
+        // Add a `,` to make it different than ():
+        ss << ",)";
+      } else {
+        ss << ")";
+      }
       return ss.str();
     case MAP:
       tmap = &(static_cast<const TokenMap*>(base)->map());
