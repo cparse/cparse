@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cerrno>
 #include <iostream>
+#include <cctype>  // For tolower() and toupper()
 
 #include "./shunting-yard.h"
 #include "./functions.h"
@@ -218,7 +219,25 @@ packToken default_pow(TokenMap scope) {
 
 packToken string_len(TokenMap scope) {
   std::string str = scope.find("this")->asString();
-  return static_cast<int>(str.size());
+  return static_cast<int64_t>(str.size());
+}
+
+packToken string_lower(TokenMap scope) {
+  std::string str = scope.find("this")->asString();
+  std::string out;
+  for (char c : str) {
+    out.push_back(tolower(c));
+  }
+  return out;
+}
+
+packToken string_upper(TokenMap scope) {
+  std::string str = scope.find("this")->asString();
+  std::string out;
+  for (char c : str) {
+    out.push_back(toupper(c));
+  }
+  return out;
 }
 
 /* * * * * default constructor functions * * * * */
@@ -287,6 +306,8 @@ struct CppFunction::Startup {
 
     typeMap_t& type_map = calculator::type_attribute_map();
     type_map[STR]["len"] = CppFunction(&string_len, "len");
+    type_map[STR]["lower"] = CppFunction(&string_lower, "lower");
+    type_map[STR]["upper"] = CppFunction(&string_upper, "upper");
   }
 } CppFunction_startup;
 

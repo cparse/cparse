@@ -354,9 +354,11 @@ TEST_CASE("Default functions") {
 
 TEST_CASE("Type specific functions") {
   TokenMap vars;
-  vars["s"] = "string";
+  vars["s"] = "String";
 
   REQUIRE(calculator::calculate("s.len()", vars).asDouble() == 6);
+  REQUIRE(calculator::calculate("s.lower()", vars).asString() == "string");
+  REQUIRE(calculator::calculate("s.upper()", vars).asString() == "STRING");
 }
 
 TEST_CASE("Assignment expressions") {
