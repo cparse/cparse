@@ -104,31 +104,13 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
     // Grab the possible values:
     RefToken* ref = static_cast<RefToken*>(b);
 
-    // Decide from where to get the updated value:
-    if (ref->key->type == STR) {
-      // If source is a map:
-      if (ref->source->type == MAP) {
-        packMap map = ref->source.asMap();
-        std::string key = ref->key.asString();
-        if (map->map.count(key)) {
-          value = (*map)[key]->clone();
-          delete ref->value;
-        }
-      }
-
-      if (!value && scope) {
-        // Read from the scope:
-        packToken* r_value = scope->find(ref->key.asString());
-        if (r_value) {
-          value = (*r_value)->clone();
-          delete ref->value;
-        }
-      }
-    } else if (ref->key->type == NUM && ref->source->type == LIST) {
-      packList list = ref->source.asList();
-      size_t index = static_cast<size_t>(ref->key.asDouble());
-      if (index < list->list.size()) {
-        value = (*list)[index]->clone();
+    // If its a local variable,
+    // and a local scope is available:
+    if (ref->source->type == NONE && scope) {
+      // Try to get the most recent value of the reference:
+      packToken* r_value = scope->find(ref->key.asString());
+      if (r_value) {
+        value = (*r_value)->clone();
         delete ref->value;
       }
     }
@@ -316,7 +298,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case ')':
         if (lastTokenWasOp == '(') {
-          rpnQueue.push(new TokenNone());
+          rpnQueue.push(new Tuple());
           lastTokenWasOp = false;
         }
         while (operatorStack.top().compare("(")) {
@@ -585,6 +567,59 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
         }
+      } else if (b_left->type == STR && !op.compare("%")) {
+        std::string s_left = static_cast<Token<std::string>*>(b_left)->val;
+        const char* left = s_left.c_str();
+        delete b_left;
+
+        Tuple right;
+
+        if (b_right->type == TUPLE) {
+          right = *static_cast<Tuple*>(b_right);
+        } else {
+          right = Tuple(b_right);
+        }
+        delete b_right;
+
+        std::string output;
+        for (const TokenBase* token : right.tuple) {
+          // Find the next occurrence of "%s"
+          while (*left && (*left != '%' || left[1] != 's')) {
+            if (*left == '\\' && left[1] == '%') ++left;
+            output.push_back(*left);
+            ++left;
+          }
+
+          if (*left == '\0') {
+            cleanStack(evaluation);
+            throw type_error("Not all arguments converted during string formatting");
+          } else {
+            left += 2;
+          }
+
+          // Replace it by the token string representation:
+          if (token->type == STR) {
+            // Avoid using packToken::str for strings
+            // or it will enclose it quotes `"str"`
+            output += static_cast<const Token<std::string>*>(token)->val;
+          } else {
+            output += packToken::str(token);
+          }
+        }
+
+        // Find the next occurrence of "%s"
+        while (*left && (*left != '%' || left[1] != 's')) {
+          if (*left == '\\' && left[1] == '%') ++left;
+          output.push_back(*left);
+          ++left;
+        }
+
+        if (*left != '\0') {
+          cleanStack(evaluation);
+          throw type_error("Not enough arguments for format string");
+        } else {
+          evaluation.push(new Token<std::string>(output, STR));
+        }
       } else if (b_left->type == STR && b_right->type == STR) {
         std::string left = static_cast<Token<std::string>*>(b_left)->val;
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
@@ -688,45 +723,23 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           }
           delete b_right;
 
-          // Build the local namespace:
-          packMap local = TokenMap(vars);
-
-          for (const std::string& name : f_left->args()) {
-            packToken value;
-            if (right.size()) {
-              value = packToken(right.pop_front());
-            } else {
-              value = packToken::None;
-            }
-
-            // Use insert to make sure it is declared
-            // on the most local scope, and not on any of its parents
-            local->insert(name, value);
-          }
-
-          packList largs;
-          // Collect any extra arguments:
-          while (right.size()) {
-            largs->list.push_back(packToken(right.pop_front()));
-          }
-          (*local)["arglist"] = largs;
-
+          packToken _this;
           if (m_left->type != NONE) {
-            (*local)["this"] = m_left;
+            _this = m_left;
           } else {
-            (*local)["this"] = packMap(vars);
+            _this = packMap(vars);
           }
 
-          // Add args to scope:
+          // Execute the function:
           packToken ret;
           try {
-            // Execute the function:
-            ret = f_left->exec(local);
+            ret = Function::call(_this, f_left, &right, vars);
           } catch (...) {
             cleanStack(evaluation);
             delete f_left;
             throw;
           }
+
           delete f_left;
 
           evaluation.push(ret->clone());
@@ -852,62 +865,4 @@ std::string calculator::str(TokenQueue_t rpn) {
   }
   ss << " ] }";
   return ss.str();
-}
-
-/* * * * * TokenMap Class: * * * * */
-
-packToken* TokenMap::find(std::string key) {
-  TokenMap_t::iterator it = map.find(key);
-
-  if (it != map.end()) {
-    return &it->second;
-  } else if (parent) {
-    return parent->find(key);
-  } else {
-    return 0;
-  }
-}
-
-const packToken* TokenMap::find(std::string key) const {
-  TokenMap_t::const_iterator it = map.find(key);
-
-  if (it != map.end()) {
-    return &it->second;
-  } else if (parent) {
-    return parent->find(key);
-  } else {
-    return 0;
-  }
-}
-
-void TokenMap::assign(std::string key, TokenBase* value) {
-  if (value) {
-    value = value->clone();
-  } else {
-    throw std::invalid_argument("TokenMap assignment expected a non NULL argument as value!");
-  }
-
-  packToken* variable = find(key);
-
-  if (variable) {
-    (*variable) = packToken(value);
-  } else {
-    map[key] = packToken(value);
-  }
-}
-
-void TokenMap::insert(std::string key, TokenBase* value) {
-  (*this)[key] = packToken(value->clone());
-}
-
-packToken& TokenMap::operator[](const std::string& key) {
-  return map[key];
-}
-
-TokenMap TokenMap::getChild() {
-  return TokenMap(this);
-}
-
-void TokenMap::erase(std::string key) {
-  map.erase(key);
 }

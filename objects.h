@@ -9,6 +9,7 @@
 
 // Iterator super class.
 struct Iterator {
+  virtual ~Iterator() {}
   // Return the next position of the iterator.
   // When it reaches the end it should return NULL
   // and reset the iterator automatically.
@@ -16,7 +17,43 @@ struct Iterator {
   virtual void reset() = 0;
 };
 
-struct TokenMap : public Iterator {
+struct Iterable {
+  virtual ~Iterable() {}
+  virtual Iterator* getIterator() = 0;
+};
+
+class Tuple : public TokenBase {
+ public:
+  typedef std::list<TokenBase*> Tuple_t;
+
+ public:
+  Tuple_t tuple;
+
+ public:
+  Tuple() { this->type = TUPLE; }
+  Tuple(const TokenBase* a);
+  Tuple(const TokenBase* a, const TokenBase* b);
+  Tuple(const Tuple& t) : tuple(copyTuple(t.tuple)) { this->type = TUPLE; }
+  ~Tuple() { cleanTuple(&tuple); }
+
+ public:
+  void push_back(const TokenBase* tb);
+  TokenBase* pop_front();
+  unsigned int size();
+
+ private:
+  Tuple_t copyTuple(const Tuple_t& t);
+  void cleanTuple(Tuple_t* t);
+
+ public:
+  Tuple& operator=(const Tuple& t);
+
+  virtual TokenBase* clone() const {
+    return new Tuple(static_cast<const Tuple&>(*this));
+  }
+};
+
+struct TokenMap : public Iterable {
   typedef std::map<std::string, packToken> TokenMap_t;
 
   // Static factories:
@@ -29,10 +66,20 @@ struct TokenMap : public Iterator {
   TokenMap* parent;
 
  public:
-  TokenMap_t::iterator it;
-  packToken* last = 0;
-  packToken* next();
-  void reset();
+  struct MapIterator : public Iterator {
+    const TokenMap_t& map;
+    TokenMap_t::const_iterator it = map.begin();
+    packToken last;
+
+    MapIterator(const TokenMap_t& map) : map(map) {}
+
+    packToken* next();
+    void reset();
+  };
+
+  Iterator* getIterator() {
+    return new MapIterator(map);
+  }
 
  public:
   TokenMap(TokenMap* parent = &TokenMap::base_map()) : parent(parent) {}
@@ -57,15 +104,28 @@ struct GlobalScope : public TokenMap {
 };
 
 
-class TokenList : public Iterator {
-  uint i = 0;
+class TokenList : public Iterable {
+ public:
+  typedef std::vector<packToken> TokenList_t;
+  TokenList_t list;
 
   // Used to initialize the default list functions.
   struct Startup;
 
  public:
-  typedef std::vector<packToken> TokenList_t;
-  TokenList_t list;
+  struct ListIterator : public Iterator {
+    TokenList_t* list;
+    uint64_t i = 0;
+
+    ListIterator(TokenList_t* list) : list(list) {}
+
+    packToken* next();
+    void reset();
+  };
+
+  Iterator* getIterator() {
+    return new ListIterator(&list);
+  }
 
  public:
   TokenList() {}
@@ -81,9 +141,6 @@ class TokenList : public Iterator {
   }
   virtual ~TokenList() {}
 
-  packToken* next();
-  void reset();
-
   packToken& operator[](size_t idx) {
     return list[idx];
   }
@@ -94,4 +151,3 @@ class TokenList : public Iterator {
 };
 
 #endif  // OBJECTS_H_
-

@@ -77,31 +77,139 @@ struct TokenList::Startup {
 
 /* * * * * TokenMap iterator implemented functions * * * * */
 
-packToken* TokenMap::next() {
-  if (last) delete last;
+packToken* TokenMap::MapIterator::next() {
   if (it != map.end()) {
-    last = new packToken(it->first);
+    last = packToken(it->first);
     ++it;
-    return last;
+    return &last;
   } else {
     it = map.begin();
-    last = 0;
     return NULL;
   }
 }
 
-void TokenMap::reset() { last = 0; it = map.begin(); }
+void TokenMap::MapIterator::reset() { it = map.begin(); }
 
 /* * * * * TokenList iterator implemented functions * * * * */
 
-packToken* TokenList::next() {
-  if (i < list.size()) {
-    return &list[i++];
+packToken* TokenList::ListIterator::next() {
+  if (i < list->size()) {
+    return &list->at(i++);
   } else {
     i = 0;
     return NULL;
   }
 }
 
-void TokenList::reset() { i = 0; }
+void TokenList::ListIterator::reset() { i = 0; }
 
+/* * * * * Tuple Functions: * * * * */
+
+Tuple::Tuple(const TokenBase* a) {
+  tuple.push_back(a->clone());
+  this->type = TUPLE;
+}
+
+Tuple::Tuple(const TokenBase* a, const TokenBase* b) {
+  tuple.push_back(a->clone());
+  tuple.push_back(b->clone());
+  this->type = TUPLE;
+}
+
+void Tuple::push_back(const TokenBase* tb) {
+  tuple.push_back(tb->clone());
+}
+
+TokenBase* Tuple::pop_front() {
+  if (tuple.size() == 0) {
+    throw std::range_error("Can't pop front of an empty Tuple!");
+  }
+
+  TokenBase* value = tuple.front();
+  tuple.pop_front();
+  return value;
+}
+
+unsigned int Tuple::size() {
+  return tuple.size();
+}
+
+Tuple::Tuple_t Tuple::copyTuple(const Tuple_t& t) {
+  Tuple_t copy;
+  Tuple_t::const_iterator it;
+  for (it = t.begin(); it != t.end(); ++it) {
+    copy.push_back((*it)->clone());
+  }
+  return copy;
+}
+
+void Tuple::cleanTuple(Tuple_t* t) {
+  while (t->size()) {
+    delete t->back();
+    t->pop_back();
+  }
+}
+
+Tuple& Tuple::operator=(const Tuple& t) {
+  cleanTuple(&tuple);
+  tuple = copyTuple(t.tuple);
+  return *this;
+}
+
+/* * * * * TokenMap Class: * * * * */
+
+packToken* TokenMap::find(std::string key) {
+  TokenMap_t::iterator it = map.find(key);
+
+  if (it != map.end()) {
+    return &it->second;
+  } else if (parent) {
+    return parent->find(key);
+  } else {
+    return 0;
+  }
+}
+
+const packToken* TokenMap::find(std::string key) const {
+  TokenMap_t::const_iterator it = map.find(key);
+
+  if (it != map.end()) {
+    return &it->second;
+  } else if (parent) {
+    return parent->find(key);
+  } else {
+    return 0;
+  }
+}
+
+void TokenMap::assign(std::string key, TokenBase* value) {
+  if (value) {
+    value = value->clone();
+  } else {
+    throw std::invalid_argument("TokenMap assignment expected a non NULL argument as value!");
+  }
+
+  packToken* variable = find(key);
+
+  if (variable) {
+    (*variable) = packToken(value);
+  } else {
+    map[key] = packToken(value);
+  }
+}
+
+void TokenMap::insert(std::string key, TokenBase* value) {
+  (*this)[key] = packToken(value->clone());
+}
+
+packToken& TokenMap::operator[](const std::string& key) {
+  return map[key];
+}
+
+TokenMap TokenMap::getChild() {
+  return TokenMap(this);
+}
+
+void TokenMap::erase(std::string key) {
+  map.erase(key);
+}

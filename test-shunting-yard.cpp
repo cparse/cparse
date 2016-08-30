@@ -90,6 +90,18 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
+TEST_CASE("String formattting") {
+  REQUIRE(calculator::calculate("'the test %s working' % 'is'").asString() == "the test is working");
+  REQUIRE(calculator::calculate("'the tests %s %s' % ('are', 'working')").asString() == "the tests are working");
+
+  REQUIRE(calculator::calculate("'works %s% %s' % (100, 'now')").asString() == "works 100% now");
+
+  REQUIRE(calculator::calculate("'escape \\%s works %s' % ('now')").asString() == "escape %s works now");
+
+  REQUIRE_THROWS(calculator::calculate("'the tests %s' % ('are', 'working')"));
+  REQUIRE_THROWS(calculator::calculate("'the tests %s %s' % ('are')"));
+}
+
 TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map[\"key\"]", &vars).asString() == "mapped value");
   REQUIRE(calculator::calculate("map[\"key\"+1]", &vars).asString() ==
@@ -100,6 +112,52 @@ TEST_CASE("Map access expressions") {
   REQUIRE(calculator::calculate("map.key3.map1", &vars).asString() == "inception1");
   REQUIRE(calculator::calculate("map.key3['map2']", &vars).asString() == "inception2");
   REQUIRE(calculator::calculate("map[\"no_key\"]", &vars) == packToken::None);
+}
+
+TEST_CASE("Prototypical inheritance tests") {
+  TokenMap vars;
+  TokenMap parent;
+  TokenMap child(&parent);
+  TokenMap grand_child(&child);
+
+  vars["a"] = 0;
+  vars["parent"] = packMap(&parent);
+  vars["child"] = packMap(&child);
+  vars["grand_child"] = packMap(&grand_child);
+
+  parent["a"] = 10;
+  parent["b"] = 20;
+  parent["c"] = 30;
+  child["b"] = 21;
+  child["c"] = 31;
+  grand_child["c"] = 32;
+
+  REQUIRE(calculator::calculate("grand_child.a - 10", &vars).asDouble() == 0);
+  REQUIRE(calculator::calculate("grand_child.b - 20", &vars).asDouble() == 1);
+  REQUIRE(calculator::calculate("grand_child.c - 30", &vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("grand_child.a = 12", &vars));
+  REQUIRE(calculator::calculate("parent.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("child.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("grand_child.a", &vars).asDouble() == 12);
+}
+
+TEST_CASE("Test usage of functions `extend` function") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("a = map()", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", &vars));
+  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", &vars));
+  REQUIRE(calculator::calculate("b.a", &vars).asDouble() == 10);
+  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", &vars));
+  REQUIRE(calculator::calculate("a.a", &vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("b.a", &vars).asDouble() == 20);
+
+  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", &vars));
+  REQUIRE(calculator::calculate("a.instanceof(b)", &vars).asBool() == false);
+  REQUIRE(calculator::calculate("a.instanceof(c)", &vars).asBool() == false);
+  REQUIRE(calculator::calculate("b.instanceof(a)", &vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(a)", &vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(b)", &vars).asBool() == true);
 }
 
 TEST_CASE("List usage expressions") {
@@ -150,9 +208,62 @@ TEST_CASE("List and map constructors usage") {
 
   REQUIRE(vars["my_map"]->type == MAP);
   REQUIRE(vars["my_list"]->type == LIST);
+  REQUIRE(calculator::calculate("my_list.len()", &vars).asDouble() == 0);
 
   REQUIRE_NOTHROW(calculator::calculate("my_list = list(1,'2',None,map(),list('sub_list'))", &vars));
   REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
+}
+
+TEST_CASE("Test list iterable behavior") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("L = list(1,2,3)", &vars));
+  Iterator* it;
+  REQUIRE_NOTHROW(it = vars["L"].asList()->getIterator());
+  packToken* next;
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 1);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 2);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asDouble() == 3);
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next == 0);
+
+  delete it;
+}
+
+TEST_CASE("Test map iterable behavior") {
+  GlobalScope vars;
+  vars["M"] = packMap();
+  vars["M"]["a"] = 1;
+  vars["M"]["b"] = 2;
+  vars["M"]["c"] = 3;
+
+  Iterator* it;
+  REQUIRE_NOTHROW(it = vars["M"].asMap()->getIterator());
+  packToken* next;
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "a");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "b");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next != 0);
+  REQUIRE(next->asString() == "c");
+
+  REQUIRE_NOTHROW(next = it->next());
+  REQUIRE(next == 0);
+
+  delete it;
 }
 
 TEST_CASE("Function usage expressions") {
@@ -210,6 +321,15 @@ TEST_CASE("Multiple argument functions") {
   GlobalScope vars;
   REQUIRE_NOTHROW(calculator::calculate("total = sum(1,2,3,4)", &vars));
   REQUIRE(vars["total"].asDouble() == 10);
+}
+
+TEST_CASE("Default functions") {
+  REQUIRE(calculator::calculate("type(None)").asString() == "none");
+  REQUIRE(calculator::calculate("type(10)").asString() == "number");
+  REQUIRE(calculator::calculate("type('str')").asString() == "string");
+  REQUIRE(calculator::calculate("type(str)").asString() == "function");
+  REQUIRE(calculator::calculate("type(list())").asString() == "list");
+  REQUIRE(calculator::calculate("type(map())").asString() == "map");
 }
 
 TEST_CASE("Type specific functions") {

@@ -9,6 +9,35 @@
 #include "./shunting-yard.h"
 #include "./functions.h"
 
+/* * * * * class Function * * * * */
+packToken Function::call(packToken _this, Function* func,
+                         Tuple* args, packMap scope) {
+  // Build the local namespace:
+  packMap local = TokenMap(scope);
+
+  // Add args to local namespace:
+  for (const std::string& name : func->args()) {
+    packToken value;
+    if (args->size()) {
+      value = packToken(args->pop_front());
+    } else {
+      value = packToken::None;
+    }
+
+    (*local)[name] = value;
+  }
+
+  packList arglist;
+  // Collect any extra arguments:
+  while (args->size()) {
+    arglist->list.push_back(packToken(args->pop_front()));
+  }
+  (*local)["arglist"] = arglist;
+  (*local)["this"] = _this;
+
+  return func->exec(local);
+}
+
 /* * * * * Built-in Functions: * * * * */
 
 const char* no_args[] = {""};
@@ -58,6 +87,7 @@ packToken default_eval(packMap scope) {
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
+
 packToken default_float(packMap scope) {
   packToken* tok = scope->find("value");
   if ((*tok)->type == NUM) return *tok;
@@ -75,11 +105,54 @@ packToken default_float(packMap scope) {
   }
   return ret;
 }
+
 packToken default_str(packMap scope) {
   // Return its string representation:
   packToken* tok = scope->find("value");
   if ((*tok)->type == STR) return *tok;
   return tok->str();
+}
+
+packToken default_type(packMap scope) {
+  packToken* tok = scope->find("value");
+  switch ((*tok)->type) {
+  case NONE: return "none";
+  case VAR: return "variable";
+  case NUM: return "number";
+  case STR: return "string";
+  case FUNC: return "function";
+  case IT: return "iterable";
+  case TUPLE: return "tuple";
+  case LIST: return "list";
+  case MAP: return "map";
+  default: return "unknown_type";
+  }
+}
+
+packToken default_extend(packMap scope) {
+  packToken* tok = scope->find("value");
+
+  if ((*tok)->type == MAP) {
+    return packMap(TokenMap(tok->asMap()));
+  } else {
+    throw std::runtime_error(tok->str() + " is not extensible!");
+  }
+}
+
+packToken default_instanceof(packMap scope) {
+  TokenMap* _super = scope->find("value")->asMap();
+  TokenMap* _this = scope->find("this")->asMap()->parent;
+
+  TokenMap* parent = _this;
+  while (parent) {
+    if (parent == _super) {
+      return true;
+    }
+
+    parent = parent->parent;
+  }
+
+  return false;
 }
 
 const char* num_arg[] = {"number"};
@@ -176,65 +249,19 @@ struct CppFunction::Startup {
     global["float"] = CppFunction(&default_float, 1, value_arg, "float");
     global["str"] = CppFunction(&default_str, 1, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
+    global["type"] = CppFunction(&default_type, 1, value_arg, "type");
+    global["extend"] = CppFunction(&default_extend, 1, value_arg, "extend");
 
     // Default constructors:
     global["list"] = CppFunction(&default_list, 0, no_args, "list");
     global["map"] = CppFunction(&default_map, 0, no_args, "map");
+
+    TokenMap& base_map = TokenMap::base_map();
+    base_map["instanceof"] = CppFunction(&default_instanceof, 1,
+                                         value_arg, "instanceof");
 
     typeMap_t& type_map = calculator::type_attribute_map();
     type_map[STR]["len"] = CppFunction(&string_len, 0, no_args, "len");
   }
 } CppFunction_startup;
 
-/* * * * * Tuple Functions: * * * * */
-
-Tuple::Tuple(const TokenBase* a) {
-  tuple.push_back(a->clone());
-  this->type = TUPLE;
-}
-
-Tuple::Tuple(const TokenBase* a, const TokenBase* b) {
-  tuple.push_back(a->clone());
-  tuple.push_back(b->clone());
-  this->type = TUPLE;
-}
-
-void Tuple::push_back(const TokenBase* tb) {
-  tuple.push_back(tb->clone());
-}
-
-TokenBase* Tuple::pop_front() {
-  if (tuple.size() == 0) {
-    throw std::range_error("Can't pop front of an empty Tuple!");
-  }
-
-  TokenBase* value = tuple.front();
-  tuple.pop_front();
-  return value;
-}
-
-unsigned int Tuple::size() {
-  return tuple.size();
-}
-
-Tuple::Tuple_t Tuple::copyTuple(const Tuple_t& t) {
-  Tuple_t copy;
-  Tuple_t::const_iterator it;
-  for (it = t.begin(); it != t.end(); ++it) {
-    copy.push_back((*it)->clone());
-  }
-  return copy;
-}
-
-void Tuple::cleanTuple(Tuple_t* t) {
-  while (t->size()) {
-    delete t->back();
-    t->pop_back();
-  }
-}
-
-Tuple& Tuple::operator=(const Tuple& t) {
-  cleanTuple(&tuple);
-  tuple = copyTuple(t.tuple);
-  return *this;
-}
