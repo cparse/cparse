@@ -11,44 +11,27 @@ const packToken packToken::None = packToken(TokenNone());
 packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
 packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}
 
-packToken& packToken::operator=(int t) {
-  delete base;
-  base = new Token<double>(t, NUM);
-  return *this;
-}
-
-packToken& packToken::operator=(double t) {
-  delete base;
-  base = new Token<double>(t, NUM);
-  return *this;
-}
-
-packToken& packToken::operator=(const char* t) {
-  delete base;
-  base = new Token<std::string>(t, STR);
-  return *this;
-}
-
-packToken& packToken::operator=(const std::string& t) {
-  delete base;
-  base = new Token<std::string>(t, STR);
-  return *this;
-}
-
 packToken& packToken::operator=(const packToken& t) {
   delete base;
   base = t.base->clone();
   return *this;
 }
 
-// Used mainly for testing
 bool packToken::operator==(const packToken& token) const {
+  if (NUM & token.base->type & base->type) {
+    return token.asDouble() == asDouble();
+  }
+
   if (token.base->type != base->type) {
     return false;
   } else {
     // Compare strings to simplify code
     return token.str().compare(str()) == 0;
   }
+}
+
+bool packToken::operator!=(const packToken& token) const {
+  return !(*this == token);
 }
 
 TokenBase* packToken::operator->() const {
@@ -90,8 +73,10 @@ const packToken& packToken::operator[](const char* key) const {
 
 bool packToken::asBool() const {
   switch (base->type) {
-    case NUM:
+    case REAL:
       return static_cast<Token<double>*>(base)->val != 0;
+    case INT:
+      return static_cast<Token<int64_t>*>(base)->val != 0;
     case STR:
       return static_cast<Token<std::string>*>(base)->val != std::string();
     case MAP:
@@ -107,11 +92,27 @@ bool packToken::asBool() const {
 }
 
 double packToken::asDouble() const {
-  if (base->type != NUM) {
+  if (!(base->type & NUM)) {
     throw bad_cast(
       "The Token is not a number!");
   }
-  return static_cast<Token<double>*>(base)->val;
+  if (base->type == REAL) {
+    return static_cast<Token<double>*>(base)->val;
+  } else {
+    return static_cast<Token<int64_t>*>(base)->val;
+  }
+}
+
+int64_t packToken::asInt() const {
+  if (!(base->type & NUM)) {
+    throw bad_cast(
+      "The Token is not a number!");
+  }
+  if (base->type == REAL) {
+    return static_cast<Token<double>*>(base)->val;
+  } else {
+    return static_cast<Token<int64_t>*>(base)->val;
+  }
 }
 
 std::string& packToken::asString() const {
@@ -175,8 +176,11 @@ std::string packToken::str(const TokenBase* base) {
       return static_cast<const Token<std::string>*>(base)->val;
     case VAR:
       return static_cast<const Token<std::string>*>(base)->val;
-    case NUM:
+    case REAL:
       ss << static_cast<const Token<double>*>(base)->val;
+      return ss.str();
+    case INT:
+      ss << static_cast<const Token<int64_t>*>(base)->val;
       return ss.str();
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
@@ -196,7 +200,13 @@ std::string packToken::str(const TokenBase* base) {
         }
         ss << str(token);
       }
-      ss << ")";
+      if (first) {
+        // Its an empty tuple:
+        // Add a `,` to make it different than ():
+        ss << ",)";
+      } else {
+        ss << ")";
+      }
       return ss.str();
     case MAP:
       tmap = &(static_cast<const TokenMap*>(base)->map());

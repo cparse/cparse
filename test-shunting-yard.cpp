@@ -62,6 +62,11 @@ TEST_CASE("Boolean expressions") {
   REQUIRE_FALSE(calculator::calculate("(3 && 0) == True").asBool());
   REQUIRE(calculator::calculate("(3 || 0) == True").asBool());
   REQUIRE_FALSE(calculator::calculate("(False || 0) == True").asBool());
+
+  REQUIRE_FALSE(calculator::calculate("10 == None").asBool());
+  REQUIRE(calculator::calculate("10 != None").asBool());
+  REQUIRE_FALSE(calculator::calculate("10 == 'str'").asBool());
+  REQUIRE(calculator::calculate("10 != 'str'").asBool());
 }
 
 TEST_CASE("String expressions") {
@@ -89,7 +94,8 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
-TEST_CASE("String formattting") {
+TEST_CASE("String operations") {
+  // String formatting:
   REQUIRE(calculator::calculate("'the test %s working' % 'is'").asString() == "the test is working");
   REQUIRE(calculator::calculate("'the tests %s %s' % ('are', 'working')").asString() == "the tests are working");
 
@@ -99,6 +105,12 @@ TEST_CASE("String formattting") {
 
   REQUIRE_THROWS(calculator::calculate("'the tests %s' % ('are', 'working')"));
   REQUIRE_THROWS(calculator::calculate("'the tests %s %s' % ('are')"));
+
+  // String indexing:
+  REQUIRE(calculator::calculate("'foobar'[0]").asString() == "f");
+  REQUIRE(calculator::calculate("'foobar'[3]").asString() == "b");
+  REQUIRE(calculator::calculate("'foobar'[-1]").asString() == "r");
+  REQUIRE(calculator::calculate("'foobar'[-3]").asString() == "b");
 }
 
 TEST_CASE("Map access expressions") {
@@ -212,6 +224,13 @@ TEST_CASE("List and map constructors usage") {
 
   REQUIRE_NOTHROW(calculator::calculate("my_list = list(1,'2',None,map(),list('sub_list'))", vars));
   REQUIRE(vars["my_list"].str() == "[ 1, \"2\", None, {}, [ \"sub_list\" ] ]");
+
+  // Test initialization by Iterator:
+  REQUIRE_NOTHROW(calculator::calculate("my_map  = map()", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map.a = 1", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map.b = 2", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_list  = list(my_map)", vars));
+  REQUIRE(vars["my_list"].str() == "[ \"a\", \"b\" ]");
 }
 
 TEST_CASE("Test list iterable behavior") {
@@ -325,7 +344,8 @@ TEST_CASE("Multiple argument functions") {
 
 TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(None)").asString() == "none");
-  REQUIRE(calculator::calculate("type(10)").asString() == "number");
+  REQUIRE(calculator::calculate("type(10.0)").asString() == "float");
+  REQUIRE(calculator::calculate("type(10)").asString() == "integer");
   REQUIRE(calculator::calculate("type('str')").asString() == "string");
   REQUIRE(calculator::calculate("type(str)").asString() == "function");
   REQUIRE(calculator::calculate("type(list())").asString() == "list");
@@ -334,12 +354,15 @@ TEST_CASE("Default functions") {
 
 TEST_CASE("Type specific functions") {
   TokenMap vars;
-  vars["s"] = "string";
+  vars["s"] = "String";
 
   REQUIRE(calculator::calculate("s.len()", vars).asDouble() == 6);
+  REQUIRE(calculator::calculate("s.lower()", vars).asString() == "string");
+  REQUIRE(calculator::calculate("s.upper()", vars).asString() == "STRING");
 }
 
 TEST_CASE("Assignment expressions") {
+  GlobalScope vars;
   calculator::calculate("assignment = 10", vars);
 
   // Assigning to an unexistent variable works.
@@ -355,6 +378,20 @@ TEST_CASE("Assignment expressions") {
   REQUIRE(calculator::calculate("a == b && b == c && b == d && d == 30", vars) == true);
 
   REQUIRE_NOTHROW(calculator::calculate("teste='b'"));
+
+  // The user should not be able to explicit overwrite variables
+  // he did not declare. So by default he can't overwrite variables
+  // on the global scope:
+  REQUIRE_NOTHROW(calculator::calculate("print = 'something'", vars));
+  REQUIRE(vars["print"].asString() == "something");
+  REQUIRE(TokenMap::default_global()["print"].str() == "[Function: print]");
+
+  // But it should overwrite variables
+  // on non-local scopes as expected:
+  TokenMap child = vars.getChild();
+  REQUIRE_NOTHROW(calculator::calculate("print = 'something else'", vars));
+  REQUIRE(vars["print"].asString() == "something else");
+  REQUIRE(child["print"]->type == NONE);
 }
 
 TEST_CASE("Assignment expressions on maps") {
@@ -488,9 +525,13 @@ TEST_CASE("Exception management") {
   TokenMap v1;
   v1["map"] = TokenMap();
   // Mismatched types, no supported operators.
-  REQUIRE_THROWS(calculator("map == 0").eval(v1));
+  REQUIRE_THROWS(calculator("map * 0").eval(v1));
 
   // This test attempts to cause a memory leak:
   // To see if it still works run with `make check`
   REQUIRE_THROWS(calculator::calculate("a+2*no_such_variable", vars));
+
+  REQUIRE_THROWS(calculator("print('hello'))"));
+  REQUIRE_THROWS(calculator("map()['hello']]"));
+  REQUIRE_THROWS(calculator("map(['hello']]"));
 }

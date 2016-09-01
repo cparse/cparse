@@ -18,22 +18,20 @@ class packToken {
 
   template<class C>
   packToken(C c, tokType type) : base(new Token<C>(c, type)) {}
-  packToken(int d) : base(new Token<double>(d, NUM)) {}
-  packToken(int64_t l) : base(new Token<double>(l, NUM)) {}
-  packToken(size_t s) : base(new Token<double>(s, NUM)) {}
-  packToken(double d) : base(new Token<double>(d, NUM)) {}
+  packToken(int d) : base(new Token<int64_t>(d, INT)) {}
+  packToken(int64_t l) : base(new Token<int64_t>(l, INT)) {}
+  packToken(size_t s) : base(new Token<int64_t>(s, INT)) {}
+  packToken(float f) : base(new Token<double>(f, REAL)) {}
+  packToken(double d) : base(new Token<double>(d, REAL)) {}
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
   packToken(const TokenMap& map);
   packToken(const TokenList& list);
   ~packToken() { delete base; }
 
-  packToken& operator=(int t);
-  packToken& operator=(double t);
-  packToken& operator=(const char* t);
-  packToken& operator=(const std::string& t);
   TokenBase* operator->() const;
   bool operator==(const packToken& t) const;
+  bool operator!=(const packToken& t) const;
   packToken& operator[](const std::string& key);
   packToken& operator[](const char* key);
   const packToken& operator[](const std::string& key) const;
@@ -43,6 +41,7 @@ class packToken {
 
   bool asBool() const;
   double asDouble() const;
+  int64_t asInt() const;
   std::string& asString() const;
   TokenMap& asMap() const;
   TokenList& asList() const;

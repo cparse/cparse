@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cerrno>
 #include <iostream>
+#include <cctype>  // For tolower() and toupper()
 
 #include "./shunting-yard.h"
 #include "./functions.h"
@@ -89,7 +90,7 @@ packToken default_eval(TokenMap scope) {
 
 packToken default_float(TokenMap scope) {
   packToken* tok = scope.find("value");
-  if ((*tok)->type == NUM) return *tok;
+  if ((*tok)->type & NUM) return tok->asDouble();
 
   // Convert it to double:
   char* rest;
@@ -101,6 +102,24 @@ packToken default_float(TokenMap scope) {
     throw std::runtime_error("Could not convert \"" + str + "\" to float!");
   } else if (errno) {
     std::range_error("Value too big or too small to fit a Double!");
+  }
+  return ret;
+}
+
+packToken default_int(TokenMap scope) {
+  packToken* tok = scope.find("value");
+  if ((*tok)->type & NUM) return tok->asInt();
+
+  // Convert it to double:
+  char* rest;
+  const std::string& str = tok->asString();
+  errno = 0;
+  int64_t ret = strtol(str.c_str(), &rest, 10);
+
+  if (str == rest) {
+    throw std::runtime_error("Could not convert \"" + str + "\" to integer!");
+  } else if (errno) {
+    std::range_error("Value too big or too small to fit an Integer!");
   }
   return ret;
 }
@@ -117,7 +136,8 @@ packToken default_type(TokenMap scope) {
   switch ((*tok)->type) {
   case NONE: return "none";
   case VAR: return "variable";
-  case NUM: return "number";
+  case REAL: return "float";
+  case INT: return "integer";
   case STR: return "string";
   case FUNC: return "function";
   case IT: return "iterable";
@@ -199,7 +219,25 @@ packToken default_pow(TokenMap scope) {
 
 packToken string_len(TokenMap scope) {
   std::string str = scope.find("this")->asString();
-  return static_cast<int>(str.size());
+  return static_cast<int64_t>(str.size());
+}
+
+packToken string_lower(TokenMap scope) {
+  std::string str = scope.find("this")->asString();
+  std::string out;
+  for (char c : str) {
+    out.push_back(tolower(c));
+  }
+  return out;
+}
+
+packToken string_upper(TokenMap scope) {
+  std::string str = scope.find("this")->asString();
+  std::string out;
+  for (char c : str) {
+    out.push_back(toupper(c));
+  }
+  return out;
 }
 
 /* * * * * default constructor functions * * * * */
@@ -208,8 +246,8 @@ packToken default_list(TokenMap scope) {
   // Get the arguments:
   TokenList list = scope.find("args")->asList();
 
-  // If the only argument is a tuple:
-  if (list.list().size() == 1 && list.list()[0]->type == TUPLE) {
+  // If the only argument is iterable:
+  if (list.list().size() == 1 && list.list()[0]->type & IT) {
     return TokenList(list.list()[0]);
   } else {
     return list;
@@ -268,6 +306,8 @@ struct CppFunction::Startup {
 
     typeMap_t& type_map = calculator::type_attribute_map();
     type_map[STR]["len"] = CppFunction(&string_len, "len");
+    type_map[STR]["lower"] = CppFunction(&string_lower, "lower");
+    type_map[STR]["upper"] = CppFunction(&string_upper, "upper");
   }
 } CppFunction_startup;
 

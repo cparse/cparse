@@ -27,9 +27,37 @@ struct Iterable : public TokenBase {
   virtual Iterator* getIterator() = 0;
 };
 
-class Tuple : public TokenBase {
+class Tuple : public Iterable {
  public:
   typedef std::list<TokenBase*> Tuple_t;
+
+ private:
+  struct TupleIterator : public Iterator {
+    Tuple_t* list;
+    Tuple_t::const_iterator it;
+    packToken last;
+
+    TupleIterator(Tuple_t* list) : it(list->begin()) {}
+    packToken* next() {
+      if (it != list->end()) {
+        last = packToken((*it)->clone());
+        return &last;
+      } else {
+        reset();
+        return 0;
+      }
+    }
+    void reset() { it = list->begin(); }
+
+    TokenBase* clone() const {
+      return new TupleIterator(*this);
+    }
+  };
+
+ public:
+  Iterator* getIterator() {
+    return new TupleIterator(&tuple);
+  }
 
  public:
   Tuple_t tuple;
@@ -120,7 +148,7 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
 
  public:
   packToken* find(std::string key);
-  const packToken* find(std::string key) const;
+  TokenMap* findMap(std::string key);
   void assign(std::string key, TokenBase* value);
   void insert(std::string key, TokenBase* value);
 
@@ -171,14 +199,24 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   TokenList(TokenBase* token) {
     this->type = LIST;
 
-    if (token->type != TUPLE) {
+    if (!(token->type & IT)) {
       throw std::invalid_argument("Invalid argument to build a list!");
     }
 
-    Tuple* tuple = static_cast<Tuple*>(token);
-    for (TokenBase* tb : tuple->tuple) {
-      list().push_back(packToken(tb->clone()));
+    Iterator* it;
+    if (token->type == IT) {
+      it = static_cast<Iterator*>(token->clone());
+    } else {
+      it = static_cast<Iterable*>(token)->getIterator();
     }
+
+    packToken* next = it->next();
+    while (next) {
+      list().push_back(*next);
+      next = it->next();
+    }
+
+    delete it;
   }
   virtual ~TokenList() {}
 

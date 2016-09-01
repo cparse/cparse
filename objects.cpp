@@ -43,8 +43,8 @@ packToken list_pop(TokenMap scope) {
 
   int64_t pos;
 
-  if ((*token)->type == NUM) {
-    pos = (uint)(token->asDouble());
+  if ((*token)->type & NUM) {
+    pos = token->asInt();
 
     // So that pop(-1) is the same as pop(last_idx):
     if (pos < 0) pos = list.list().size()-pos;
@@ -194,13 +194,13 @@ packToken* TokenMap::find(std::string key) {
   }
 }
 
-const packToken* TokenMap::find(std::string key) const {
-  TokenMap_t::const_iterator it = map().find(key);
+TokenMap* TokenMap::findMap(std::string key) {
+  TokenMap_t::iterator it = map().find(key);
 
   if (it != map().end()) {
-    return &it->second;
+    return this;
   } else if (parent()) {
-    return parent()->find(key);
+    return parent()->findMap(key);
   } else {
     return 0;
   }
