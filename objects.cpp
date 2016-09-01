@@ -12,8 +12,8 @@
 // - https://isocpp.org/wiki/faq/ctors#static-init-order
 //
 TokenMap& TokenMap::base_map() {
-  static TokenMap global_map(0);
-  return global_map;
+  static TokenMap _base_map(0);
+  return _base_map;
 }
 
 TokenMap& TokenMap::default_global() {
@@ -26,42 +26,44 @@ TokenMap TokenMap::empty = TokenMap(&default_global());
 /* * * * * TokenList built-in functions * * * * */
 
 const char* push_args[] = {"item"};
-packToken list_push(packMap scope) {
-  packToken* list = scope->find("this");
-  packToken* token = scope->find("item");
+packToken list_push(TokenMap scope) {
+  packToken* list = scope.find("this");
+  packToken* token = scope.find("item");
 
   // If "this" is not a list it will throw here:
-  list->asList()->list.push_back(*token);
+  list->asList().list().push_back(*token);
 
   return *list;
 }
 
 const char* pop_args[] = {"pos"};
-packToken list_pop(packMap scope) {
-  TokenList* list = scope->find("this")->asList();
-  packToken* token = scope->find("pos");
+packToken list_pop(TokenMap scope) {
+  TokenList list = scope.find("this")->asList();
+  packToken* token = scope.find("pos");
 
-  uint pos;
+  int64_t pos;
 
   if ((*token)->type == NUM) {
     pos = (uint)(token->asDouble());
+
+    // So that pop(-1) is the same as pop(last_idx):
+    if (pos < 0) pos = list.list().size()-pos;
   } else {
-    pos = list->list.size()-1;
+    pos = list.list().size()-1;
   }
 
-  packToken result = list->list[pos];
+  packToken result = list.list()[pos];
 
   // Erase the item from the list:
-  // Note that this operation is optimal if pos == list.size()
-  list->list.erase(list->list.begin() + pos);
+  // Note that this operation is optimal if pos == list.size()-1
+  list.list().erase(list.list().begin() + pos);
 
   return result;
 }
 
-const char* list_no_args[] = {""};
-packToken list_len(packMap scope) {
-  packList list = scope->find("this")->asList();
-  return list->list.size();
+packToken list_len(TokenMap scope) {
+  TokenList list = scope.find("this")->asList();
+  return list.list().size();
 }
 
 /* * * * * Initialize TokenList functions * * * * */
@@ -71,7 +73,7 @@ struct TokenList::Startup {
     TokenMap& base = calculator::type_attribute_map()[LIST];
     base["push"] = CppFunction(list_push, 1, push_args, "push");
     base["pop"] = CppFunction(list_pop, 1, pop_args, "pop");
-    base["len"] = CppFunction(list_len, 0, list_no_args, "len");
+    base["len"] = CppFunction(list_len, "len");
   }
 } list_startup;
 
@@ -156,27 +158,49 @@ Tuple& Tuple::operator=(const Tuple& t) {
   return *this;
 }
 
+/* * * * * MapData_t struct: * * * * */
+
+MapData_t::MapData_t(TokenMap* p) : parent(p ? new TokenMap(*p) : 0) {}
+MapData_t::MapData_t(const MapData_t& other) {
+  map = other.map;
+  if (other.parent) {
+    parent = new TokenMap(*(other.parent));
+  } else {
+    parent = 0;
+  }
+}
+MapData_t::~MapData_t() { if (parent) delete parent; }
+
+MapData_t& MapData_t::operator=(const MapData_t& other) {
+  if (this != &other) {
+    if (parent) delete parent;
+    map = other.map;
+    parent = other.parent;
+  }
+  return *this;
+}
+
 /* * * * * TokenMap Class: * * * * */
 
 packToken* TokenMap::find(std::string key) {
-  TokenMap_t::iterator it = map.find(key);
+  TokenMap_t::iterator it = map().find(key);
 
-  if (it != map.end()) {
+  if (it != map().end()) {
     return &it->second;
-  } else if (parent) {
-    return parent->find(key);
+  } else if (parent()) {
+    return parent()->find(key);
   } else {
     return 0;
   }
 }
 
 const packToken* TokenMap::find(std::string key) const {
-  TokenMap_t::const_iterator it = map.find(key);
+  TokenMap_t::const_iterator it = map().find(key);
 
-  if (it != map.end()) {
+  if (it != map().end()) {
     return &it->second;
-  } else if (parent) {
-    return parent->find(key);
+  } else if (parent()) {
+    return parent()->find(key);
   } else {
     return 0;
   }
@@ -194,7 +218,7 @@ void TokenMap::assign(std::string key, TokenBase* value) {
   if (variable) {
     (*variable) = packToken(value);
   } else {
-    map[key] = packToken(value);
+    map()[key] = packToken(value);
   }
 }
 
@@ -203,7 +227,7 @@ void TokenMap::insert(std::string key, TokenBase* value) {
 }
 
 packToken& TokenMap::operator[](const std::string& key) {
-  return map[key];
+  return map()[key];
 }
 
 TokenMap TokenMap::getChild() {
@@ -211,5 +235,5 @@ TokenMap TokenMap::getChild() {
 }
 
 void TokenMap::erase(std::string key) {
-  map.erase(key);
+  map().erase(key);
 }

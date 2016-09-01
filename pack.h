@@ -6,14 +6,15 @@
 #define PACK_H_
 
 // Pack a pointer to be automatically deleted:
-template<class T> class pack {
+template<typename T> class pack {
   // Reference Counter type:
   struct RC_t {
-    int count;
+    int64_t count;
     T* obj;
     bool _delete;
   };
 
+ public:
   typedef std::list<RC_t> RefList_t;
   typedef typename RefList_t::iterator Ref_t;
 
@@ -78,8 +79,14 @@ template<class T> class pack {
   operator T*() const { return ref->obj; }
   T* operator->() const { return ref->obj; }
   T& operator*() const { return *(ref->obj); }
-  T* get() const { return ref->obj; }
+  T* data() const { return ref->obj; }
+  int64_t count() const { return ref->count; }
+
+  friend bool operator==(pack<T> first, pack<T> second) {
+    return first.ref == second.ref;
+  }
 };
+
 
 #endif  // PACK_H_
 

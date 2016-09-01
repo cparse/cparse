@@ -7,7 +7,7 @@
 class Function : public TokenBase {
  public:
   static packToken call(packToken _this, Function* func,
-                        Tuple* args, packMap scope);
+                        Tuple* args, TokenMap scope);
 
  public:
   typedef std::list<std::string> argsList;
@@ -20,7 +20,7 @@ class Function : public TokenBase {
   virtual ~Function() {}
 
   virtual const argsList args() const = 0;
-  virtual packToken exec(packMap scope) const = 0;
+  virtual packToken exec(TokenMap scope) const = 0;
   virtual TokenBase* clone() const = 0;
 };
 
@@ -31,14 +31,15 @@ class CppFunction : public Function {
   struct Startup;
 
  public:
-  packToken (*func)(packMap);
+  packToken (*func)(TokenMap);
   argsList _args;
 
-  CppFunction(packToken (*func)(packMap), unsigned int nargs,
+  CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
               const char** args, std::string name = "");
+  CppFunction(packToken (*func)(TokenMap), std::string name = "");
 
   virtual const argsList args() const { return _args; }
-  virtual packToken exec(packMap scope) const { return func(scope); }
+  virtual packToken exec(TokenMap scope) const { return func(scope); }
 
   virtual TokenBase* clone() const {
     return new CppFunction(static_cast<const CppFunction&>(*this));

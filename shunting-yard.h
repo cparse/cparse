@@ -49,16 +49,8 @@ typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, int> OppMap_t;
 typedef std::list<TokenBase*> Tuple_t;
 
-// The pack template manages
-// reference counting.
-#include "./pack.h"
-
 class TokenMap;
-typedef pack<TokenMap> packMap;
-
 class TokenList;
-typedef pack<TokenList> packList;
-
 class Function;
 #include "./packToken.h"
 
@@ -96,13 +88,13 @@ class calculator {
   static typeMap_t& type_attribute_map();
 
  public:
-  static packToken calculate(const char* expr, packMap vars = &TokenMap::empty,
+  static packToken calculate(const char* expr, TokenMap vars = &TokenMap::empty,
                              const char* delim = 0, const char** rest = 0);
 
  private:
-  static TokenBase* calculate(TokenQueue_t RPN, packMap vars);
+  static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars);
   static void cleanRPN(TokenQueue_t* rpn);
-  static TokenQueue_t toRPN(const char* expr, packMap vars,
+  static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = _opPrecedence);
 
@@ -123,13 +115,13 @@ class calculator {
   ~calculator();
   calculator() {}
   calculator(const calculator& calc);
-  calculator(const char* expr, packMap vars = &TokenMap::empty,
+  calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
              OppMap_t opPrecedence = _opPrecedence);
-  void compile(const char* expr, packMap vars = &TokenMap::empty,
+  void compile(const char* expr, TokenMap vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0,
                OppMap_t opPrecedence = _opPrecedence);
-  packToken eval(packMap vars = &TokenMap::empty, bool keep_refs = false) const;
+  packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;
 
   // Serialization:
   std::string str() const;

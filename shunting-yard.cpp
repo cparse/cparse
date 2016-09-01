@@ -148,7 +148,7 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
-                               packMap vars, const char* delim,
+                               TokenMap vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence) {
   TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
   uint8_t lastTokenWasOp = true;
@@ -203,7 +203,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         } else if (key == "None") {
           value = &noneToken;
         } else {
-          if (vars) value = vars->find(key);
+          if (vars) value = vars.find(key);
         }
 
         if (value) {
@@ -361,7 +361,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   return rpnQueue;
 }
 
-packToken calculator::calculate(const char* expr, packMap vars,
+packToken calculator::calculate(const char* expr, TokenMap vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
@@ -379,7 +379,7 @@ void cleanStack(std::stack<TokenBase*> st) {
   }
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -415,7 +415,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
-        b_right = resolve_reference(b_right, vars);
+        b_right = resolve_reference(b_right, &vars);
       }
 
       packToken r_left;
@@ -424,7 +424,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         RefToken* left = static_cast<RefToken*>(b_left);
         r_left = left->key;
         m_left = left->source;
-        b_left = resolve_reference(left, vars);
+        b_left = resolve_reference(left, &vars);
       } else if (b_left->type == VAR) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
@@ -448,11 +448,11 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         // If the left operand has a variable name:
         if (r_left->type == STR) {
           if (m_left->type == MAP) {
-            packMap& map = m_left.asMap();
+            TokenMap& map = m_left.asMap();
             std::string& key = r_left.asString();
-            (*map)[key] = packToken(b_right->clone());
+            map[key] = packToken(b_right->clone());
           } else if (vars) {
-            vars->assign(r_left.asString(), b_right);
+            vars.assign(r_left.asString(), b_right);
           } else {
             delete b_right;
             cleanStack(evaluation);
@@ -463,9 +463,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
         // If the left operand has an index number:
         } else if (r_left->type == NUM) {
           if (m_left->type == LIST) {
-            packList& list = m_left.asList();
+            TokenList& list = m_left.asList();
             size_t index = static_cast<size_t>(r_left.asDouble());
-            (*list)[index] = packToken(b_right->clone());
+            list[index] = packToken(b_right->clone());
           } else {
             delete b_right;
             cleanStack(evaluation);
@@ -481,13 +481,13 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           throw undefined_operation(op, r_left, p_right);
         }
       } else if (b_left->type == MAP && b_right->type == STR) {
-        packMap left = static_cast<Token<packMap>*>(b_left)->val;
+        TokenMap left = *static_cast<TokenMap*>(b_left);
         std::string right = static_cast<Token<std::string>*>(b_right)->val;
         delete b_left;
         delete b_right;
 
         if (!op.compare("[]") || !op.compare(".")) {
-          packToken* p_value = left->find(right);
+          packToken* p_value = left.find(right);
           TokenBase* value;
 
           if (p_value) {
@@ -665,7 +665,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == LIST && b_right->type == NUM) {
-        packList left = static_cast<Token<packList>*>(b_left)->val;
+        TokenList left = *static_cast<TokenList*>(b_left);
         double right = static_cast<Token<double>*>(b_right)->val;
         delete b_right;
 
@@ -674,16 +674,16 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
 
           if (index < 0) {
             // Reverse index, i.e. list[-1] = list[list.size()-1]
-            index += left->list.size();
+            index += left.list().size();
           }
 
-          if (index < 0 || static_cast<size_t>(index) >= left->list.size()) {
+          if (index < 0 || static_cast<size_t>(index) >= left.list().size()) {
             delete b_left;
             cleanStack(evaluation);
             throw std::domain_error("List index out of range!");
           }
 
-          TokenBase* value = left->list[index]->clone();
+          TokenBase* value = left.list()[index]->clone();
 
           evaluation.push(new RefToken(index, value, packToken(b_left)));
         } else {
@@ -692,20 +692,22 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           throw undefined_operation(op, left, right);
         }
       } else if (b_left->type == LIST && b_right->type == LIST) {
-        packList left = static_cast<Token<packList>*>(b_left)->val;
-        packList right = static_cast<Token<packList>*>(b_right)->val;
+        TokenList left = *static_cast<TokenList*>(b_left);
+        TokenList right = *static_cast<TokenList*>(b_right);
         delete b_left;
         delete b_right;
 
         if (!op.compare("+")) {
-          // Copy the first list into a new packList:
-          packList result = TokenList(*left);
+          // Deep copy the first list:
+          TokenList result;
+          result.list() = left.list();
 
-          for (packToken& p : right->list) {
-            result->list.push_back(p);
+          // Insert items from the right list into the left:
+          for (packToken& p : right.list()) {
+            result.list().push_back(p);
           }
 
-          evaluation.push(new Token<packList>(result, LIST));
+          evaluation.push(new TokenList(result));
         } else {
           cleanStack(evaluation);
           throw undefined_operation(op, left, right);
@@ -727,7 +729,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
           if (m_left->type != NONE) {
             _this = m_left;
           } else {
-            _this = packMap(vars);
+            _this = vars;
           }
 
           // Execute the function:
@@ -764,7 +766,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, packMap vars) {
       packToken* value = NULL;
       std::string key = static_cast<Token<std::string>*>(base)->val;
 
-      if (vars) { value = vars->find(key); }
+      if (vars) { value = vars.find(key); }
 
       if (value) {
         TokenBase* copy = (*value)->clone();
@@ -809,13 +811,13 @@ calculator::calculator(const calculator& calc) {
 // Work as a sub-parser:
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
-calculator::calculator(const char* expr, packMap vars,
+calculator::calculator(const char* expr, TokenMap vars,
                        const char* delim, const char** rest, OppMap_t opPrecedence) {
   compile(expr, vars, delim, rest, opPrecedence);
 }
 
 void calculator::compile(const char* expr,
-                         packMap vars, const char* delim,
+                         TokenMap vars, const char* delim,
                          const char** rest, OppMap_t opPrecedence) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
@@ -823,7 +825,7 @@ void calculator::compile(const char* expr,
   this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
 }
 
-packToken calculator::eval(packMap vars, bool keep_refs) const {
+packToken calculator::eval(TokenMap vars, bool keep_refs) const {
   TokenBase* value = calculate(this->RPN, vars);
   if (keep_refs) {
     return packToken(value);
