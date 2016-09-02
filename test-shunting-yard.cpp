@@ -315,8 +315,6 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
   REQUIRE(calculator::calculate("float(10)").asDouble() == 10);
-  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
-  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
 
   vars["a"] = 0;
   REQUIRE(calculator::calculate(" eval('a = 3') ", vars).asDouble() == 3);
@@ -334,6 +332,20 @@ TEST_CASE("Function usage expressions") {
   vars["base"] = 3;
   REQUIRE(c.eval().asDouble() == 4);
   REQUIRE(c.eval(vars).asDouble() == 9);
+}
+
+TEST_CASE("Built-in str() function") {
+  REQUIRE(calculator::calculate(" str(None) ").asString() == "None");
+  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
+  REQUIRE(calculator::calculate(" str(10.1) ").asString() == "10.1");
+  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
+  REQUIRE(calculator::calculate(" str(list(1,2,3)) ").asString() == "[ 1, 2, 3 ]");
+  REQUIRE(calculator::calculate(" str(map()) ").asString() == "{}");
+  REQUIRE(calculator::calculate(" str(map) ").asString() == "[Function: map]");
+
+  vars["iterator"] = packToken(new TokenList());
+  vars["iterator"]->type = IT;
+  REQUIRE(calculator::calculate("str(iterator)", vars).asString() == "[Iterator]");
 }
 
 TEST_CASE("Multiple argument functions") {

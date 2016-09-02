@@ -229,6 +229,9 @@ std::string packToken::str(const TokenBase* base) {
       ss << " ]";
       return ss.str();
     default:
+      if (base->type & IT) {
+        return "[Iterator]";
+      }
       return "unknown_type";
   }
 }
