@@ -11,8 +11,15 @@
 // reference counting.
 #include "./pack.h"
 
+class Iterator;
+
+struct Iterable : public TokenBase {
+  virtual ~Iterable() {}
+  virtual Iterator* getIterator() = 0;
+};
+
 // Iterator super class.
-struct Iterator : public TokenBase {
+struct Iterator : public Iterable {
   Iterator() { this->type = IT; }
   virtual ~Iterator() {}
   // Return the next position of the iterator.
@@ -20,11 +27,8 @@ struct Iterator : public TokenBase {
   // and reset the iterator automatically.
   virtual packToken* next() = 0;
   virtual void reset() = 0;
-};
 
-struct Iterable : public TokenBase {
-  virtual ~Iterable() {}
-  virtual Iterator* getIterator() = 0;
+  Iterator* getIterator();
 };
 
 class Tuple : public Iterable {
@@ -203,12 +207,7 @@ class TokenList : public pack<TokenList_t>, public Iterable {
       throw std::invalid_argument("Invalid argument to build a list!");
     }
 
-    Iterator* it;
-    if (token->type == IT) {
-      it = static_cast<Iterator*>(token->clone());
-    } else {
-      it = static_cast<Iterable*>(token)->getIterator();
-    }
+    Iterator* it = static_cast<Iterable*>(token)->getIterator();
 
     packToken* next = it->next();
     while (next) {

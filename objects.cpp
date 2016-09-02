@@ -77,6 +77,12 @@ struct TokenList::Startup {
   }
 } list_startup;
 
+/* * * * * Iterator functions * * * * */
+
+Iterator*  Iterator::getIterator() {
+  return static_cast<Iterator*>(this->clone());
+}
+
 /* * * * * TokenMap iterator implemented functions * * * * */
 
 packToken* TokenMap::MapIterator::next() {
