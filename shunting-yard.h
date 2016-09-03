@@ -118,7 +118,7 @@ class calculator {
 
  public:
   ~calculator();
-  calculator() {}
+  calculator() { this->RPN.push(new TokenNone()); }
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,

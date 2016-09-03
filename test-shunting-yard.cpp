@@ -519,6 +519,9 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(calculator(""));
   REQUIRE_THROWS(calculator("      "));
 
+  // Uninitialized calculators should eval to None:
+  REQUIRE(calculator().eval().str() == "None");
+
   REQUIRE_THROWS(ecalc.eval());
   REQUIRE_NOTHROW(ecalc.eval(emap));
 
