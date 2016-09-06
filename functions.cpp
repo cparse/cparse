@@ -12,15 +12,17 @@
 
 /* * * * * class Function * * * * */
 packToken Function::call(packToken _this, Function* func,
-                         Tuple* args, TokenMap scope) {
+                         TokenList* args, TokenMap scope) {
   // Build the local namespace:
   TokenMap local = scope.getChild();
+  TokenList_t::iterator it = args->list().begin();
 
   // Add args to local namespace:
   for (const std::string& name : func->args()) {
     packToken value;
-    if (args->size()) {
-      value = packToken(args->pop_front());
+    if (it != args->list().end()) {
+      value = packToken(*it);
+      ++it;
     } else {
       value = packToken::None;
     }
@@ -30,8 +32,9 @@ packToken Function::call(packToken _this, Function* func,
 
   TokenList arglist;
   // Collect any extra arguments:
-  while (args->size()) {
-    arglist.list().push_back(packToken(args->pop_front()));
+  while (it != args->list().end()) {
+    arglist.list().push_back(packToken(*it));
+    ++it;
   }
   local["args"] = arglist;
   local["this"] = _this;
@@ -248,7 +251,17 @@ packToken default_list(TokenMap scope) {
 
   // If the only argument is iterable:
   if (list.list().size() == 1 && list.list()[0]->type & IT) {
-    return TokenList(list.list()[0]);
+    TokenList new_list;
+    Iterator* it = static_cast<Iterable*>(list.list()[0].token())->getIterator();
+
+    packToken* next = it->next();
+    while (next) {
+      new_list.list().push_back(*next);
+      next = it->next();
+    }
+
+    delete it;
+    return new_list;
   } else {
     return list;
   }

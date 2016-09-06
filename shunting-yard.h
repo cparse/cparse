@@ -52,7 +52,6 @@ struct TokenNone : public TokenBase {
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, int> OppMap_t;
-typedef std::list<TokenBase*> Tuple_t;
 
 class TokenMap;
 class TokenList;

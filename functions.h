@@ -7,7 +7,7 @@
 class Function : public TokenBase {
  public:
   static packToken call(packToken _this, Function* func,
-                        Tuple* args, TokenMap scope);
+                        TokenList* args, TokenMap scope);
 
  public:
   typedef std::list<std::string> argsList;

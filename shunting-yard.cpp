@@ -453,8 +453,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
       if (!op.compare(",")) {
         if (b_left->type == TUPLE) {
           Tuple* tuple = static_cast<Tuple*>(b_left);
-          tuple->push_back(b_right);
-          delete b_right;
+          tuple->list().push_back(packToken(b_right));
           evaluation.push(tuple);
         } else {
           evaluation.push(new Tuple(b_left, b_right));
@@ -641,7 +640,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         delete b_right;
 
         std::string output;
-        for (const TokenBase* token : right.tuple) {
+        for (const TokenBase* token : right.list()) {
           // Find the next occurrence of "%s"
           while (*left && (*left != '%' || left[1] != 's')) {
             if (*left == '\\' && left[1] == '%') ++left;
