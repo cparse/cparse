@@ -376,6 +376,17 @@ TEST_CASE("Multiple argument functions") {
   REQUIRE(vars["total"].asDouble() == 10);
 }
 
+TEST_CASE("Passing keyword arguments to functions") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("my_map = map('a':1,'b':2)", vars));
+
+  TokenMap map;
+  REQUIRE_NOTHROW(map = vars["my_map"].asMap());
+
+  REQUIRE(map["a"].asInt() == 1);
+  REQUIRE(map["b"].asInt() == 2);
+}
+
 TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(None)").asString() == "none");
   REQUIRE(calculator::calculate("type(10.0)").asString() == "float");
