@@ -153,25 +153,6 @@ TEST_CASE("Prototypical inheritance tests") {
   REQUIRE(calculator::calculate("grand_child.a", vars).asDouble() == 12);
 }
 
-TEST_CASE("Test usage of functions `extend` function") {
-  GlobalScope vars;
-
-  REQUIRE_NOTHROW(calculator::calculate("a = map()", vars));
-  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", vars));
-  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", vars));
-  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 10);
-  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", vars));
-  REQUIRE(calculator::calculate("a.a", vars).asDouble() == 10);
-  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 20);
-
-  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", vars));
-  REQUIRE(calculator::calculate("a.instanceof(b)", vars).asBool() == false);
-  REQUIRE(calculator::calculate("a.instanceof(c)", vars).asBool() == false);
-  REQUIRE(calculator::calculate("b.instanceof(a)", vars).asBool() == true);
-  REQUIRE(calculator::calculate("c.instanceof(a)", vars).asBool() == true);
-  REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
-}
-
 TEST_CASE("List usage expressions", "[list]") {
   TokenMap vars;
   vars["my_list"] = TokenList();
@@ -354,6 +335,25 @@ TEST_CASE("Function usage expressions") {
   vars["base"] = 3;
   REQUIRE(c.eval().asDouble() == 4);
   REQUIRE(c.eval(vars).asDouble() == 9);
+}
+
+TEST_CASE("Built-in extend() function") {
+  GlobalScope vars;
+
+  REQUIRE_NOTHROW(calculator::calculate("a = map()", vars));
+  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", vars));
+  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", vars));
+  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 10);
+  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", vars));
+  REQUIRE(calculator::calculate("a.a", vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 20);
+
+  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", vars));
+  REQUIRE(calculator::calculate("a.instanceof(b)", vars).asBool() == false);
+  REQUIRE(calculator::calculate("a.instanceof(c)", vars).asBool() == false);
+  REQUIRE(calculator::calculate("b.instanceof(a)", vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(a)", vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
 }
 
 TEST_CASE("Built-in str() function") {
