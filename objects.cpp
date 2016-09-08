@@ -23,6 +23,34 @@ TokenMap& TokenMap::default_global() {
 
 TokenMap TokenMap::empty = TokenMap(&default_global());
 
+/* * * * * TokenMap built-in functions * * * * */
+
+const char* map_pop_args[] = {"key", "default"};
+packToken map_pop(TokenMap scope) {
+  TokenMap map = scope["this"].asMap();
+  std::string key = scope["key"].asString();
+
+  // Check if the item is available and remove it:
+  if (map.map().count(key)) {
+    packToken value = map[key];
+    map.erase(key);
+    return value;
+  }
+
+  // If not available return the default value or None
+  packToken* def = scope.find("default");
+  if (def) {
+    return *def;
+  } else {
+    return packToken::None;
+  }
+}
+
+packToken map_len(TokenMap scope) {
+  TokenMap map = scope.find("this")->asMap();
+  return map.map().size();
+}
+
 /* * * * * TokenList built-in functions * * * * */
 
 const char* push_args[] = {"item"};
@@ -36,7 +64,7 @@ packToken list_push(TokenMap scope) {
   return *list;
 }
 
-const char* pop_args[] = {"pos"};
+const char* list_pop_args[] = {"pos"};
 packToken list_pop(TokenMap scope) {
   TokenList list = scope.find("this")->asList();
   packToken* token = scope.find("pos");
@@ -70,10 +98,14 @@ packToken list_len(TokenMap scope) {
 
 struct TokenList::Startup {
   Startup() {
-    TokenMap& base = calculator::type_attribute_map()[LIST];
-    base["push"] = CppFunction(list_push, 1, push_args, "push");
-    base["pop"] = CppFunction(list_pop, 1, pop_args, "pop");
-    base["len"] = CppFunction(list_len, "len");
+    TokenMap& base_list = calculator::type_attribute_map()[LIST];
+    base_list["push"] = CppFunction(list_push, 1, push_args, "push");
+    base_list["pop"] = CppFunction(list_pop, 1, list_pop_args, "pop");
+    base_list["len"] = CppFunction(list_len, "len");
+
+    TokenMap& base_map = TokenMap::base_map();
+    base_map["pop"] = CppFunction(map_pop, 2, map_pop_args, "pop");
+    base_map["len"] = CppFunction(map_len, "len");
   }
 } list_startup;
 

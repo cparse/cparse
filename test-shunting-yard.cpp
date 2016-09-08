@@ -153,6 +153,25 @@ TEST_CASE("Prototypical inheritance tests") {
   REQUIRE(calculator::calculate("grand_child.a", vars).asDouble() == 12);
 }
 
+TEST_CASE("Map usage expressions", "[map]") {
+  TokenMap vars;
+  vars["my_map"] = TokenMap();
+  REQUIRE_NOTHROW(calculator::calculate("my_map['a'] = 1", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map['b'] = 2", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map['c'] = 3", vars));
+
+  REQUIRE(vars["my_map"].str() == "{ \"a\": 1, \"b\": 2, \"c\": 3 }");
+  REQUIRE(calculator::calculate("my_map.len()", vars).asInt() == 3);
+
+  REQUIRE_NOTHROW(calculator::calculate("my_map.pop('b')", vars));
+
+  REQUIRE(vars["my_map"].str() == "{ \"a\": 1, \"c\": 3 }");
+  REQUIRE(calculator::calculate("my_map.len()", vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("default = my_map.pop('b', 3)", vars));
+  REQUIRE(vars["default"].asInt() == 3);
+}
+
 TEST_CASE("List usage expressions", "[list]") {
   TokenMap vars;
   vars["my_list"] = TokenList();
@@ -162,7 +181,7 @@ TEST_CASE("List usage expressions", "[list]") {
   REQUIRE_NOTHROW(calculator::calculate("my_list.push(3)", vars));
 
   REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
-  REQUIRE(calculator::calculate("my_list.len()", vars).asDouble() == 3);
+  REQUIRE(calculator::calculate("my_list.len()", vars).asInt() == 3);
 
   REQUIRE_NOTHROW(calculator::calculate("my_list.pop(1)", vars));
 
