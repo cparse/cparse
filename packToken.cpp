@@ -85,6 +85,7 @@ bool packToken::asBool() const {
     case NONE:
       return false;
     case TUPLE:
+    case STUPLE:
       return static_cast<Tuple*>(base)->list().size() != 0;
     default:
       throw bad_cast("Token type can not be cast to boolean!");
@@ -190,6 +191,7 @@ std::string packToken::str(const TokenBase* base) {
       if (name.size()) return "[Function: " + name + "]";
       return "[Function]";
     case TUPLE:
+    case STUPLE:
       ss << "(";
       first = true;
       for (const TokenBase* token : static_cast<const Tuple*>(base)->list()) {

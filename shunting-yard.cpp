@@ -28,7 +28,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
-  opp["="] = 15;
+  opp["="] = 15; opp[":"] = 15;
   opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
@@ -457,6 +457,16 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           evaluation.push(tuple);
         } else {
           evaluation.push(new Tuple(b_left, b_right));
+          delete b_left;
+          delete b_right;
+        }
+      } else if (!op.compare(":")) {
+        if (b_left->type == STUPLE) {
+          STuple* tuple = static_cast<STuple*>(b_left);
+          tuple->list().push_back(packToken(b_right));
+          evaluation.push(tuple);
+        } else {
+          evaluation.push(new STuple(b_left, b_right));
           delete b_left;
           delete b_right;
         }
@@ -924,6 +934,7 @@ void calculator::compile(const char* expr,
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {
   TokenBase* value = calculate(this->RPN, vars);
+  packToken p = packToken(value->clone());
   if (keep_refs) {
     return packToken(value);
   } else {

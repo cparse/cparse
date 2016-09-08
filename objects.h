@@ -179,4 +179,34 @@ class Tuple : public TokenList {
   }
 };
 
+// This Special Tuple is to be used only as syntactic sugar, and
+// constructed only with the operator `:`, i.e.:
+// - passing key-word arguments: func(1, 2, optional_arg:10)
+// - slicing lists or strings: my_list[2:10:2] (not implemented)
+//
+// STuple means one of:
+// - Special Tuple, Syntactic Tuple or System Tuple
+//
+// I haven't decided yet. Suggestions accepted.
+class STuple : public Tuple {
+ public:
+  STuple() { this->type = STUPLE; }
+  STuple(TokenBase* first) {
+    this->type = STUPLE;
+    list().push_back(packToken(first->clone()));
+  }
+
+  STuple(TokenBase* first, TokenBase* second) {
+    this->type = STUPLE;
+    list().push_back(packToken(first->clone()));
+    list().push_back(packToken(second->clone()));
+  }
+
+ public:
+  // Implement the TokenBase abstract class
+  TokenBase* clone() const {
+    return new STuple(*this);
+  }
+};
+
 #endif  // OBJECTS_H_

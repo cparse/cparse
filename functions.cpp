@@ -145,6 +145,7 @@ packToken default_type(TokenMap scope) {
   case FUNC: return "function";
   case IT: return "iterable";
   case TUPLE: return "tuple";
+  case STUPLE: return "argument tuple";
   case LIST: return "list";
   case MAP: return "map";
   default: return "unknown_type";

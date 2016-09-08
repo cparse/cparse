@@ -172,7 +172,7 @@ TEST_CASE("Test usage of functions `extend` function") {
   REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
 }
 
-TEST_CASE("List usage expressions") {
+TEST_CASE("List usage expressions", "[list]") {
   TokenMap vars;
   vars["my_list"] = TokenList();
 
@@ -211,6 +211,28 @@ TEST_CASE("List usage expressions") {
   // List index out of range:
   REQUIRE_THROWS(calculator::calculate("concat[10]", vars));
   REQUIRE_THROWS(calculator::calculate("concat[-10]", vars));
+}
+
+TEST_CASE("Tuple usage expressions", "[tuple]") {
+  TokenMap vars;
+  calculator c;
+
+  REQUIRE_NOTHROW(c.compile("'key':'value'"));
+  STuple* t0 = static_cast<STuple*>(c.eval()->clone());
+  REQUIRE(t0->type == STUPLE);
+  REQUIRE(t0->list().size() == 2);
+  delete t0;
+
+  REQUIRE_NOTHROW(c.compile("1, 'key':'value', 3"));
+  Tuple* t1 = static_cast<Tuple*>(c.eval()->clone());
+  REQUIRE(t1->type == TUPLE);
+  REQUIRE(t1->list().size() == 3);
+
+  STuple* t2 = static_cast<STuple*>(t1->list()[1]->clone());
+  REQUIRE(t2->type == STUPLE);
+  REQUIRE(t2->list().size() == 2);
+  delete t1;
+  delete t2;
 }
 
 TEST_CASE("List and map constructors usage") {
