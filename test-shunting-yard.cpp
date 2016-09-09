@@ -153,26 +153,26 @@ TEST_CASE("Prototypical inheritance tests") {
   REQUIRE(calculator::calculate("grand_child.a", vars).asDouble() == 12);
 }
 
-TEST_CASE("Test usage of functions `extend` function") {
-  GlobalScope vars;
+TEST_CASE("Map usage expressions", "[map]") {
+  TokenMap vars;
+  vars["my_map"] = TokenMap();
+  REQUIRE_NOTHROW(calculator::calculate("my_map['a'] = 1", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map['b'] = 2", vars));
+  REQUIRE_NOTHROW(calculator::calculate("my_map['c'] = 3", vars));
 
-  REQUIRE_NOTHROW(calculator::calculate("a = map()", vars));
-  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", vars));
-  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", vars));
-  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 10);
-  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", vars));
-  REQUIRE(calculator::calculate("a.a", vars).asDouble() == 10);
-  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 20);
+  REQUIRE(vars["my_map"].str() == "{ \"a\": 1, \"b\": 2, \"c\": 3 }");
+  REQUIRE(calculator::calculate("my_map.len()", vars).asInt() == 3);
 
-  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", vars));
-  REQUIRE(calculator::calculate("a.instanceof(b)", vars).asBool() == false);
-  REQUIRE(calculator::calculate("a.instanceof(c)", vars).asBool() == false);
-  REQUIRE(calculator::calculate("b.instanceof(a)", vars).asBool() == true);
-  REQUIRE(calculator::calculate("c.instanceof(a)", vars).asBool() == true);
-  REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
+  REQUIRE_NOTHROW(calculator::calculate("my_map.pop('b')", vars));
+
+  REQUIRE(vars["my_map"].str() == "{ \"a\": 1, \"c\": 3 }");
+  REQUIRE(calculator::calculate("my_map.len()", vars).asDouble() == 2);
+
+  REQUIRE_NOTHROW(calculator::calculate("default = my_map.pop('b', 3)", vars));
+  REQUIRE(vars["default"].asInt() == 3);
 }
 
-TEST_CASE("List usage expressions") {
+TEST_CASE("List usage expressions", "[list]") {
   TokenMap vars;
   vars["my_list"] = TokenList();
 
@@ -181,7 +181,7 @@ TEST_CASE("List usage expressions") {
   REQUIRE_NOTHROW(calculator::calculate("my_list.push(3)", vars));
 
   REQUIRE(vars["my_list"].str() == "[ 1, 2, 3 ]");
-  REQUIRE(calculator::calculate("my_list.len()", vars).asDouble() == 3);
+  REQUIRE(calculator::calculate("my_list.len()", vars).asInt() == 3);
 
   REQUIRE_NOTHROW(calculator::calculate("my_list.pop(1)", vars));
 
@@ -211,6 +211,28 @@ TEST_CASE("List usage expressions") {
   // List index out of range:
   REQUIRE_THROWS(calculator::calculate("concat[10]", vars));
   REQUIRE_THROWS(calculator::calculate("concat[-10]", vars));
+}
+
+TEST_CASE("Tuple usage expressions", "[tuple]") {
+  TokenMap vars;
+  calculator c;
+
+  REQUIRE_NOTHROW(c.compile("'key':'value'"));
+  STuple* t0 = static_cast<STuple*>(c.eval()->clone());
+  REQUIRE(t0->type == STUPLE);
+  REQUIRE(t0->list().size() == 2);
+  delete t0;
+
+  REQUIRE_NOTHROW(c.compile("1, 'key':'value', 3"));
+  Tuple* t1 = static_cast<Tuple*>(c.eval()->clone());
+  REQUIRE(t1->type == TUPLE);
+  REQUIRE(t1->list().size() == 3);
+
+  STuple* t2 = static_cast<STuple*>(t1->list()[1]->clone());
+  REQUIRE(t2->type == STUPLE);
+  REQUIRE(t2->list().size() == 2);
+  delete t1;
+  delete t2;
 }
 
 TEST_CASE("List and map constructors usage") {
@@ -315,8 +337,6 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE(calculator::calculate(" float('0.1') ").asDouble() == 0.1);
   REQUIRE(calculator::calculate("float(10)").asDouble() == 10);
-  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
-  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
 
   vars["a"] = 0;
   REQUIRE(calculator::calculate(" eval('a = 3') ", vars).asDouble() == 3);
@@ -336,10 +356,54 @@ TEST_CASE("Function usage expressions") {
   REQUIRE(c.eval(vars).asDouble() == 9);
 }
 
+TEST_CASE("Built-in extend() function") {
+  GlobalScope vars;
+
+  REQUIRE_NOTHROW(calculator::calculate("a = map()", vars));
+  REQUIRE_NOTHROW(calculator::calculate("b = extend(a)", vars));
+  REQUIRE_NOTHROW(calculator::calculate("a.a = 10", vars));
+  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 10);
+  REQUIRE_NOTHROW(calculator::calculate("b.a = 20", vars));
+  REQUIRE(calculator::calculate("a.a", vars).asDouble() == 10);
+  REQUIRE(calculator::calculate("b.a", vars).asDouble() == 20);
+
+  REQUIRE_NOTHROW(calculator::calculate("c = extend(b)", vars));
+  REQUIRE(calculator::calculate("a.instanceof(b)", vars).asBool() == false);
+  REQUIRE(calculator::calculate("a.instanceof(c)", vars).asBool() == false);
+  REQUIRE(calculator::calculate("b.instanceof(a)", vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(a)", vars).asBool() == true);
+  REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
+}
+
+TEST_CASE("Built-in str() function") {
+  REQUIRE(calculator::calculate(" str(None) ").asString() == "None");
+  REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
+  REQUIRE(calculator::calculate(" str(10.1) ").asString() == "10.1");
+  REQUIRE(calculator::calculate(" str('texto') ").asString() == "texto");
+  REQUIRE(calculator::calculate(" str(list(1,2,3)) ").asString() == "[ 1, 2, 3 ]");
+  REQUIRE(calculator::calculate(" str(map()) ").asString() == "{}");
+  REQUIRE(calculator::calculate(" str(map) ").asString() == "[Function: map]");
+
+  vars["iterator"] = packToken(new TokenList());
+  vars["iterator"]->type = IT;
+  REQUIRE(calculator::calculate("str(iterator)", vars).asString() == "[Iterator]");
+}
+
 TEST_CASE("Multiple argument functions") {
   GlobalScope vars;
   REQUIRE_NOTHROW(calculator::calculate("total = sum(1,2,3,4)", vars));
   REQUIRE(vars["total"].asDouble() == 10);
+}
+
+TEST_CASE("Passing keyword arguments to functions") {
+  GlobalScope vars;
+  REQUIRE_NOTHROW(calculator::calculate("my_map = map('a':1,'b':2)", vars));
+
+  TokenMap map;
+  REQUIRE_NOTHROW(map = vars["my_map"].asMap());
+
+  REQUIRE(map["a"].asInt() == 1);
+  REQUIRE(map["b"].asInt() == 2);
 }
 
 TEST_CASE("Default functions") {
@@ -506,6 +570,9 @@ TEST_CASE("Exception management") {
 
   REQUIRE_THROWS(calculator(""));
   REQUIRE_THROWS(calculator("      "));
+
+  // Uninitialized calculators should eval to None:
+  REQUIRE(calculator().eval().str() == "None");
 
   REQUIRE_THROWS(ecalc.eval());
   REQUIRE_NOTHROW(ecalc.eval(emap));

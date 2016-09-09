@@ -17,11 +17,12 @@ enum tokType {
   INT = 0x9,   // == 0x8 + 0x1 => Integers are numbers.
 
   // Complex types:
-  IT = 0x20,     // Everything with the bit 0x20 set is an iterator.
-  TUPLE = 0x21,  // == 0x20 + 0x01 => Tuples are iterators.
-  LIST = 0x22,   // == 0x20 + 0x01 => Lists are iterators.
-  MAP = 0x60,    // == 0x20 + 0x40 => Maps are Iterators
-                 // Everything with the bit 0x40 set is a MAP.
+  IT = 0x20,      // Everything with the bit 0x20 set is an iterator.
+  LIST = 0x21,    // == 0x20 + 0x01 => Lists are iterators.
+  TUPLE = 0x22,   // == 0x20 + 0x01 => Tuples are iterators.
+  STUPLE = 0x23,  // == 0x20 + 0x02 => ArgTuples are iterators.
+  MAP = 0x60,     // == 0x20 + 0x40 => Maps are Iterators
+                  // Everything with the bit 0x40 set is a MAP.
   REF = 0x80
 };
 
@@ -52,7 +53,6 @@ struct TokenNone : public TokenBase {
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 typedef std::map<std::string, int> OppMap_t;
-typedef std::list<TokenBase*> Tuple_t;
 
 class TokenMap;
 class TokenList;
@@ -118,7 +118,7 @@ class calculator {
 
  public:
   ~calculator();
-  calculator() {}
+  calculator() { this->RPN.push(new TokenNone()); }
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
@@ -133,7 +133,7 @@ class calculator {
   static std::string str(TokenQueue_t rpn);
 
   // Operators:
-  calculator& operator = (const calculator& calc);
+  calculator& operator=(const calculator& calc);
 };
 
 #endif  // SHUNTING_YARD_H_

@@ -9,32 +9,82 @@
 
 #include "./shunting-yard.h"
 #include "./functions.h"
+#include "./shunting-yard-exceptions.h"
 
 /* * * * * class Function * * * * */
 packToken Function::call(packToken _this, Function* func,
-                         Tuple* args, TokenMap scope) {
+                         TokenList* args, TokenMap scope) {
   // Build the local namespace:
+  TokenMap kwargs;
   TokenMap local = scope.getChild();
 
-  // Add args to local namespace:
-  for (const std::string& name : func->args()) {
-    packToken value;
-    if (args->size()) {
-      value = packToken(args->pop_front());
-    } else {
-      value = packToken::None;
-    }
+  argsList arg_names = func->args();
 
-    local[name] = value;
+  TokenList_t::iterator args_it = args->list().begin();
+  argsList::const_iterator names_it = arg_names.begin();
+
+  /* * * * * Parse named arguments: * * * * */
+
+  while (args_it != args->list().end() && names_it != arg_names.end()) {
+    // If the positional argument list is over:
+    if ((*args_it)->type == STUPLE) break;
+
+    // Else add it to the local namespace:
+    local[*names_it] = *args_it;
+
+    ++args_it;
+    ++names_it;
   }
+
+  /* * * * * Parse extra positional arguments: * * * * */
 
   TokenList arglist;
-  // Collect any extra arguments:
-  while (args->size()) {
-    arglist.list().push_back(packToken(args->pop_front()));
+  for (; args_it != args->list().end(); ++args_it) {
+    // If there is a keyword argument:
+    if ((*args_it)->type == STUPLE) break;
+    // Else add it to arglist:
+    arglist.list().push_back(*args_it);
   }
-  local["args"] = arglist;
+
+  /* * * * * Parse keyword arguments: * * * * */
+
+  for (; args_it != args->list().end(); ++args_it) {
+    packToken& arg = *args_it;
+
+    if (arg->type != STUPLE) {
+      throw syntax_error("Positional argument follows keyword argument");
+    }
+
+    STuple* st = static_cast<STuple*>(arg.token());
+
+    if (st->list().size() != 2) {
+      throw syntax_error("Keyword tuples must have exactly 2 items!");
+    }
+
+    if (st->list()[0]->type != STR) {
+      throw syntax_error("Keyword first argument should be of type string!");
+    }
+
+    // Save it:
+    std::string key = st->list()[0].asString();
+    packToken& value = st->list()[1];
+    kwargs[key] = value;
+  }
+
+  /* * * * * Set missing arguments to None: * * * * */
+
+  for (; names_it != arg_names.end(); ++names_it) {
+    // If not set by a keyword argument:
+    if (local.map().count(*names_it) == 0) {
+      local[*names_it] = packToken::None;
+    }
+  }
+
+  /* * * * * Set built-in variables: * * * * */
+
   local["this"] = _this;
+  local["args"] = arglist;
+  local["kwargs"] = kwargs;
 
   return func->exec(local);
 }
@@ -142,6 +192,7 @@ packToken default_type(TokenMap scope) {
   case FUNC: return "function";
   case IT: return "iterable";
   case TUPLE: return "tuple";
+  case STUPLE: return "argument tuple";
   case LIST: return "list";
   case MAP: return "map";
   default: return "unknown_type";
@@ -248,14 +299,24 @@ packToken default_list(TokenMap scope) {
 
   // If the only argument is iterable:
   if (list.list().size() == 1 && list.list()[0]->type & IT) {
-    return TokenList(list.list()[0]);
+    TokenList new_list;
+    Iterator* it = static_cast<Iterable*>(list.list()[0].token())->getIterator();
+
+    packToken* next = it->next();
+    while (next) {
+      new_list.list().push_back(*next);
+      next = it->next();
+    }
+
+    delete it;
+    return new_list;
   } else {
     return list;
   }
 }
 
 packToken default_map(TokenMap scope) {
-  return TokenMap();
+  return scope["kwargs"];
 }
 
 /* * * * * class CppFunction * * * * */

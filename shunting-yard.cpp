@@ -28,7 +28,7 @@ OppMap_t calculator::buildOpPrecedence() {
   opp["=="] = 9; opp["!="] = 9;
   opp["&&"] = 13;
   opp["||"] = 14;
-  opp["="] = 15;
+  opp["="] = 15; opp[":"] = 15;
   opp[","] = 16;
   opp["("]  = 17; opp["["] = 17;
 
@@ -453,11 +453,20 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
       if (!op.compare(",")) {
         if (b_left->type == TUPLE) {
           Tuple* tuple = static_cast<Tuple*>(b_left);
-          tuple->push_back(b_right);
-          delete b_right;
+          tuple->list().push_back(packToken(b_right));
           evaluation.push(tuple);
         } else {
           evaluation.push(new Tuple(b_left, b_right));
+          delete b_left;
+          delete b_right;
+        }
+      } else if (!op.compare(":")) {
+        if (b_left->type == STUPLE) {
+          STuple* tuple = static_cast<STuple*>(b_left);
+          tuple->list().push_back(packToken(b_right));
+          evaluation.push(tuple);
+        } else {
+          evaluation.push(new STuple(b_left, b_right));
           delete b_left;
           delete b_right;
         }
@@ -641,7 +650,7 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         delete b_right;
 
         std::string output;
-        for (const TokenBase* token : right.tuple) {
+        for (const TokenBase* token : right.list()) {
           // Find the next occurrence of "%s"
           while (*left && (*left != '%' || left[1] != 's')) {
             if (*left == '\\' && left[1] == '%') ++left;
@@ -925,6 +934,7 @@ void calculator::compile(const char* expr,
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {
   TokenBase* value = calculate(this->RPN, vars);
+  packToken p = packToken(value->clone());
   if (keep_refs) {
     return packToken(value);
   } else {

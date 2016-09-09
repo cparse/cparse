@@ -11,8 +11,15 @@
 // reference counting.
 #include "./pack.h"
 
+class Iterator;
+
+struct Iterable : public TokenBase {
+  virtual ~Iterable() {}
+  virtual Iterator* getIterator() = 0;
+};
+
 // Iterator super class.
-struct Iterator : public TokenBase {
+struct Iterator : public Iterable {
   Iterator() { this->type = IT; }
   virtual ~Iterator() {}
   // Return the next position of the iterator.
@@ -20,70 +27,8 @@ struct Iterator : public TokenBase {
   // and reset the iterator automatically.
   virtual packToken* next() = 0;
   virtual void reset() = 0;
-};
 
-struct Iterable : public TokenBase {
-  virtual ~Iterable() {}
-  virtual Iterator* getIterator() = 0;
-};
-
-class Tuple : public Iterable {
- public:
-  typedef std::list<TokenBase*> Tuple_t;
-
- private:
-  struct TupleIterator : public Iterator {
-    Tuple_t* list;
-    Tuple_t::const_iterator it;
-    packToken last;
-
-    TupleIterator(Tuple_t* list) : it(list->begin()) {}
-    packToken* next() {
-      if (it != list->end()) {
-        last = packToken((*it)->clone());
-        return &last;
-      } else {
-        reset();
-        return 0;
-      }
-    }
-    void reset() { it = list->begin(); }
-
-    TokenBase* clone() const {
-      return new TupleIterator(*this);
-    }
-  };
-
- public:
-  Iterator* getIterator() {
-    return new TupleIterator(&tuple);
-  }
-
- public:
-  Tuple_t tuple;
-
- public:
-  Tuple() { this->type = TUPLE; }
-  Tuple(const TokenBase* a);
-  Tuple(const TokenBase* a, const TokenBase* b);
-  Tuple(const Tuple& t) : tuple(copyTuple(t.tuple)) { this->type = TUPLE; }
-  ~Tuple() { cleanTuple(&tuple); }
-
- public:
-  void push_back(const TokenBase* tb);
-  TokenBase* pop_front();
-  unsigned int size();
-
- private:
-  Tuple_t copyTuple(const Tuple_t& t);
-  void cleanTuple(Tuple_t* t);
-
- public:
-  Tuple& operator=(const Tuple& t);
-
-  virtual TokenBase* clone() const {
-    return new Tuple(static_cast<const Tuple&>(*this));
-  }
+  Iterator* getIterator();
 };
 
 class TokenMap;
@@ -196,28 +141,6 @@ class TokenList : public pack<TokenList_t>, public Iterable {
 
  public:
   TokenList() { this->type = LIST; }
-  TokenList(TokenBase* token) {
-    this->type = LIST;
-
-    if (!(token->type & IT)) {
-      throw std::invalid_argument("Invalid argument to build a list!");
-    }
-
-    Iterator* it;
-    if (token->type == IT) {
-      it = static_cast<Iterator*>(token->clone());
-    } else {
-      it = static_cast<Iterable*>(token)->getIterator();
-    }
-
-    packToken* next = it->next();
-    while (next) {
-      list().push_back(*next);
-      next = it->next();
-    }
-
-    delete it;
-  }
   virtual ~TokenList() {}
 
   packToken& operator[](size_t idx) {
@@ -232,6 +155,57 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   // Implement the TokenBase abstract class
   TokenBase* clone() const {
     return new TokenList(*this);
+  }
+};
+
+class Tuple : public TokenList {
+ public:
+  Tuple() { this->type = TUPLE; }
+  Tuple(TokenBase* first) {
+    this->type = TUPLE;
+    list().push_back(packToken(first->clone()));
+  }
+
+  Tuple(TokenBase* first, TokenBase* second) {
+    this->type = TUPLE;
+    list().push_back(packToken(first->clone()));
+    list().push_back(packToken(second->clone()));
+  }
+
+ public:
+  // Implement the TokenBase abstract class
+  TokenBase* clone() const {
+    return new Tuple(*this);
+  }
+};
+
+// This Special Tuple is to be used only as syntactic sugar, and
+// constructed only with the operator `:`, i.e.:
+// - passing key-word arguments: func(1, 2, optional_arg:10)
+// - slicing lists or strings: my_list[2:10:2] (not implemented)
+//
+// STuple means one of:
+// - Special Tuple, Syntactic Tuple or System Tuple
+//
+// I haven't decided yet. Suggestions accepted.
+class STuple : public Tuple {
+ public:
+  STuple() { this->type = STUPLE; }
+  STuple(TokenBase* first) {
+    this->type = STUPLE;
+    list().push_back(packToken(first->clone()));
+  }
+
+  STuple(TokenBase* first, TokenBase* second) {
+    this->type = STUPLE;
+    list().push_back(packToken(first->clone()));
+    list().push_back(packToken(second->clone()));
+  }
+
+ public:
+  // Implement the TokenBase abstract class
+  TokenBase* clone() const {
+    return new STuple(*this);
   }
 };
 

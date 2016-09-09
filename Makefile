@@ -11,8 +11,8 @@ $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(OBJ) -o $(EXE)
 
 again: clean all
 
-test: $(EXE); ./$(EXE)
+test: $(EXE); ./$(EXE) $(args)
 
-check: $(EXE); valgrind --leak-check=full ./$(EXE)
+check: $(EXE); valgrind --leak-check=full ./$(EXE) $(args)
 
 clean: ; rm -f $(EXE) $(OBJ)
