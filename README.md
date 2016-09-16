@@ -28,9 +28,11 @@ contains substantial modifications from Vinícius Garcia.*
   + [shunting_yard.h](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.h)
   + [shunting_yard_ts.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard_ts.cpp)
 
-# Minimal example.
+# Minimal examples.
 
-```C
+## A simple calculator.
+
+```C++
 #include <iostream>
 #include "shunting-yard.h"
 
@@ -43,24 +45,166 @@ int main() {
   // several times efficiently:
   calculator c1("pi-b");
   vars["b"] = 0.14;
-  std::cout << c1.eval(&vars) << std::endl; // 3
+  std::cout << c1.eval(vars) << std::endl; // 3
   vars["b"] = 2.14;
-  std::cout << c1.eval(&vars) << std::endl; // 1
+  std::cout << c1.eval(vars) << std::endl; // 1
 
   return 0;
 }
 ```
 
-# More examples.
+## As a sub-parser for a programming language.
+
+Here we implement an interpreter for multiple expressions, the delimiter used
+will be `;` or `\n` just like Javascript or Python and the code must start and end on curly brackets.
+
+A similar architecture can be used for interpreting other common programming language statements like `for` loops and `if` statements. If you're interested take a look on the [jSpy programming language](github.com/vingarcia/jspy) that uses this project as the core parsing system.
+
+```C++
+#include <iostream>
+#include "shunting-yard.h"
+#include "shunting-yard-exceptions.h"
+
+struct codeBlock {
+  static void interpret(const char* start, const char** end, TokenMap vars) {
+    // Remove white spaces:
+    while (isspace(*start)) ++start;
+
+    if (*start != '{') {
+      throw syntax_error("Expected '{'");
+    } else {
+      ++start;
+    }
+
+    while (*start != '}') {
+      calculator::calculate(start, vars, ";\n}", &start);
+
+      // Alternatively you could write above:
+      // - calculator(start, ";\n}", &start).eval(vars);
+
+      // Find the beginning of the next expression:
+      while(isspace(*start) || *start == ';') ++start;
+    }
+
+    if (*start == '}') {
+      *end = start+1;
+    } else {
+      throw syntax_error("Expected '}'");
+    }
+  }
+};
+
+int main() {
+  GlobalScope vars;
+  const char* code =
+    "{"
+    "  a = 10;"
+    "  b = 20\n"
+    "  c = a + b }";
+
+  codeBlock::interpret(code, &code, vars);
+
+  std::cout << vars["c"] << std::endl; // 30
+  return 0;
+}
+```
+
+Please note that a calculator can compile an expression so that it can efficiently be executed several times at a later moment.
+
+## Using built-in containers.
+
+```C++
+int main() {
+  GlobalScope vars;
+  const char* code =
+    "{"
+    "  m = map(\n"
+    "    'a':10,\n"
+    "    'b':sqrt(4)*10\n"
+    "  )\n"
+    "  m.c = m['a'] + m[\"b\"]\n"
+
+    // Note: A list can be built from a list of items,
+    //       or from an iterable object such as a map():
+    "  l = list(1,2,3) + list(m)\n"
+    "}";
+
+  // This class was described on the example above
+  codeBlock::interpret(code, &code, vars);
+
+  std::cout << vars["m"]["c"] << std::endl; // 30
+  std::cout << vars["m"] << std::endl; // { "a": 10, "b": 20, "c": 30 }
+  std::cout << vars["l"] << std::endl; // [ 1, 2, 3, "a", "b", "c" ]
+  
+  return 0;
+}
+```
+
+## Easy definition of new built-in functions.
+
+We describe two functions: `foo` and `bar`.
+
+- `foo` works as a print() function.
+- `bar` has no required arguments, but accept arguments anyway and print them.
+
+```C++
+#include <iostream>
+#include "shunting-yard.h"
+
+const char* args[] = {"str"};
+packToken func_foo(TokenMap scope) {
+  // Just print `str`
+  std::string str = scope["str"].asString();
+  std::cout << "foo " << str << std::endl;
+  return packToken::None;
+}
+
+// Bar has no required arguments:
+packToken func_bar(TokenMap scope) {
+  std::cout << "arg-list: " << scope["args"] << std::endl;
+  std::cout << "key-word: " << scope["kwargs"] << std::endl;
+  return packToken::None;
+}
+
+// This initializer is instantiated before main() is executed:
+struct FuncInitializer {
+  FuncInitializer() {
+    TokenMap& global_scope = TokenMap::default_global();
+
+    // Register the functions on the default global scope:
+    global_scope["bar"] = CppFunction(&func_bar, /*optional: */ "bar");
+    global_scope["foo"] = CppFunction(&func_foo, 1, args, "foo");
+  }
+} my_initializer;
+
+int main() {
+  GlobalScope vars;
+  calculator::calculate("foo('10')"); // output: "foo 10"
+
+  // Executing function bar with several arguments:
+  calculator::calculate("bar('positional', 'args', 'key':'-', 'word':'args')");
+  // output:
+  // arg-list: [ 'positional', 'args' ]
+  // key-word: { 'key': '-', 'word': 'args' }
+
+  return 0;
+}
+```
+
+## More examples.
  + See `test-shunting-yard.cpp`.
+
+---
 
 # Features.
  + Unary operators. +, -
  + Binary operators. +, -, /, *, %, <<, >>, ^
  + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
- + Map of variable names.
+ + Support for local variables
  + Functions. sin, cos, tan, abs, print
- + Easy to add new operators, functions and even new types.
+ + Easy to add new operators, functions and even new types
+ + Easy to implement object-to-object inheritance (with the prototype concept)
+ + Built-in garbage collector (does not handle cyclic references yet).
 
 # Adding a binary operator.
 To add a binary operator,

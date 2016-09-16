@@ -143,13 +143,7 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   TokenList() { this->type = LIST; }
   virtual ~TokenList() {}
 
-  packToken& operator[](size_t idx) {
-    return list()[idx];
-  }
-
-  packToken& operator[](double idx) {
-    return list()[(size_t)idx];
-  }
+  packToken& operator[](const uint64_t idx) { return list()[idx]; }
 
  public:
   // Implement the TokenBase abstract class
