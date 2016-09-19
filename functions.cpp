@@ -93,7 +93,7 @@ packToken Function::call(packToken _this, Function* func,
 
 packToken default_print(TokenMap scope) {
   // Get the argument list:
-  TokenList list = scope.find("args")->asList();
+  TokenList list = scope["args"].asList();
 
   bool first = true;
   for (packToken item : list.list()) {
@@ -117,7 +117,7 @@ packToken default_print(TokenMap scope) {
 
 packToken default_sum(TokenMap scope) {
   // Get the arguments:
-  TokenList list = scope.find("args")->asList();
+  TokenList list = scope["args"].asList();
 
   if (list.list().size() == 1 && list.list().front()->type == LIST) {
     list = list.list().front().asList();
@@ -133,18 +133,18 @@ packToken default_sum(TokenMap scope) {
 
 const char* value_arg[] = {"value"};
 packToken default_eval(TokenMap scope) {
-  std::string code = scope.find("value")->asString();
+  std::string code = scope["value"].asString();
   // Evaluate it as a calculator expression:
   return calculator::calculate(code.c_str(), scope);
 }
 
 packToken default_float(TokenMap scope) {
-  packToken* tok = scope.find("value");
-  if ((*tok)->type & NUM) return tok->asDouble();
+  packToken tok = scope["value"];
+  if (tok->type & NUM) return tok.asDouble();
 
   // Convert it to double:
   char* rest;
-  const std::string& str = tok->asString();
+  const std::string& str = tok.asString();
   errno = 0;
   double ret = strtod(str.c_str(), &rest);
 
@@ -157,12 +157,12 @@ packToken default_float(TokenMap scope) {
 }
 
 packToken default_int(TokenMap scope) {
-  packToken* tok = scope.find("value");
-  if ((*tok)->type & NUM) return tok->asInt();
+  packToken tok = scope["value"];
+  if (tok->type & NUM) return tok.asInt();
 
   // Convert it to double:
   char* rest;
-  const std::string& str = tok->asString();
+  const std::string& str = tok.asString();
   errno = 0;
   int64_t ret = strtol(str.c_str(), &rest, 10);
 
@@ -176,14 +176,14 @@ packToken default_int(TokenMap scope) {
 
 packToken default_str(TokenMap scope) {
   // Return its string representation:
-  packToken* tok = scope.find("value");
-  if ((*tok)->type == STR) return *tok;
-  return tok->str();
+  packToken tok = scope["value"];
+  if (tok->type == STR) return tok;
+  return tok.str();
 }
 
 packToken default_type(TokenMap scope) {
-  packToken* tok = scope.find("value");
-  switch ((*tok)->type) {
+  packToken tok = scope["value"];
+  switch (tok->type) {
   case NONE: return "none";
   case VAR: return "variable";
   case REAL: return "float";
@@ -200,18 +200,18 @@ packToken default_type(TokenMap scope) {
 }
 
 packToken default_extend(TokenMap scope) {
-  packToken* tok = scope.find("value");
+  packToken tok = scope["value"];
 
-  if ((*tok)->type == MAP) {
-    return tok->asMap().getChild();
+  if (tok->type == MAP) {
+    return tok.asMap().getChild();
   } else {
-    throw std::runtime_error(tok->str() + " is not extensible!");
+    throw std::runtime_error(tok.str() + " is not extensible!");
   }
 }
 
 packToken default_instanceof(TokenMap scope) {
-  TokenMap _super = scope.find("value")->asMap();
-  TokenMap* _this = scope.find("this")->asMap().parent();
+  TokenMap _super = scope["value"].asMap();
+  TokenMap* _this = scope["this"].asMap().parent();
 
   TokenMap* parent = _this;
   while (parent) {
@@ -228,31 +228,31 @@ packToken default_instanceof(TokenMap scope) {
 const char* num_arg[] = {"number"};
 packToken default_sqrt(TokenMap scope) {
   // Get a single argument:
-  double number = scope.find("number")->asDouble();
+  double number = scope["number"].asDouble();
 
   return sqrt(number);
 }
 packToken default_sin(TokenMap scope) {
   // Get a single argument:
-  double number = scope.find("number")->asDouble();
+  double number = scope["number"].asDouble();
 
   return sin(number);
 }
 packToken default_cos(TokenMap scope) {
   // Get a single argument:
-  double number = scope.find("number")->asDouble();
+  double number = scope["number"].asDouble();
 
   return cos(number);
 }
 packToken default_tan(TokenMap scope) {
   // Get a single argument:
-  double number = scope.find("number")->asDouble();
+  double number = scope["number"].asDouble();
 
   return tan(number);
 }
 packToken default_abs(TokenMap scope) {
   // Get a single argument:
-  double number = scope.find("number")->asDouble();
+  double number = scope["number"].asDouble();
 
   return std::abs(number);
 }
@@ -260,8 +260,8 @@ packToken default_abs(TokenMap scope) {
 const char* pow_args[] = {"number", "exp"};
 packToken default_pow(TokenMap scope) {
   // Get two arguments:
-  double number = scope.find("number")->asDouble();
-  double exp = scope.find("exp")->asDouble();
+  double number = scope["number"].asDouble();
+  double exp = scope["exp"].asDouble();
 
   return pow(number, exp);
 }
@@ -269,12 +269,12 @@ packToken default_pow(TokenMap scope) {
 /* * * * * Type-specific default functions * * * * */
 
 packToken string_len(TokenMap scope) {
-  std::string str = scope.find("this")->asString();
+  std::string str = scope["this"].asString();
   return static_cast<int64_t>(str.size());
 }
 
 packToken string_lower(TokenMap scope) {
-  std::string str = scope.find("this")->asString();
+  std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
     out.push_back(tolower(c));
@@ -283,7 +283,7 @@ packToken string_lower(TokenMap scope) {
 }
 
 packToken string_upper(TokenMap scope) {
-  std::string str = scope.find("this")->asString();
+  std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
     out.push_back(toupper(c));
@@ -295,7 +295,7 @@ packToken string_upper(TokenMap scope) {
 
 packToken default_list(TokenMap scope) {
   // Get the arguments:
-  TokenList list = scope.find("args")->asList();
+  TokenList list = scope["args"].asList();
 
   // If the only argument is iterable:
   if (list.list().size() == 1 && list.list()[0]->type & IT) {
