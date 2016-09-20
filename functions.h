@@ -10,7 +10,7 @@ class Function : public TokenBase {
                         TokenList* args, TokenMap scope);
 
  public:
-  typedef std::list<std::string> argsList;
+  typedef std::list<std::string> args_t;
 
   // Used only to initialize
   // default functions on program startup.
@@ -19,7 +19,7 @@ class Function : public TokenBase {
   Function() { this->type = FUNC; }
   virtual ~Function() {}
 
-  virtual const argsList args() const = 0;
+  virtual const args_t args() const = 0;
   virtual packToken exec(TokenMap scope) const = 0;
   virtual TokenBase* clone() const = 0;
 };
@@ -32,13 +32,13 @@ class CppFunction : public Function {
 
  public:
   packToken (*func)(TokenMap);
-  argsList _args;
+  args_t _args;
 
   CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
               const char** args, std::string name = "");
   CppFunction(packToken (*func)(TokenMap), std::string name = "");
 
-  virtual const argsList args() const { return _args; }
+  virtual const args_t args() const { return _args; }
   virtual packToken exec(TokenMap scope) const { return func(scope); }
 
   virtual TokenBase* clone() const {

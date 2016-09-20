@@ -18,10 +18,10 @@ packToken Function::call(packToken _this, Function* func,
   TokenMap kwargs;
   TokenMap local = scope.getChild();
 
-  argsList arg_names = func->args();
+  args_t arg_names = func->args();
 
   TokenList_t::iterator args_it = args->list().begin();
-  argsList::const_iterator names_it = arg_names.begin();
+  args_t::const_iterator names_it = arg_names.begin();
 
   /* * * * * Parse named arguments: * * * * */
 
