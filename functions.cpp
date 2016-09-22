@@ -324,7 +324,7 @@ packToken default_map(TokenMap scope) {
 CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
                          const char** args, std::string name)
                          : func(func) {
-  this->name = name;
+  this->_name = name;
   // Add all strings to args list:
   for (uint32_t i = 0; i < nargs; ++i) {
     this->_args.push_back(args[i]);
@@ -334,7 +334,7 @@ CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
 // Build a function with no named args:
 CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
                          : func(func) {
-  this->name = name;
+  this->_name = name;
 }
 
 /* * * * * CppFunction Initializer Constructor: * * * * */
