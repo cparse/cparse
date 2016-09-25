@@ -22,16 +22,13 @@ class Function : public TokenBase {
 };
 
 class CppFunction : public Function {
- private:
-  // Used only to initialize
-  // builtin functions at startup.
-  struct Startup;
-
  public:
   packToken (*func)(TokenMap);
   args_t _args;
   std::string _name;
 
+  CppFunction(packToken (*func)(TokenMap), const args_t args,
+              std::string name = "");
   CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
               const char** args, std::string name = "");
   CppFunction(packToken (*func)(TokenMap), std::string name = "");

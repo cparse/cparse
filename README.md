@@ -151,7 +151,7 @@ We describe two functions: `foo` and `bar`.
 #include <iostream>
 #include "shunting-yard.h"
 
-const char* args[] = {"str"};
+const args_t args = {"str"};
 packToken func_foo(TokenMap scope) {
   // Just print `str`
   std::string str = scope["str"].asString();
@@ -173,7 +173,7 @@ struct FuncInitializer {
 
     // Register the functions on the default global scope:
     global_scope["bar"] = CppFunction(&func_bar, /*optional: */ "bar");
-    global_scope["foo"] = CppFunction(&func_foo, 1, args, "foo");
+    global_scope["foo"] = CppFunction(&func_foo, args, "foo");
   }
 } my_initializer;
 

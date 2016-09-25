@@ -89,6 +89,8 @@ packToken Function::call(packToken _this, Function* func,
   return func->exec(local);
 }
 
+namespace builtin_functions {
+
 /* * * * * Built-in Functions: * * * * */
 
 packToken default_print(TokenMap scope) {
@@ -131,7 +133,7 @@ packToken default_sum(TokenMap scope) {
   return sum;
 }
 
-const char* value_arg[] = {"value"};
+const args_t value_arg = {"value"};
 packToken default_eval(TokenMap scope) {
   std::string code = scope["value"].asString();
   // Evaluate it as a calculator expression:
@@ -225,7 +227,7 @@ packToken default_instanceof(TokenMap scope) {
   return false;
 }
 
-const char* num_arg[] = {"number"};
+const args_t num_arg = {"number"};
 packToken default_sqrt(TokenMap scope) {
   // Get a single argument:
   double number = scope["number"].asDouble();
@@ -257,7 +259,7 @@ packToken default_abs(TokenMap scope) {
   return std::abs(number);
 }
 
-const char* pow_args[] = {"number", "exp"};
+const args_t pow_args = {"number", "exp"};
 packToken default_pow(TokenMap scope) {
   // Get two arguments:
   double number = scope["number"].asDouble();
@@ -319,7 +321,15 @@ packToken default_map(TokenMap scope) {
   return scope["kwargs"];
 }
 
+}  // namespace builtin_functions
+
 /* * * * * class CppFunction * * * * */
+
+CppFunction::CppFunction(packToken (*func)(TokenMap), const args_t args,
+                         std::string name)
+                         : func(func), _args(args) {
+  this->_name = name;
+}
 
 CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
                          const char** args, std::string name)
@@ -339,30 +349,32 @@ CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
 
 /* * * * * CppFunction Initializer Constructor: * * * * */
 
-struct CppFunction::Startup {
+namespace builtin_functions {
+
+struct Startup {
   Startup() {
     TokenMap& global = TokenMap::default_global();
 
     global["print"] = CppFunction(&default_print, "print");
     global["sum"] = CppFunction(&default_sum, "sum");
-    global["sqrt"] = CppFunction(&default_sqrt, 1, num_arg, "sqrt");
-    global["sin"] = CppFunction(&default_sin, 1, num_arg, "sin");
-    global["cos"] = CppFunction(&default_cos, 1, num_arg, "cos");
-    global["tan"] = CppFunction(&default_tan, 1, num_arg, "tan");
-    global["abs"] = CppFunction(&default_abs, 1, num_arg, "abs");
-    global["pow"] = CppFunction(&default_pow, 2, pow_args, "pow");
-    global["float"] = CppFunction(&default_float, 1, value_arg, "float");
-    global["str"] = CppFunction(&default_str, 1, value_arg, "str");
-    global["eval"] = CppFunction(&default_eval, 1, value_arg, "eval");
-    global["type"] = CppFunction(&default_type, 1, value_arg, "type");
-    global["extend"] = CppFunction(&default_extend, 1, value_arg, "extend");
+    global["sqrt"] = CppFunction(&default_sqrt, num_arg, "sqrt");
+    global["sin"] = CppFunction(&default_sin, num_arg, "sin");
+    global["cos"] = CppFunction(&default_cos, num_arg, "cos");
+    global["tan"] = CppFunction(&default_tan, num_arg, "tan");
+    global["abs"] = CppFunction(&default_abs, num_arg, "abs");
+    global["pow"] = CppFunction(&default_pow, pow_args, "pow");
+    global["float"] = CppFunction(&default_float, value_arg, "float");
+    global["str"] = CppFunction(&default_str, value_arg, "str");
+    global["eval"] = CppFunction(&default_eval, value_arg, "eval");
+    global["type"] = CppFunction(&default_type, value_arg, "type");
+    global["extend"] = CppFunction(&default_extend, value_arg, "extend");
 
     // Default constructors:
     global["list"] = CppFunction(&default_list, "list");
     global["map"] = CppFunction(&default_map, "map");
 
     TokenMap& base_map = TokenMap::base_map();
-    base_map["instanceof"] = CppFunction(&default_instanceof, 1,
+    base_map["instanceof"] = CppFunction(&default_instanceof,
                                          value_arg, "instanceof");
 
     typeMap_t& type_map = calculator::type_attribute_map();
@@ -370,5 +382,6 @@ struct CppFunction::Startup {
     type_map[STR]["lower"] = CppFunction(&string_lower, "lower");
     type_map[STR]["upper"] = CppFunction(&string_upper, "upper");
   }
-} CppFunction_startup;
+} base_functions_startup;
 
+}  // namespace builtin_functions
