@@ -31,6 +31,8 @@ struct type_error : public msg_exception {
 };
 
 struct undefined_operation : public msg_exception {
+  undefined_operation(const std::string& op, const TokenBase* left, const TokenBase* right)
+                      : undefined_operation(op, packToken(left->clone()), packToken(right->clone())) {}
   undefined_operation(const std::string& op, const packToken& left, const packToken& right)
     : msg_exception("Unexpected operation with operator '" + op + "' and operands: " + left.str() + " and " + right.str() + ".") {}
 };
