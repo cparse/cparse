@@ -28,7 +28,7 @@ void PREPARE_ENVIRONMENT() {
   emap["b"] = 20;
 }
 
-TEST_CASE("Static calculate::calculate()") {
+TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("-pi + 1", vars).asDouble() == Approx(-2.14));
   REQUIRE(calculator::calculate("-pi + 1 * b1", vars).asDouble() == Approx(-3.14));
   REQUIRE(calculator::calculate("(20+10)*3/2-3", vars).asDouble() == Approx(42.0));
@@ -549,6 +549,14 @@ TEST_CASE("Parsing as slave parser") {
 
   const char* error_test = "a = (;  1,;  2,; 3;)\n print(a);";
   REQUIRE_THROWS(calculator::calculate(error_test, vars, "\n;", &code));
+}
+
+TEST_CASE("operation_id() function", "[op_id]") {
+  #define opID(t1, t2) Operation::build_mask(t1, t2)
+  REQUIRE((opID(NONE, NONE)) == 0x0000000100000001);
+  REQUIRE((opID(FUNC, FUNC)) == 0x0000001000000010);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
 }
 
 TEST_CASE("Resource management") {
