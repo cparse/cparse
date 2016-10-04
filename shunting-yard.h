@@ -95,16 +95,37 @@ struct RefToken : public TokenBase {
   }
 };
 
-struct Operation {
+struct BaseOperation {
   static inline const uint32_t mask(tokType_t type);
   static const opID_t build_mask(tokType_t left, tokType_t right);
   virtual const opID_t getMask() = 0;
+
+  // This exec is designed for use of advanced users:
   virtual TokenBase* exec(TokenBase* left, const std::string& op,
                           TokenBase* right) = 0;
 };
 
+struct Operation : public BaseOperation {
+  virtual TokenBase* exec(TokenBase* left, const std::string& op,
+                          TokenBase* right) {
+    packToken result = exec(packToken(left->clone()),
+                             op, packToken(right->clone()));
+
+    if (result) {
+      delete left;
+      delete right;
+      return result->clone();
+    } else {
+      return 0;
+    }
+  }
+
+  // This exec is designed for use of non advanced users:
+  virtual packToken exec(packToken left, std::string op, packToken right) = 0;
+};
+
 typedef std::map<tokType_t, TokenMap> typeMap_t;
-typedef std::vector<Operation*> opList_t;
+typedef std::vector<BaseOperation*> opList_t;
 typedef std::map<std::string, opList_t> opMap_t;
 
 class calculator {

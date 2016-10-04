@@ -10,7 +10,7 @@
 
 namespace builtin_operations {
 
-struct Comma : public Operation {
+struct Comma : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(ANY_TYPE, ANY_TYPE); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -28,7 +28,7 @@ struct Comma : public Operation {
   }
 } Comma;
 
-struct Colon : public Operation {
+struct Colon : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(ANY_TYPE, ANY_TYPE); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -47,7 +47,7 @@ struct Colon : public Operation {
 } Colon;
 
   // If it is an assignment operation:
-struct Equal : public Operation {
+struct Equal : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(ANY_TYPE, ANY_TYPE); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -62,7 +62,7 @@ struct Equal : public Operation {
   }
 } Equal;
 
-struct Different : public Operation {
+struct Different : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(ANY_TYPE, ANY_TYPE); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -77,7 +77,7 @@ struct Different : public Operation {
   }
 } Different;
 
-struct MapIndex : public Operation {
+struct MapIndex : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(MAP, STR); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -104,7 +104,7 @@ struct MapIndex : public Operation {
 } MapIndex;
 
 // Resolve build-in operations for non-map types, e.g.: 'str'.len()
-struct TypeSpecificFunction : public Operation {
+struct TypeSpecificFunction : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(ANY_TYPE, STR); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -129,7 +129,7 @@ struct TypeSpecificFunction : public Operation {
   }
 } TypeSpecificFunction;
 
-struct NumeralOperation : public Operation {
+struct NumeralOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(NUM, NUM); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -192,7 +192,7 @@ struct NumeralOperation : public Operation {
   }
 } NumeralOperation;
 
-struct FormatOperation : public Operation {
+struct FormatOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(STR, ANY_TYPE); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -249,7 +249,7 @@ struct FormatOperation : public Operation {
   }
 } FormatOperation;
 
-struct StringOnStringOperation : public Operation {
+struct StringOnStringOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(STR, STR); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -273,7 +273,7 @@ struct StringOnStringOperation : public Operation {
   }
 } StringOnStringOperation;
 
-struct StringOnNumberOperation : public Operation {
+struct StringOnNumberOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(STR, NUM); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -318,7 +318,7 @@ struct StringOnNumberOperation : public Operation {
   }
 } StringOnNumberOperation;
 
-struct NumberOnStringOperation : public Operation {
+struct NumberOnStringOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(NUM, STR); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -344,7 +344,7 @@ struct NumberOnStringOperation : public Operation {
   }
 } NumberOnStringOperation;
 
-struct ListOnNumberOperation : public Operation {
+struct ListOnNumberOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(LIST, NUM); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
@@ -379,7 +379,7 @@ struct ListOnNumberOperation : public Operation {
   }
 } ListOnNumberOperation;
 
-struct ListOnListOperation : public Operation {
+struct ListOnListOperation : public BaseOperation {
   const opID_t getMask() { return Operation::build_mask(LIST, LIST); }
 
   TokenBase* exec(TokenBase* b_left, const std::string& op, TokenBase* b_right) {

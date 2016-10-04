@@ -562,7 +562,6 @@ TEST_CASE("operation_id() function", "[op_id]") {
 /* * * * * Declaring adhoc operations * * * * */
 
 struct myCalc : public calculator {
-
   struct myCalcStartup;
   static opMap_t& my_opMap() {
     static opMap_t opMap;
@@ -574,7 +573,7 @@ struct myCalc : public calculator {
   using calculator::calculator;
 };
 
-struct op1 : public Operation {
+struct op1 : public BaseOperation {
   const opID_t getMask() { return build_mask(STR, TUPLE); }
   TokenBase* exec(TokenBase* left, const std::string& op,
                   TokenBase* right) {
@@ -584,9 +583,8 @@ struct op1 : public Operation {
 
 struct op2 : public Operation {
   const opID_t getMask() { return build_mask(ANY_TYPE, ANY_TYPE); }
-  TokenBase* exec(TokenBase* left, const std::string& op,
-                  TokenBase* right) {
-    return calculator::default_opMap()[","][0]->exec(left, op, right);
+  packToken exec(packToken left, std::string op, packToken right) {
+    return packToken(calculator::default_opMap()[","][0]->exec(left->clone(), op, right->clone()));
   }
 } op2;
 
