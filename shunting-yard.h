@@ -139,7 +139,7 @@ class calculator {
   struct RAII_TokenQueue_t;
 
  protected:
-  virtual opMap_t opMap() const { return default_opMap(); }
+  virtual const opMap_t opMap() const { return default_opMap(); }
 
  private:
   TokenQueue_t RPN;

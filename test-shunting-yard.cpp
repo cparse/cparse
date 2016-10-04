@@ -559,6 +559,53 @@ TEST_CASE("operation_id() function", "[op_id]") {
   REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
 }
 
+/* * * * * Declaring adhoc operations * * * * */
+
+struct myCalc : public calculator {
+
+  struct myCalcStartup;
+  static opMap_t& my_opMap() {
+    static opMap_t opMap;
+    return opMap;
+  }
+
+  const opMap_t opMap() const { return my_opMap(); }
+
+  using calculator::calculator;
+};
+
+struct op1 : public Operation {
+  const opID_t getMask() { return build_mask(STR, TUPLE); }
+  TokenBase* exec(TokenBase* left, const std::string& op,
+                  TokenBase* right) {
+    return calculator::default_opMap()["%"][0]->exec(left, op, right);
+  }
+} op1;
+
+struct op2 : public Operation {
+  const opID_t getMask() { return build_mask(ANY_TYPE, ANY_TYPE); }
+  TokenBase* exec(TokenBase* left, const std::string& op,
+                  TokenBase* right) {
+    return calculator::default_opMap()[","][0]->exec(left, op, right);
+  }
+} op2;
+
+struct myCalc::myCalcStartup {
+  myCalcStartup() {
+    opMap_t& opMap = myCalc::my_opMap();
+    opMap["+"].push_back(&op1);
+    opMap["."].push_back(&op2);
+  }
+} myCalcStartup;
+
+/* * * * * Testing adhoc operations * * * * */
+
+TEST_CASE("Adhoc operations", "[operation]") {
+  myCalc c("'Lets create %s operators%s' + ('adhoc' . '!')");
+
+  REQUIRE(c.eval() == "Lets create adhoc operators!");
+}
+
 TEST_CASE("Resource management") {
   calculator C1, C2("1 + 1");
 

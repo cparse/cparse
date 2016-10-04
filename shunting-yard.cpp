@@ -420,7 +420,7 @@ packToken calculator::calculate(const char* expr, TokenMap vars,
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
   TokenBase* ret;
 
-  ret = calculator::calculate(rpn, vars, default_opMap());
+  ret = calculator::calculate(rpn, vars);
 
   return packToken(resolve_reference(ret));
 }
