@@ -28,7 +28,7 @@ void PREPARE_ENVIRONMENT() {
   emap["b"] = 20;
 }
 
-TEST_CASE("Static calculate::calculate()") {
+TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("-pi + 1", vars).asDouble() == Approx(-2.14));
   REQUIRE(calculator::calculate("-pi + 1 * b1", vars).asDouble() == Approx(-3.14));
   REQUIRE(calculator::calculate("(20+10)*3/2-3", vars).asDouble() == Approx(42.0));
@@ -549,6 +549,77 @@ TEST_CASE("Parsing as slave parser") {
 
   const char* error_test = "a = (;  1,;  2,; 3;)\n print(a);";
   REQUIRE_THROWS(calculator::calculate(error_test, vars, "\n;", &code));
+}
+
+TEST_CASE("operation_id() function", "[op_id]") {
+  #define opID(t1, t2) Operation::build_mask(t1, t2)
+  REQUIRE((opID(NONE, NONE)) == 0x0000000100000001);
+  REQUIRE((opID(FUNC, FUNC)) == 0x0000001000000010);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
+}
+
+/* * * * * Declaring adhoc operations * * * * */
+
+struct myCalc : public calculator {
+  static opMap_t& my_opMap() {
+    static opMap_t opMap;
+    return opMap;
+  }
+
+  static OppMap_t& my_OppMap() {
+    static OppMap_t opp;
+    return opp;
+  }
+
+  const opMap_t opMap() const { return my_opMap(); }
+  const OppMap_t opPrecedence() const { return my_OppMap(); }
+
+  using calculator::calculator;
+};
+
+struct op1 : public BaseOperation {
+  const opID_t getMask() { return build_mask(STR, TUPLE); }
+  TokenBase* exec(TokenBase* left, const std::string& op,
+                  TokenBase* right) {
+    return calculator::default_opMap()["%"][0]->exec(left, op, right);
+  }
+} op1;
+
+struct op2 : public Operation {
+  const opID_t getMask() { return build_mask(ANY_TYPE, ANY_TYPE); }
+  packToken exec(packToken left, std::string op, packToken right) {
+    return packToken(calculator::default_opMap()[","][0]->exec(left->clone(), op, right->clone()));
+  }
+} op2;
+
+struct myCalcStartup {
+  myCalcStartup() {
+    OppMap_t& opp = myCalc::my_OppMap();
+    opp["."] = 1;
+    opp["+"] = 2;
+
+    opMap_t& opMap = myCalc::my_opMap();
+    opMap["+"].push_back(&op1);
+    opMap["."].push_back(&op2);
+  }
+} myCalcStartup;
+
+/* * * * * Testing adhoc operations * * * * */
+
+TEST_CASE("Adhoc operations", "[operation]") {
+  myCalc c1, c2;
+  const char* exp = "'Lets create %s operators%s' + ('adhoc' . '!' )";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_OppMap()));
+
+  REQUIRE(c1.eval() == "Lets create adhoc operators!");
+  REQUIRE(c2.eval() == "Lets create adhoc operators!");
+
+  // Testing opPrecedence:
+  exp = "'Lets create %s operators%s' + 'adhoc' . '!'";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == "Lets create adhoc operators!");
 }
 
 TEST_CASE("Resource management") {

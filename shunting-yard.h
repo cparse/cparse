@@ -6,30 +6,43 @@
 #include <string>
 #include <queue>
 #include <list>
+#include <vector>
 
+/*
+ * About tokType enum:
+ *
+ * The 3 left most bits (0x80, 0x40 and 0x20) of the Token Type
+ * are reserved for denoting Numerals, Iterators and References.
+ * If you want to define your own type please mind this bits.
+ */
+typedef uint8_t tokType_t;
+typedef uint64_t opID_t;
 enum tokType {
   // Base types:
+  // Note: The mask system accepts at most 29 (32-3) different base types.
   NONE, OP, VAR, STR, FUNC,
 
   // Numerals:
-  NUM = 0x8,   // Everything with the bit 0x8 set is a number.
-  REAL = 0x8,  // == 0x8 => Real numbers.
-  INT = 0x9,   // == 0x8 + 0x1 => Integers are numbers.
+  NUM = 0x20,   // Everything with the bit 0x20 set is a number.
+  REAL = 0x21,  // == 0x20 => Real numbers.
+  INT = 0x22,   // == 0x20 + 0x1 => Integers are numbers.
 
   // Complex types:
-  IT = 0x20,      // Everything with the bit 0x20 set is an iterator.
-  LIST = 0x21,    // == 0x20 + 0x01 => Lists are iterators.
-  TUPLE = 0x22,   // == 0x20 + 0x01 => Tuples are iterators.
-  STUPLE = 0x23,  // == 0x20 + 0x02 => ArgTuples are iterators.
-  MAP = 0x60,     // == 0x20 + 0x40 => Maps are Iterators
-                  // Everything with the bit 0x40 set is a MAP.
-  REF = 0x80
+  IT = 0x40,      // Everything with the bit 0x20 set is an iterator.
+  LIST = 0x41,    // == 0x20 + 0x01 => Lists are iterators.
+  TUPLE = 0x42,   // == 0x20 + 0x02 => Tuples are iterators.
+  STUPLE = 0x43,  // == 0x20 + 0x03 => ArgTuples are iterators.
+  MAP = 0x44,     // == 0x20 + 0x04 => Maps are Iterators
+
+  REF = 0x80,
+
+  ANY_TYPE = 0xFF
 };
 
-typedef unsigned char uint8_t;
+#define ANY_OP ""
 
 struct TokenBase {
-  uint8_t type;
+  tokType_t type;
   virtual ~TokenBase() {}
   virtual TokenBase* clone() const = 0;
 };
@@ -37,7 +50,7 @@ struct TokenBase {
 template<class T> class Token : public TokenBase {
  public:
   T val;
-  Token(T t, uint8_t type) : val(t) { this->type = type; }
+  Token(T t, tokType_t type) : val(t) { this->type = type; }
   virtual TokenBase* clone() const {
     return new Token(static_cast<const Token&>(*this));
   }
@@ -52,7 +65,14 @@ struct TokenNone : public TokenBase {
 
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
-typedef std::map<std::string, int> OppMap_t;
+struct OppMap_t : public std::map<std::string, int> {
+  OppMap_t() {
+    // These operations are hard-coded on the system,
+    // thus they should always be defined.
+    (*this)["[]"] = -1; (*this)["()"] = -1;
+    (*this)["["] = 0xFFFFFF; (*this)["("] = 0xFFFFFF;
+  }
+};
 
 class TokenMap;
 class TokenList;
@@ -82,12 +102,43 @@ struct RefToken : public TokenBase {
   }
 };
 
-typedef std::map<uint8_t, TokenMap> typeMap_t;
+struct BaseOperation {
+  static inline const uint32_t mask(tokType_t type);
+  static const opID_t build_mask(tokType_t left, tokType_t right);
+  virtual const opID_t getMask() = 0;
+
+  // This exec is designed for use of advanced users:
+  virtual TokenBase* exec(TokenBase* left, const std::string& op,
+                          TokenBase* right) = 0;
+};
+
+struct Operation : public BaseOperation {
+  virtual TokenBase* exec(TokenBase* left, const std::string& op,
+                          TokenBase* right) {
+    packToken result = exec(packToken(left->clone()),
+                             op, packToken(right->clone()));
+
+    if (result) {
+      delete left;
+      delete right;
+      return result->clone();
+    } else {
+      return 0;
+    }
+  }
+
+  // This exec is designed for use of non advanced users:
+  virtual packToken exec(packToken left, std::string op, packToken right) = 0;
+};
+
+typedef std::map<tokType_t, TokenMap> typeMap_t;
+typedef std::vector<BaseOperation*> opList_t;
+typedef std::map<std::string, opList_t> opMap_t;
 
 class calculator {
- private:
-  static OppMap_t _opPrecedence;
-  static OppMap_t buildOpPrecedence();
+ public:
+  static OppMap_t& default_opPrecedence();
+  static opMap_t& default_opMap();
 
  public:
   static typeMap_t& type_attribute_map();
@@ -97,11 +148,12 @@ class calculator {
                              const char* delim = 0, const char** rest = 0);
 
  private:
-  static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars);
+  static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars,
+                              opMap_t opMap = default_opMap());
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
-                            OppMap_t opPrecedence = _opPrecedence);
+                            OppMap_t opPrecedence = default_opPrecedence());
 
   static bool handle_unary(const std::string& op,
                            TokenQueue_t* rpnQueue, bool lastTokenWasOp);
@@ -113,19 +165,22 @@ class calculator {
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
 
+ protected:
+  virtual const opMap_t opMap() const { return default_opMap(); }
+  virtual const OppMap_t opPrecedence() const { return default_opPrecedence(); }
+
  private:
   TokenQueue_t RPN;
 
  public:
-  ~calculator();
+  virtual ~calculator();
   calculator() { this->RPN.push(new TokenNone()); }
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
-             OppMap_t opPrecedence = _opPrecedence);
+             const OppMap_t& opPrecedence = default_opPrecedence());
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
-               const char* delim = 0, const char** rest = 0,
-               OppMap_t opPrecedence = _opPrecedence);
+               const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;
 
   // Serialization:

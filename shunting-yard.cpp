@@ -1,8 +1,6 @@
 #include "./shunting-yard.h"
 #include "./shunting-yard-exceptions.h"
 
-#include <math.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
@@ -13,39 +11,64 @@
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
 
-OppMap_t calculator::buildOpPrecedence() {
-  OppMap_t opp;
+/* * * * * BaseOperation class: * * * * */
 
-  // Create the operator precedence map based on C++ default
-  // precedence order as described on cppreference website:
-  // http://en.cppreference.com/w/cpp/language/operator_precedence
-  opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
-  opp["**"]  = 3;
-  opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
-  opp["+"]  = 6; opp["-"]  = 6;
-  opp["<<"] = 7; opp[">>"] = 7;
-  opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
-  opp["=="] = 9; opp["!="] = 9;
-  opp["&&"] = 13;
-  opp["||"] = 14;
-  opp["="] = 15; opp[":"] = 15;
-  opp[","] = 16;
-  opp["("]  = 17; opp["["] = 17;
+// Convert a type into an unique mask for bit wise operations:
+const uint32_t BaseOperation::mask(tokType_t type) {
+  if (type == ANY_TYPE) {
+    return 0xFFFF;
+  } else {
+    return ((type & 0xE0) << 24) | (1 << (type & 0x1F));
+  }
+}
 
+// Build a mask for each pair of operands
+const opID_t BaseOperation::build_mask(tokType_t left, tokType_t right) {
+  opID_t result = mask(left);
+  return (result << 32) | mask(right);
+}
+
+/* * * * * Operation Utilities: * * * * */
+
+bool match_op_id(opID_t id, opID_t mask) {
+  uint64_t result = id & mask;
+  uint32_t* val = reinterpret_cast<uint32_t*>(&result);
+  if (val[0] && val[1]) return true;
+  return false;
+}
+
+#define EXEC_OPERATION(result, opID, opMap, OP_MASK)\
+  for (BaseOperation* operation : opMap[OP_MASK]) {\
+    if (match_op_id(opID, operation->getMask())) {\
+      result = operation->exec(b_left, op, b_right);\
+      if (result) break;\
+    }\
+  }\
+
+/* * * * * Static containers: * * * * */
+
+// Builds the opPrecedence map only once:
+OppMap_t& calculator::default_opPrecedence() {
+  static OppMap_t opp;
   return opp;
 }
-// Builds the opPrecedence map only once:
-OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 
 typeMap_t& calculator::type_attribute_map() {
   static typeMap_t type_map;
   return type_map;
 }
 
+opMap_t& calculator::default_opMap() {
+  static opMap_t opMap;
+  return opMap;
+}
+
 // Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
+
+/* * * * * Calculator Class: * * * * */
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
@@ -72,7 +95,7 @@ void calculator::handle_op(const std::string& op,
   // Check if operator exists:
   if (opPrecedence.find(op) == opPrecedence.end()) {
     cleanRPN(rpnQueue);
-    throw std::domain_error("Unknown operator: `" + op + "`!");
+    throw std::domain_error("Undefined operator: `" + op + "`!");
   }
 
   float cur_opp = opPrecedence[op];
@@ -266,7 +289,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      uint8_t lastType;
+      tokType_t lastType;
       char lastOp;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
@@ -385,9 +408,8 @@ packToken calculator::calculate(const char* expr, TokenMap vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
-  TokenBase* ret;
 
-  ret = calculator::calculate(rpn, vars);
+  TokenBase* ret = calculator::calculate(rpn, vars);
 
   return packToken(resolve_reference(ret));
 }
@@ -399,7 +421,8 @@ void cleanStack(std::stack<TokenBase*> st) {
   }
 }
 
-TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
+TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars,
+                                 opMap_t opMap) {
   RAII_TokenQueue_t rpn;
 
   // Deep copy the token list, so everything can be
@@ -420,6 +443,8 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
     if (base->type == OP) {
       std::string op = static_cast<Token<std::string>*>(base)->val;
       delete base;
+
+      /* * * * * Resolve operands Values and References: * * * * */
 
       if (evaluation.size() < 2) {
         cleanStack(evaluation);
@@ -449,29 +474,9 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
         r_left = static_cast<Token<std::string>*>(b_left)->val;
       }
 
-      // If it is a tuple operator:
-      if (!op.compare(",")) {
-        if (b_left->type == TUPLE) {
-          Tuple* tuple = static_cast<Tuple*>(b_left);
-          tuple->list().push_back(packToken(b_right));
-          evaluation.push(tuple);
-        } else {
-          evaluation.push(new Tuple(b_left, b_right));
-          delete b_left;
-          delete b_right;
-        }
-      } else if (!op.compare(":")) {
-        if (b_left->type == STUPLE) {
-          STuple* tuple = static_cast<STuple*>(b_left);
-          tuple->list().push_back(packToken(b_right));
-          evaluation.push(tuple);
-        } else {
-          evaluation.push(new STuple(b_left, b_right));
-          delete b_left;
-          delete b_right;
-        }
-      // If it is an assignment operation:
-      } else if (!op.compare("=")) {
+      /* * * * * Resolve Asign Operation * * * * */
+
+      if (!op.compare("=")) {
         delete b_left;
 
         // If the left operand has a variable name:
@@ -517,308 +522,6 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           cleanStack(evaluation);
           throw undefined_operation(op, r_left, p_right);
         }
-      } else if (!op.compare("==")) {
-        packToken left(b_left);
-        packToken right(b_right);
-
-        if (left->type == VAR || right->type == VAR) {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-
-        evaluation.push(new Token<int64_t>(left == right, INT));
-      } else if (!op.compare("!=")) {
-        packToken left(b_left);
-        packToken right(b_right);
-
-        if (left->type == VAR || right->type == VAR) {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-
-        evaluation.push(new Token<int64_t>(left != right, INT));
-      } else if (b_left->type == MAP && b_right->type == STR) {
-        TokenMap left = *static_cast<TokenMap*>(b_left);
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
-        delete b_left;
-        delete b_right;
-
-        if (!op.compare("[]") || !op.compare(".")) {
-          packToken* p_value = left.find(right);
-          TokenBase* value;
-
-          if (p_value) {
-            value = (*p_value)->clone();
-          } else {
-            value = new TokenNone();
-          }
-
-          evaluation.push(new RefToken(right, value, left));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      // Resolve build-in operations for non-map types, e.g.: 'str'.len()
-      } else if (!op.compare(".") && b_right->type == STR) {
-        TokenMap& left = calculator::type_attribute_map()[b_left->type];
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
-        delete b_right;
-
-        packToken* attr = left.find(right);
-        if (attr) {
-          TokenBase* value = (*attr)->clone();
-          packToken source = packToken(b_left);
-
-          // Note: If attr is a function, it will receive have
-          // scope["this"] == source, so it can make changes on this object.
-          // Or just read some information for example: its length.
-          evaluation.push(new RefToken(right, value, source));
-        } else {
-          packToken p_left = packToken(b_left->clone());
-          delete b_left;
-          cleanStack(evaluation);
-          throw undefined_operation(op, p_left, right);
-        }
-      } else if (b_left->type & NUM && b_right->type & NUM) {
-        double left, right;
-        int64_t left_i, right_i;
-
-        // Extract integer and real values of the operators:
-        if (b_left->type == NUM) {
-          left = static_cast<Token<double>*>(b_left)->val;
-          left_i = static_cast<int64_t>(left);
-        } else {
-          left_i = static_cast<Token<int64_t>*>(b_left)->val;
-          left = static_cast<double>(left_i);
-        }
-
-        if (b_right->type == NUM) {
-          right = static_cast<Token<double>*>(b_right)->val;
-          right_i = static_cast<int64_t>(right);
-        } else {
-          right_i = static_cast<Token<int64_t>*>(b_right)->val;
-          right = static_cast<double>(right_i);
-        }
-
-        delete b_left;
-        delete b_right;
-
-        if (!op.compare("+")) {
-          evaluation.push(new Token<double>(left + right, NUM));
-        } else if (!op.compare("*")) {
-          evaluation.push(new Token<double>(left * right, NUM));
-        } else if (!op.compare("-")) {
-          evaluation.push(new Token<double>(left - right, NUM));
-        } else if (!op.compare("/")) {
-          evaluation.push(new Token<double>(left / right, NUM));
-        } else if (!op.compare("<<")) {
-          evaluation.push(new Token<double>(left_i << right_i, NUM));
-        } else if (!op.compare("**")) {
-          evaluation.push(new Token<double>(pow(left, right), NUM));
-        } else if (!op.compare(">>")) {
-          evaluation.push(new Token<double>(left_i >> right_i, NUM));
-        } else if (!op.compare("%")) {
-          evaluation.push(new Token<double>(left_i % right_i, NUM));
-        } else if (!op.compare("<")) {
-          evaluation.push(new Token<double>(left < right, NUM));
-        } else if (!op.compare(">")) {
-          evaluation.push(new Token<double>(left > right, NUM));
-        } else if (!op.compare("<=")) {
-          evaluation.push(new Token<double>(left <= right, NUM));
-        } else if (!op.compare(">=")) {
-          evaluation.push(new Token<double>(left >= right, NUM));
-        } else if (!op.compare("&&")) {
-          evaluation.push(new Token<double>(left_i && right_i, NUM));
-        } else if (!op.compare("||")) {
-          evaluation.push(new Token<double>(left_i || right_i, NUM));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type == STR && !op.compare("%")) {
-        std::string s_left = static_cast<Token<std::string>*>(b_left)->val;
-        const char* left = s_left.c_str();
-        delete b_left;
-
-        Tuple right;
-
-        if (b_right->type == TUPLE) {
-          right = *static_cast<Tuple*>(b_right);
-        } else {
-          right = Tuple(b_right);
-        }
-        delete b_right;
-
-        std::string output;
-        for (const TokenBase* token : right.list()) {
-          // Find the next occurrence of "%s"
-          while (*left && (*left != '%' || left[1] != 's')) {
-            if (*left == '\\' && left[1] == '%') ++left;
-            output.push_back(*left);
-            ++left;
-          }
-
-          if (*left == '\0') {
-            cleanStack(evaluation);
-            throw type_error("Not all arguments converted during string formatting");
-          } else {
-            left += 2;
-          }
-
-          // Replace it by the token string representation:
-          if (token->type == STR) {
-            // Avoid using packToken::str for strings
-            // or it will enclose it quotes `"str"`
-            output += static_cast<const Token<std::string>*>(token)->val;
-          } else {
-            output += packToken::str(token);
-          }
-        }
-
-        // Find the next occurrence of "%s"
-        while (*left && (*left != '%' || left[1] != 's')) {
-          if (*left == '\\' && left[1] == '%') ++left;
-          output.push_back(*left);
-          ++left;
-        }
-
-        if (*left != '\0') {
-          cleanStack(evaluation);
-          throw type_error("Not enough arguments for format string");
-        } else {
-          evaluation.push(new Token<std::string>(output, STR));
-        }
-      } else if (b_left->type == STR && b_right->type == STR) {
-        std::string left = static_cast<Token<std::string>*>(b_left)->val;
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
-        delete b_left;
-        delete b_right;
-
-        if (!op.compare("+")) {
-          evaluation.push(new Token<std::string>(left + right, STR));
-        } else if (!op.compare("==")) {
-          evaluation.push(new Token<int64_t>(left.compare(right) == 0, INT));
-        } else if (!op.compare("!=")) {
-          evaluation.push(new Token<int64_t>(left.compare(right) != 0, INT));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type == STR && b_right->type & NUM) {
-        std::string left = static_cast<Token<std::string>*>(b_left)->val;
-        double right;
-
-        if (b_right->type == REAL) {
-          right = static_cast<Token<double>*>(b_right)->val;
-        } else {
-          right = static_cast<Token<int64_t>*>(b_right)->val;
-        }
-
-        delete b_left;
-        delete b_right;
-
-        std::stringstream ss;
-        if (!op.compare("+")) {
-          ss << left << right;
-          evaluation.push(new Token<std::string>(ss.str(), STR));
-        } else if (!op.compare("[]")) {
-          int64_t index = right;
-
-          if (index < 0) {
-            // Reverse index, i.e. list[-1] = list[list.size()-1]
-            index += left.size();
-          }
-
-          if (index < 0 || static_cast<size_t>(index) >= left.size()) {
-            delete b_left;
-            cleanStack(evaluation);
-            throw std::domain_error("String index out of range!");
-          }
-
-          std::string value;
-          value.push_back(left[index]);
-
-          evaluation.push(new Token<std::string>(value, STR));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type & NUM && b_right->type == STR) {
-        double left;
-        std::string right = static_cast<Token<std::string>*>(b_right)->val;
-
-        if (b_left->type == REAL) {
-          left = static_cast<Token<double>*>(b_left)->val;
-        } else {
-          left = static_cast<Token<int64_t>*>(b_left)->val;
-        }
-
-        delete b_left;
-        delete b_right;
-
-        std::stringstream ss;
-        if (!op.compare("+")) {
-          ss << left << right;
-          evaluation.push(new Token<std::string>(ss.str(), STR));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type == LIST && b_right->type & NUM) {
-        TokenList left = *static_cast<TokenList*>(b_left);
-        int64_t right = static_cast<Token<double>*>(b_right)->val;
-
-        if (b_right->type == REAL) {
-          right = static_cast<Token<double>*>(b_right)->val;
-        } else {
-          right = static_cast<Token<int64_t>*>(b_right)->val;
-        }
-
-        delete b_right;
-
-        if (!op.compare("[]")) {
-          int64_t index = right;
-
-          if (index < 0) {
-            // Reverse index, i.e. list[-1] = list[list.size()-1]
-            index += left.list().size();
-          }
-
-          if (index < 0 || static_cast<size_t>(index) >= left.list().size()) {
-            delete b_left;
-            cleanStack(evaluation);
-            throw std::domain_error("List index out of range!");
-          }
-
-          TokenBase* value = left.list()[index]->clone();
-
-          evaluation.push(new RefToken(index, value, packToken(b_left)));
-        } else {
-          delete b_left;
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
-      } else if (b_left->type == LIST && b_right->type == LIST) {
-        TokenList left = *static_cast<TokenList*>(b_left);
-        TokenList right = *static_cast<TokenList*>(b_right);
-        delete b_left;
-        delete b_right;
-
-        if (!op.compare("+")) {
-          // Deep copy the first list:
-          TokenList result;
-          result.list() = left.list();
-
-          // Insert items from the right list into the left:
-          for (packToken& p : right.list()) {
-            result.list().push_back(p);
-          }
-
-          evaluation.push(new TokenList(result));
-        } else {
-          cleanStack(evaluation);
-          throw undefined_operation(op, left, right);
-        }
       } else if (b_left->type == FUNC) {
         Function* f_left = static_cast<Function*>(b_left);
 
@@ -861,13 +564,33 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars) {
           throw undefined_operation(op, p_left, p_right);
         }
       } else {
-        packToken p_left(b_left->clone());
-        packToken p_right(b_right->clone());
-        delete b_left;
-        delete b_right;
+        opID_t opID = BaseOperation::build_mask(b_left->type, b_right->type);
+        TokenBase* result = 0;
 
-        cleanStack(evaluation);
-        throw undefined_operation(op, p_left, p_right);
+        try {
+          // Resolve the operation:
+          EXEC_OPERATION(result, opID, opMap, op);
+          if (!result) {
+            EXEC_OPERATION(result, opID, opMap, ANY_OP);
+          }
+        } catch (...) {
+          delete b_left;
+          delete b_right;
+          cleanStack(evaluation);
+          throw;
+        }
+
+        if (result) {
+          evaluation.push(result);
+        } else {
+          packToken p_left(b_left->clone());
+          packToken p_right(b_right->clone());
+          delete b_left;
+          delete b_right;
+
+          cleanStack(evaluation);
+          throw undefined_operation(op, p_left, p_right);
+        }
       }
     } else if (base->type == VAR) {  // Variable
       packToken* value = NULL;
@@ -918,22 +641,21 @@ calculator::calculator(const calculator& calc) {
 // Work as a sub-parser:
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
-calculator::calculator(const char* expr, TokenMap vars,
-                       const char* delim, const char** rest, OppMap_t opPrecedence) {
-  compile(expr, vars, delim, rest, opPrecedence);
+calculator::calculator(const char* expr, TokenMap vars, const char* delim,
+                       const char** rest, const OppMap_t& opp) {
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opp);
 }
 
-void calculator::compile(const char* expr,
-                         TokenMap vars, const char* delim,
-                         const char** rest, OppMap_t opPrecedence) {
+void calculator::compile(const char* expr, TokenMap vars, const char* delim,
+                         const char** rest) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence());
 }
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {
-  TokenBase* value = calculate(this->RPN, vars);
+  TokenBase* value = calculate(this->RPN, vars, opMap());
   packToken p = packToken(value->clone());
   if (keep_refs) {
     return packToken(value);

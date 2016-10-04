@@ -15,8 +15,7 @@ as an expression using Dijkstra's
 which modifies
 [Jesse Brown's original code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
 
-*This project was created by [Brandon Amos](http://bamos.github.io) and
-contains substantial modifications from Vinícius Garcia.*
+*This project was developed by [Brandon Amos](http://bamos.github.io) and Vinícius Garcia.*
 
 ---
 
@@ -111,7 +110,7 @@ int main() {
 
 Please note that a calculator can compile an expression so that it can efficiently be executed several times at a later moment.
 
-## Using built-in containers.
+## Using built-in List and Map.
 
 ```C++
 int main() {
@@ -145,13 +144,13 @@ int main() {
 We describe two functions: `foo` and `bar`.
 
 - `foo` works as a print() function.
-- `bar` has no required arguments, but accept arguments anyway and print them.
+- `bar` has no required arguments, but accept arguments anyway and prints them.
 
 ```C++
 #include <iostream>
 #include "shunting-yard.h"
 
-const char* args[] = {"str"};
+const args_t args = {"str"};
 packToken func_foo(TokenMap scope) {
   // Just print `str`
   std::string str = scope["str"].asString();
@@ -166,14 +165,14 @@ packToken func_bar(TokenMap scope) {
   return packToken::None;
 }
 
-// This initializer is instantiated before main() is executed:
+// This initializer is a trick to run code before main() is executed:
 struct FuncInitializer {
   FuncInitializer() {
     TokenMap& global_scope = TokenMap::default_global();
 
     // Register the functions on the default global scope:
-    global_scope["bar"] = CppFunction(&func_bar, /*optional: */ "bar");
-    global_scope["foo"] = CppFunction(&func_foo, 1, args, "foo");
+    global_scope["bar"] = CppFunction(&func_bar, /*optional name:*/ "bar");
+    global_scope["foo"] = CppFunction(&func_foo, args, "foo");
   }
 } my_initializer;
 
@@ -183,9 +182,12 @@ int main() {
 
   // Executing function bar with several arguments:
   calculator::calculate("bar('positional', 'args', 'key':'-', 'word':'args')");
-  // output:
-  // arg-list: [ 'positional', 'args' ]
-  // key-word: { 'key': '-', 'word': 'args' }
+
+  /*
+   * Output:
+   * arg-list: [ 'positional', 'args' ]
+   * key-word: { 'key': '-', 'word': 'args' }
+   */
 
   return 0;
 }
@@ -200,17 +202,18 @@ int main() {
  + Unary operators. +, -
  + Binary operators. +, -, /, *, %, <<, >>, ^
  + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
- + Support for local variables
  + Functions. sin, cos, tan, abs, print
- + Easy to add new operators, functions and even new types
+ + Support for an hierarchy of scopes with local scope, global scope etc.
+ + Easy to add new operators, operations, functions and even new types
  + Easy to implement object-to-object inheritance (with the prototype concept)
- + Built-in garbage collector (does not handle cyclic references yet).
+ + Built-in garbage collector (does not handle cyclic references yet)
 
-# Adding a binary operator.
-To add a binary operator,
+# Writing your own operations.
+To write your own operations:
 
- 1. Update the operator precedence map in `calculator::buildOpPrecedence`.
- 2. Add the computation to `calculator::calculate`.
+ 1. Copy the `operations.cpp` file.
+ 2. Edit it as you please; it is very easy to understand what to do.
+ 3. Compile your code and make sure to include your copied file instead of the original `.o`.
 
 # Implementation Details
 The main steps of the calculation process are:
