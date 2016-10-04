@@ -562,13 +562,18 @@ TEST_CASE("operation_id() function", "[op_id]") {
 /* * * * * Declaring adhoc operations * * * * */
 
 struct myCalc : public calculator {
-  struct myCalcStartup;
   static opMap_t& my_opMap() {
     static opMap_t opMap;
     return opMap;
   }
 
+  static OppMap_t& my_OppMap() {
+    static OppMap_t opp;
+    return opp;
+  }
+
   const opMap_t opMap() const { return my_opMap(); }
+  const OppMap_t opPrecedence() const { return my_OppMap(); }
 
   using calculator::calculator;
 };
@@ -588,8 +593,12 @@ struct op2 : public Operation {
   }
 } op2;
 
-struct myCalc::myCalcStartup {
+struct myCalcStartup {
   myCalcStartup() {
+    OppMap_t& opp = myCalc::my_OppMap();
+    opp["."] = 1;
+    opp["+"] = 2;
+
     opMap_t& opMap = myCalc::my_opMap();
     opMap["+"].push_back(&op1);
     opMap["."].push_back(&op2);
@@ -599,9 +608,18 @@ struct myCalc::myCalcStartup {
 /* * * * * Testing adhoc operations * * * * */
 
 TEST_CASE("Adhoc operations", "[operation]") {
-  myCalc c("'Lets create %s operators%s' + ('adhoc' . '!')");
+  myCalc c1, c2;
+  const char* exp = "'Lets create %s operators%s' + ('adhoc' . '!' )";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_OppMap()));
 
-  REQUIRE(c.eval() == "Lets create adhoc operators!");
+  REQUIRE(c1.eval() == "Lets create adhoc operators!");
+  REQUIRE(c2.eval() == "Lets create adhoc operators!");
+
+  // Testing opPrecedence:
+  exp = "'Lets create %s operators%s' + 'adhoc' . '!'";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == "Lets create adhoc operators!");
 }
 
 TEST_CASE("Resource management") {

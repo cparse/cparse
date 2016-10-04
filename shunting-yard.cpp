@@ -11,6 +11,8 @@
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
 
+/* * * * * BaseOperation class: * * * * */
+
 // Convert a type into an unique mask for bit wise operations:
 const uint32_t BaseOperation::mask(tokType_t type) {
   if (type == ANY_TYPE) {
@@ -25,6 +27,8 @@ const opID_t BaseOperation::build_mask(tokType_t left, tokType_t right) {
   opID_t result = mask(left);
   return (result << 32) | mask(right);
 }
+
+/* * * * * Operation Utilities: * * * * */
 
 bool match_op_id(opID_t id, opID_t mask) {
   uint64_t result = id & mask;
@@ -41,29 +45,13 @@ bool match_op_id(opID_t id, opID_t mask) {
     }\
   }\
 
-OppMap_t calculator::buildOpPrecedence() {
-  OppMap_t opp;
+/* * * * * Static containers: * * * * */
 
-  // Create the operator precedence map based on C++ default
-  // precedence order as described on cppreference website:
-  // http://en.cppreference.com/w/cpp/language/operator_precedence
-  opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
-  opp["**"] = 3;
-  opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
-  opp["+"]  = 6; opp["-"]  = 6;
-  opp["<<"] = 7; opp[">>"] = 7;
-  opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
-  opp["=="] = 9; opp["!="] = 9;
-  opp["&&"] = 13;
-  opp["||"] = 14;
-  opp["="]  = 15; opp[":"] = 15;
-  opp[","]  = 16;
-  opp["("]  = 17; opp["["] = 17;
-
+// Builds the opPrecedence map only once:
+OppMap_t& calculator::default_opPrecedence() {
+  static OppMap_t opp;
   return opp;
 }
-// Builds the opPrecedence map only once:
-OppMap_t calculator::_opPrecedence = calculator::buildOpPrecedence();
 
 typeMap_t& calculator::type_attribute_map() {
   static typeMap_t type_map;
@@ -79,6 +67,8 @@ opMap_t& calculator::default_opMap() {
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
+
+/* * * * * Calculator Class: * * * * */
 
 // Check for unary operators and "convert" them to binary:
 bool calculator::handle_unary(const std::string& op,
@@ -105,7 +95,7 @@ void calculator::handle_op(const std::string& op,
   // Check if operator exists:
   if (opPrecedence.find(op) == opPrecedence.end()) {
     cleanRPN(rpnQueue);
-    throw std::domain_error("Unknown operator: `" + op + "`!");
+    throw std::domain_error("Undefined operator: `" + op + "`!");
   }
 
   float cur_opp = opPrecedence[op];
@@ -418,9 +408,8 @@ packToken calculator::calculate(const char* expr, TokenMap vars,
                                 const char* delim, const char** rest) {
   // Convert to RPN with Dijkstra's Shunting-yard algorithm.
   RAII_TokenQueue_t rpn = calculator::toRPN(expr, vars, delim, rest);
-  TokenBase* ret;
 
-  ret = calculator::calculate(rpn, vars);
+  TokenBase* ret = calculator::calculate(rpn, vars);
 
   return packToken(resolve_reference(ret));
 }
@@ -652,18 +641,17 @@ calculator::calculator(const calculator& calc) {
 // Work as a sub-parser:
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
-calculator::calculator(const char* expr, TokenMap vars,
-                       const char* delim, const char** rest, OppMap_t opPrecedence) {
-  compile(expr, vars, delim, rest, opPrecedence);
+calculator::calculator(const char* expr, TokenMap vars, const char* delim,
+                       const char** rest, const OppMap_t& opp) {
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opp);
 }
 
-void calculator::compile(const char* expr,
-                         TokenMap vars, const char* delim,
-                         const char** rest, OppMap_t opPrecedence) {
+void calculator::compile(const char* expr, TokenMap vars, const char* delim,
+                         const char** rest) {
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence);
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence());
 }
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {

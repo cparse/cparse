@@ -407,6 +407,23 @@ struct ListOnListOperation : public BaseOperation {
 
 struct Startup {
   Startup() {
+    // Create the operator precedence map based on C++ default
+    // precedence order as described on cppreference website:
+    // http://en.cppreference.com/w/cpp/language/operator_precedence
+    OppMap_t& opp = calculator::default_opPrecedence();
+    opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
+    opp["**"] = 3;
+    opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
+    opp["+"]  = 6; opp["-"]  = 6;
+    opp["<<"] = 7; opp[">>"] = 7;
+    opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
+    opp["=="] = 9; opp["!="] = 9;
+    opp["&&"] = 13;
+    opp["||"] = 14;
+    opp["="]  = 15; opp[":"] = 15;
+    opp[","]  = 16;
+
+    // Link operations to respective operators:
     opMap_t& opMap = calculator::default_opMap();
     opMap[","].push_back(&Comma);
     opMap[":"].push_back(&Colon);

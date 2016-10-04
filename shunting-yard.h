@@ -65,7 +65,14 @@ struct TokenNone : public TokenBase {
 
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
-typedef std::map<std::string, int> OppMap_t;
+struct OppMap_t : public std::map<std::string, int> {
+  OppMap_t() {
+    // These operations are hard-coded on the system,
+    // thus they should always be defined.
+    (*this)["[]"] = -1; (*this)["()"] = -1;
+    (*this)["["] = 0xFFFFFF; (*this)["("] = 0xFFFFFF;
+  }
+};
 
 class TokenMap;
 class TokenList;
@@ -130,8 +137,7 @@ typedef std::map<std::string, opList_t> opMap_t;
 
 class calculator {
  public:
-  static OppMap_t _opPrecedence;
-  static OppMap_t buildOpPrecedence();
+  static OppMap_t& default_opPrecedence();
   static opMap_t& default_opMap();
 
  public:
@@ -147,7 +153,7 @@ class calculator {
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
-                            OppMap_t opPrecedence = _opPrecedence);
+                            OppMap_t opPrecedence = default_opPrecedence());
 
   static bool handle_unary(const std::string& op,
                            TokenQueue_t* rpnQueue, bool lastTokenWasOp);
@@ -161,6 +167,7 @@ class calculator {
 
  protected:
   virtual const opMap_t opMap() const { return default_opMap(); }
+  virtual const OppMap_t opPrecedence() const { return default_opPrecedence(); }
 
  private:
   TokenQueue_t RPN;
@@ -171,10 +178,9 @@ class calculator {
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
-             OppMap_t opPrecedence = _opPrecedence);
+             const OppMap_t& opPrecedence = default_opPrecedence());
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
-               const char* delim = 0, const char** rest = 0,
-               OppMap_t opPrecedence = _opPrecedence);
+               const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;
 
   // Serialization:
