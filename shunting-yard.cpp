@@ -63,10 +63,10 @@ opMap_t& calculator::default_opMap() {
   return opMap;
 }
 
-// Literal Tokens: True, False and None:
-packToken trueToken = packToken(1);
-packToken falseToken = packToken(0);
-packToken noneToken = TokenNone();
+rWordMap_t& calculator::default_rWordMap() {
+  static rWordMap_t rwMap;
+  return rwMap;
+}
 
 /* * * * * Calculator Class: * * * * */
 
@@ -172,16 +172,10 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                TokenMap vars, const char* delim,
-                               const char** rest, OppMap_t opPrecedence) {
-  TokenQueue_t rpnQueue; std::stack<std::string> operatorStack;
-  uint8_t lastTokenWasOp = true;
-  bool lastTokenWasUnary = false;
+                               const char** rest, OppMap_t opPrecedence,
+                               rWordMap_t rWordMap) {
+  rpnBuilder data;
   char* nextChar;
-
-  // Used to make sure the expression won't
-  // end inside a bracket evaluation just because
-  // found a delimiter like '\n' or ')'
-  int bracketLevel = 0;
 
   static char c = '\0';
   if (!delim) delim = &c;
@@ -194,23 +188,25 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   // In one pass, ignore whitespace and parse the expression into RPN
   // using Dijkstra's Shunting-yard algorithm.
-  while (*expr && (bracketLevel || !strchr(delim, *expr))) {
+  while (*expr && (data.bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
       int64_t _int = strtol(expr, &nextChar, 10);
 
       // If the number was not a float:
       if (!strchr(".eE", *nextChar)) {
-        rpnQueue.push(new Token<int64_t>(_int, INT));
+        data.rpn.push(new Token<int64_t>(_int, INT));
       } else {
         double digit = strtod(expr, &nextChar);
-        rpnQueue.push(new Token<double>(digit, REAL));
+        data.rpn.push(new Token<double>(digit, REAL));
       }
 
       expr = nextChar;
-      lastTokenWasOp = false;
-      lastTokenWasUnary = false;
+      data.lastTokenWasOp = false;
+      data.lastTokenWasUnary = false;
     } else if (isvariablechar(*expr)) {
+      rWordMap_t::iterator it;
+
       // If the token is a variable, resolve it and
       // add the parsed number to the output queue.
       std::stringstream ss;
@@ -220,35 +216,28 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ss << *expr;
         ++expr;
       }
+      std::string key = ss.str();
 
-      if (lastTokenWasOp == '.') {
-        rpnQueue.push(new Token<std::string>(ss.str(), STR));
+      if (data.lastTokenWasOp == '.') {
+        data.rpn.push(new Token<std::string>(key, STR));
+      } else if ((it=rWordMap.find(key)) != rWordMap.end()) {
+        // Parse reserved words:
+        data.rpn.push(it->second(expr, &expr, &data));
       } else {
-        packToken* value = NULL;
-        std::string key = ss.str();
-
-        if (key == "True") {
-          value = &trueToken;
-        } else if (key == "False") {
-          value = &falseToken;
-        } else if (key == "None") {
-          value = &noneToken;
-        } else {
-          if (vars) value = vars.find(key);
-        }
+        packToken* value = vars.find(key);
 
         if (value) {
           // Save a reference token:
           TokenBase* copy = (*value)->clone();
-          rpnQueue.push(new RefToken(key, copy));
+          data.rpn.push(new RefToken(key, copy));
         } else {
           // Save the variable name:
-          rpnQueue.push(new Token<std::string>(key, VAR));
+          data.rpn.push(new Token<std::string>(key, VAR));
         }
       }
 
-      lastTokenWasOp = false;
-      lastTokenWasUnary = false;
+      data.lastTokenWasOp = false;
+      data.lastTokenWasUnary = false;
     } else if (*expr == '\'' || *expr == '"') {
       // If it is a string literal, parse it and
       // add to the output queue.
@@ -280,85 +269,87 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if (*expr != quote) {
         std::string squote = (quote == '"' ? "\"": "'");
-        cleanRPN(&rpnQueue);
+        cleanRPN(&data.rpn);
         throw syntax_error("Expected quote (" + squote +
                            ") at end of string declaration: " + squote + ss.str() + ".");
       }
       ++expr;
-      rpnQueue.push(new Token<std::string>(ss.str(), STR));
-      lastTokenWasOp = false;
+      data.rpn.push(new Token<std::string>(ss.str(), STR));
+      data.lastTokenWasOp = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
       tokType_t lastType;
       char lastOp;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
-      if (lastTokenWasUnary) {
+      if (data.lastTokenWasUnary) {
         std::string op;
         op.push_back(*expr);
-        cleanRPN(&rpnQueue);
-        throw syntax_error("Expected operand after unary operator `" + operatorStack.top() +
+        cleanRPN(&data.rpn);
+        throw syntax_error("Expected operand after unary operator `" + data.opStack.top() +
                            "` but found: `" + op + "` instead.");
       }
 
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = rpnQueue.size() ? rpnQueue.back()->type : NONE;
-        lastOp = operatorStack.size() ? operatorStack.top()[0] : '\0';
+        lastType = data.rpn.size() ? data.rpn.back()->type : NONE;
+        lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          lastTokenWasUnary = handle_unary("()", &rpnQueue, lastTokenWasOp);
-          handle_op("()", &rpnQueue, &operatorStack, opPrecedence);
+          data.lastTokenWasUnary = handle_unary("()", &data.rpn,
+                                                data.lastTokenWasOp);
+          handle_op("()", &data.rpn, &data.opStack, opPrecedence);
           // Add it as a bracket to the op stack:
         }
-        operatorStack.push("(");
-        lastTokenWasOp = '(';
-        ++bracketLevel;
+        data.opStack.push("(");
+        data.lastTokenWasOp = '(';
+        ++data.bracketLevel;
         ++expr;
         break;
       case '[':
         // This counts as a bracket and as an operator:
-        lastTokenWasUnary = handle_unary("[]", &rpnQueue, lastTokenWasOp);
-        handle_op("[]", &rpnQueue, &operatorStack, opPrecedence);
+        data.lastTokenWasUnary = handle_unary("[]", &data.rpn,
+                                              data.lastTokenWasOp);
+        handle_op("[]", &data.rpn, &data.opStack, opPrecedence);
         // Add it as a bracket to the op stack:
-        operatorStack.push("[");
-        lastTokenWasOp = true;
-        ++bracketLevel;
+        data.opStack.push("[");
+        data.lastTokenWasOp = true;
+        ++data.bracketLevel;
         ++expr;
         break;
       case ')':
-        if (lastTokenWasOp == '(') {
-          rpnQueue.push(new Tuple());
-          lastTokenWasOp = false;
+        if (data.lastTokenWasOp == '(') {
+          data.rpn.push(new Tuple());
+          data.lastTokenWasOp = false;
         }
-        while (operatorStack.size() && operatorStack.top().compare("(")) {
-          rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
-          operatorStack.pop();
+        while (data.opStack.size() && data.opStack.top().compare("(")) {
+          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
+          data.opStack.pop();
         }
 
-        if (operatorStack.size() == 0) {
-          cleanRPN(&rpnQueue);
+        if (data.opStack.size() == 0) {
+          cleanRPN(&data.rpn);
           throw syntax_error("Extra ')' on the expression!");
         }
 
-        operatorStack.pop();
-        --bracketLevel;
+        data.opStack.pop();
+        --data.bracketLevel;
         ++expr;
         break;
       case ']':
-        while (operatorStack.size() && operatorStack.top().compare("[")) {
-          rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
-          operatorStack.pop();
+        while (data.opStack.size() && data.opStack.top().compare("[")) {
+          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
+          data.opStack.pop();
         }
 
-        if (operatorStack.size() == 0) {
-          cleanRPN(&rpnQueue);
+        if (data.opStack.size() == 0) {
+          cleanRPN(&data.rpn);
           throw syntax_error("Extra ']' on the expression!");
         }
 
-        operatorStack.pop();
-        --bracketLevel;
+        data.opStack.pop();
+        --data.bracketLevel;
         ++expr;
         break;
       default:
@@ -376,32 +367,33 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
           ss >> op;
 
-          lastTokenWasUnary = handle_unary(op, &rpnQueue, lastTokenWasOp);
+          data.lastTokenWasUnary = handle_unary(op, &data.rpn,
+                                                data.lastTokenWasOp);
 
-          handle_op(op, &rpnQueue, &operatorStack, opPrecedence);
+          handle_op(op, &data.rpn, &data.opStack, opPrecedence);
 
-          lastTokenWasOp = op[0];
+          data.lastTokenWasOp = op[0];
         }
       }
     }
     // Ignore spaces but stop on delimiter if not inside brackets.
     while (*expr && isspace(*expr)
-           && (bracketLevel || !strchr(delim, *expr))) ++expr;
+           && (data.bracketLevel || !strchr(delim, *expr))) ++expr;
   }
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
-  if (lastTokenWasUnary) {
-    cleanRPN(&rpnQueue);
-    throw syntax_error("Expected operand after unary operator `" + operatorStack.top() + "`");
+  if (data.lastTokenWasUnary) {
+    cleanRPN(&data.rpn);
+    throw syntax_error("Expected operand after unary operator `" + data.opStack.top() + "`");
   }
 
-  while (!operatorStack.empty()) {
-    rpnQueue.push(new Token<std::string>(operatorStack.top(), OP));
-    operatorStack.pop();
+  while (!data.opStack.empty()) {
+    data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
+    data.opStack.pop();
   }
 
   if (rest) *rest = expr;
-  return rpnQueue;
+  return data.rpn;
 }
 
 packToken calculator::calculate(const char* expr, TokenMap vars,
@@ -642,8 +634,9 @@ calculator::calculator(const calculator& calc) {
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
 calculator::calculator(const char* expr, TokenMap vars, const char* delim,
-                       const char** rest, const OppMap_t& opp) {
-  this->RPN = calculator::toRPN(expr, vars, delim, rest, opp);
+                       const char** rest, const OppMap_t& opp,
+                       const rWordMap_t& rwMap) {
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, opp, rwMap);
 }
 
 void calculator::compile(const char* expr, TokenMap vars, const char* delim,
@@ -651,7 +644,8 @@ void calculator::compile(const char* expr, TokenMap vars, const char* delim,
   // Make sure it is empty:
   cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, vars, delim, rest, opPrecedence());
+  this->RPN = calculator::toRPN(expr, vars, delim, rest,
+                                opPrecedence(), rWordMap());
 }
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {
