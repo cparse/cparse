@@ -74,26 +74,6 @@ struct OppMap_t : public std::map<std::string, int> {
   }
 };
 
-// This struct was created to expose internal toRPN() variables
-// to custom parsers, in special to the rWordParser_t functions.
-struct rpnBuilder {
-  TokenQueue_t rpn;
-  std::stack<std::string> opStack;
-  uint8_t lastTokenWasOp = true;
-  bool lastTokenWasUnary = false;
-
-  // Used to make sure the expression won't
-  // end inside a bracket evaluation just because
-  // found a delimiter like '\n' or ')'
-  uint32_t bracketLevel = 0;
-};
-
-// The reservedWordParser_t is the function type called when
-// a reserved word is found at parsing time.
-typedef TokenBase* rWordParser_t(const char* expr, const char** rest,
-                                 rpnBuilder* data);
-typedef std::map<std::string, rWordParser_t*> rWordMap_t;
-
 class TokenMap;
 class TokenList;
 class Function;
@@ -105,6 +85,29 @@ class Function;
 // Define the `Function` class
 // as well as some built-in functions:
 #include "./functions.h"
+
+// This struct was created to expose internal toRPN() variables
+// to custom parsers, in special to the rWordParser_t functions.
+struct rpnBuilder {
+  TokenQueue_t rpn;
+  std::stack<std::string> opStack;
+  uint8_t lastTokenWasOp = true;
+  bool lastTokenWasUnary = false;
+  TokenMap scope;
+
+  // Used to make sure the expression won't
+  // end inside a bracket evaluation just because
+  // found a delimiter like '\n' or ')'
+  uint32_t bracketLevel = 0;
+
+  rpnBuilder(TokenMap scope) : scope(scope) {}
+};
+
+// The reservedWordParser_t is the function type called when
+// a reserved word is found at parsing time.
+typedef TokenBase* rWordParser_t(const char* expr, const char** rest,
+                                 rpnBuilder* data);
+typedef std::map<std::string, rWordParser_t*> rWordMap_t;
 
 struct RefToken : public TokenBase {
   packToken key;

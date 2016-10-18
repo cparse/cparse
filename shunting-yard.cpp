@@ -174,7 +174,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
                                TokenMap vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence,
                                rWordMap_t rWordMap) {
-  rpnBuilder data;
+  rpnBuilder data(vars);
   char* nextChar;
 
   static char c = '\0';
