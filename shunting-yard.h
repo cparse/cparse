@@ -67,12 +67,32 @@ class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 struct OppMap_t : public std::map<std::string, int> {
   OppMap_t() {
-    // These operations are hard-coded on the system,
-    // thus they should always be defined.
+    // These operations are hard-coded inside the calculator,
+    // thus their precedence should always be defined:
     (*this)["[]"] = -1; (*this)["()"] = -1;
-    (*this)["["] = 0xFFFFFF; (*this)["("] = 0xFFFFFF;
+    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF;
   }
 };
+
+// This struct was created to expose internal toRPN() variables
+// to custom parsers, in special to the rWordParser_t functions.
+struct rpnBuilder {
+  TokenQueue_t rpn;
+  std::stack<std::string> opStack;
+  uint8_t lastTokenWasOp = true;
+  bool lastTokenWasUnary = false;
+
+  // Used to make sure the expression won't
+  // end inside a bracket evaluation just because
+  // found a delimiter like '\n' or ')'
+  uint32_t bracketLevel = 0;
+};
+
+// The reservedWordParser_t is the function type called when
+// a reserved word is found at parsing time.
+typedef TokenBase* rWordParser_t(const char* expr, const char** rest,
+                                 rpnBuilder* data);
+typedef std::map<std::string, rWordParser_t*> rWordMap_t;
 
 class TokenMap;
 class TokenList;
@@ -137,6 +157,7 @@ typedef std::map<std::string, opList_t> opMap_t;
 
 class calculator {
  public:
+  static rWordMap_t& default_rWordMap();
   static OppMap_t& default_opPrecedence();
   static opMap_t& default_opMap();
 
@@ -153,7 +174,8 @@ class calculator {
   static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
-                            OppMap_t opPrecedence = default_opPrecedence());
+                            OppMap_t opPrecedence = default_opPrecedence(),
+                            rWordMap_t rWordMap = default_rWordMap());
 
   static bool handle_unary(const std::string& op,
                            TokenQueue_t* rpnQueue, bool lastTokenWasOp);
@@ -168,6 +190,7 @@ class calculator {
  protected:
   virtual const opMap_t opMap() const { return default_opMap(); }
   virtual const OppMap_t opPrecedence() const { return default_opPrecedence(); }
+  virtual const rWordMap_t rWordMap() const { return default_rWordMap(); }
 
  private:
   TokenQueue_t RPN;
@@ -178,7 +201,8 @@ class calculator {
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
-             const OppMap_t& opPrecedence = default_opPrecedence());
+             const OppMap_t& opPrecedence = default_opPrecedence(),
+             const rWordMap_t& rwMap = default_rWordMap());
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;

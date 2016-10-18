@@ -1,7 +1,3 @@
-
-#ifndef OPERATIONS_H_
-#define OPERATIONS_H_
-
 #include <math.h>
 #include <sstream>
 
@@ -446,4 +442,32 @@ struct Startup {
 
 }  // namespace builtin_operations
 
-#endif  // OPERATIONS_H_
+namespace builtin_reservedWords {
+
+// Literal Tokens: True, False and None:
+packToken trueToken = packToken(1);
+packToken falseToken = packToken(0);
+packToken noneToken = TokenNone();
+
+TokenBase* True(const char* expr, const char** rest, rpnBuilder* data) {
+  return trueToken->clone();
+}
+
+TokenBase* False(const char* expr, const char** rest, rpnBuilder* data) {
+  return falseToken->clone();
+}
+
+TokenBase* None(const char* expr, const char** rest, rpnBuilder* data) {
+  return noneToken->clone();
+}
+
+struct Startup {
+  Startup() {
+    rWordMap_t& rwMap = calculator::default_rWordMap();
+    rwMap["True"] = &True;
+    rwMap["False"] = &False;
+    rwMap["None"] = &None;
+  }
+} Startup;
+
+}  // namespace builtin_reservedWords
