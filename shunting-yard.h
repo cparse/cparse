@@ -125,38 +125,44 @@ struct RefToken : public TokenBase {
   }
 };
 
-struct BaseOperation {
-  static inline const uint32_t mask(tokType_t type);
-  static const opID_t build_mask(tokType_t left, tokType_t right);
-  virtual const opID_t getMask() = 0;
-
-  // This exec is designed for use of advanced users:
-  virtual TokenBase* exec(TokenBase* left, const std::string& op,
-                          TokenBase* right) = 0;
+struct opSignature_t {
+  tokType_t left; std::string op; tokType_t right;
+  opSignature_t(const tokType_t left, const tokType_t right)
+               : left(left), right(right) {}
+  opSignature_t(const tokType_t L, const std::string op, const tokType_t R)
+               : left(L), op(op), right(R) {}
 };
 
-struct Operation : public BaseOperation {
-  virtual TokenBase* exec(TokenBase* left, const std::string& op,
-                          TokenBase* right) {
-    packToken result = exec(packToken(left->clone()),
-                             op, packToken(right->clone()));
+class Operation {
+ public:
+  typedef TokenBase* (*opFunc_t)(TokenBase*, const std::string&, TokenBase*);
 
-    if (result) {
-      delete left;
-      delete right;
-      return result->clone();
-    } else {
-      return 0;
-    }
+ public:
+  static inline const uint32_t mask(tokType_t type);
+  static const opID_t build_mask(tokType_t left, tokType_t right);
+
+ private:
+  opID_t _mask;
+  opFunc_t _exec;
+
+ public:
+  Operation(opSignature_t sig, opFunc_t func)
+              : _mask(build_mask(sig.left, sig.right)), _exec(func) {}
+
+ public:
+  const opID_t getMask() { return _mask; }
+  TokenBase* exec(TokenBase* left, const std::string& op, TokenBase* right) {
+    return _exec(left, op, right);
   }
-
-  // This exec is designed for use of non advanced users:
-  virtual packToken exec(packToken left, std::string op, packToken right) = 0;
 };
 
 typedef std::map<tokType_t, TokenMap> typeMap_t;
-typedef std::vector<BaseOperation*> opList_t;
-typedef std::map<std::string, opList_t> opMap_t;
+typedef std::vector<Operation> opList_t;
+struct opMap_t : public std::map<std::string, opList_t> {
+  void add(const opSignature_t sig, Operation::opFunc_t func) {
+    (*this)[sig.op].push_back(Operation(sig, func));
+  }
+};
 
 class calculator {
  public:
