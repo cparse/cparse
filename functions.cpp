@@ -1,12 +1,3 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
-#include <string>
-#include <stdexcept>
-#include <cerrno>
-#include <iostream>
-#include <cctype>  // For tolower() and toupper()
-
 #include "./shunting-yard.h"
 #include "./functions.h"
 #include "./shunting-yard-exceptions.h"
