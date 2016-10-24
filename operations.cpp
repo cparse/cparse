@@ -46,15 +46,12 @@ packToken MapIndex(const packToken& p_left, const std::string& op, const packTok
 
   if (!op.compare("[]") || !op.compare(".")) {
     packToken* p_value = left.find(right);
-    TokenBase* value;
 
     if (p_value) {
-      value = (*p_value)->clone();
+      return RefToken(right, *p_value, left);
     } else {
-      value = new TokenNone();
+      return RefToken(right, packToken::None, left);
     }
-
-    return RefToken(right, value, left);
   } else {
     throw undefined_operation(op, left, right);
   }
@@ -69,13 +66,10 @@ packToken TypeSpecificFunction(const packToken& p_left, const std::string& op, c
 
   packToken* attr = attr_map.find(key);
   if (attr) {
-    TokenBase* value = (*attr)->clone();
-    const packToken& source = p_left;
-
     // Note: If attr is a function, it will receive have
     // scope["this"] == source, so it can make changes on this object.
     // Or just read some information for example: its length.
-    return RefToken(key, value, source);
+    return RefToken(key, (*attr), p_left);
   } else {
     throw undefined_operation(op, p_left, p_right);
   }
@@ -244,9 +238,9 @@ packToken ListOnNumberOperation(const packToken& p_left, const std::string& op, 
       throw std::domain_error("List index out of range!");
     }
 
-    TokenBase* value = left.list()[index]->clone();
+    packToken& value = left.list()[index];
 
-    return RefToken(index, value, packToken(p_left));
+    return RefToken(index, value, p_left);
   } else {
     throw undefined_operation(op, p_left, p_right);
   }

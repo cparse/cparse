@@ -115,10 +115,10 @@ struct RefToken : public TokenBase {
   packToken key;
   packToken value;
   packToken source;
-  RefToken(packToken k, TokenBase* v, packToken m) :
+  RefToken(packToken k, TokenBase* v, packToken m = packToken::None) :
     key(k), value(v), source(m) { this->type = v->type | REF; }
-  RefToken(packToken k, TokenBase* v) :
-    key(k), value(v), source(packToken::None) { this->type = v->type | REF; }
+  RefToken(packToken k, packToken v, packToken m = packToken::None) :
+    key(k), value(v), source(m) { this->type = v->type | REF; }
 
   virtual TokenBase* clone() const {
     return new RefToken(*this);
