@@ -7,7 +7,8 @@ LD ?= ld
 CXX ?= g++
 CFLAGS = -std=c++11 -Wall -pedantic
 DEBUG = -g #-DDEBUG
-all: $(EXE)
+
+all: $(EXE) release
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(DEBUG) $(OBJ) -o $(EXE)
 %.o: %.cpp *.h; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
