@@ -76,6 +76,8 @@ struct OppMap_t : public std::map<std::string, int> {
 
 class TokenMap;
 class TokenList;
+class Tuple;
+class STuple;
 class Function;
 #include "./packToken.h"
 
@@ -111,52 +113,61 @@ typedef std::map<std::string, rWordParser_t*> rWordMap_t;
 
 struct RefToken : public TokenBase {
   packToken key;
-  TokenBase* value;
+  packToken value;
   packToken source;
-  RefToken(packToken k, TokenBase* v, packToken m) :
+  RefToken(packToken k, TokenBase* v, packToken m = packToken::None) :
     key(k), value(v), source(m) { this->type = v->type | REF; }
-  RefToken(packToken k, TokenBase* v) :
-    key(k), value(v), source(packToken::None) { this->type = v->type | REF; }
+  RefToken(packToken k, packToken v, packToken m = packToken::None) :
+    key(k), value(v), source(m) { this->type = v->type | REF; }
 
   virtual TokenBase* clone() const {
-    RefToken* copy = new RefToken(static_cast<const RefToken&>(*this));
-    copy->value = value->clone();
-    return copy;
+    return new RefToken(*this);
   }
 };
 
-struct BaseOperation {
+struct opSignature_t {
+  tokType_t left; std::string op; tokType_t right;
+  opSignature_t(const tokType_t L, const std::string op, const tokType_t R)
+               : left(L), op(op), right(R) {}
+};
+
+class Operation {
+ public:
+  typedef packToken (*opFunc_t)(const packToken&, const std::string&,
+                                const packToken&);
+
+ public:
+  // Use this exception to reject an operation.
+  // Without stoping the operation matching process.
+  struct Reject : public std::exception {};
+
+ public:
   static inline const uint32_t mask(tokType_t type);
   static const opID_t build_mask(tokType_t left, tokType_t right);
-  virtual const opID_t getMask() = 0;
 
-  // This exec is designed for use of advanced users:
-  virtual TokenBase* exec(TokenBase* left, const std::string& op,
-                          TokenBase* right) = 0;
-};
+ private:
+  opID_t _mask;
+  opFunc_t _exec;
 
-struct Operation : public BaseOperation {
-  virtual TokenBase* exec(TokenBase* left, const std::string& op,
-                          TokenBase* right) {
-    packToken result = exec(packToken(left->clone()),
-                             op, packToken(right->clone()));
+ public:
+  Operation(opSignature_t sig, opFunc_t func)
+           : _mask(build_mask(sig.left, sig.right)), _exec(func) {}
 
-    if (result) {
-      delete left;
-      delete right;
-      return result->clone();
-    } else {
-      return 0;
-    }
+ public:
+  const opID_t getMask() { return _mask; }
+  packToken exec(const packToken& left, const std::string& op,
+                 const packToken& right) {
+    return _exec(left, op, right);
   }
-
-  // This exec is designed for use of non advanced users:
-  virtual packToken exec(packToken left, std::string op, packToken right) = 0;
 };
 
 typedef std::map<tokType_t, TokenMap> typeMap_t;
-typedef std::vector<BaseOperation*> opList_t;
-typedef std::map<std::string, opList_t> opMap_t;
+typedef std::vector<Operation> opList_t;
+struct opMap_t : public std::map<std::string, opList_t> {
+  void add(const opSignature_t sig, Operation::opFunc_t func) {
+    (*this)[sig.op].push_back(Operation(sig, func));
+  }
+};
 
 class calculator {
  public:

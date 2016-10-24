@@ -1,19 +1,20 @@
 EXE = test-shunting-yard
 CORE_SRC = shunting-yard.cpp packToken.cpp functions.cpp objects.cpp 
-SRC = $(EXE).cpp $(CORE_SRC) operations.cpp catch.cpp
+SRC = $(EXE).cpp $(CORE_SRC) builtin-operations.cpp catch.cpp
 OBJ = $(SRC:.cpp=.o)
 
 LD ?= ld
 CXX ?= g++
 CFLAGS = -std=c++11 -Wall -pedantic
 DEBUG = -g #-DDEBUG
-all: $(EXE)
+
+all: $(EXE) release
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(DEBUG) $(OBJ) -o $(EXE)
 %.o: %.cpp *.h; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
 
-release: $(CORE_SRC) operations.cpp;
-	$(CXX) -c -O3 $(CFLAGS) $(CORE_SRC) operations.cpp
+release: $(CORE_SRC) builtin-operations.cpp;
+	$(CXX) -c -O3 $(CFLAGS) $(CORE_SRC) builtin-operations.cpp
 	$(LD) -r -O1 $(CORE_SRC:.cpp=.o) -o core-shunting-yard.o
 
 again: clean all

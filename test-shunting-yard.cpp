@@ -578,20 +578,15 @@ struct myCalc : public calculator {
   using calculator::calculator;
 };
 
-struct op1 : public BaseOperation {
-  const opID_t getMask() { return build_mask(STR, TUPLE); }
-  TokenBase* exec(TokenBase* left, const std::string& op,
-                  TokenBase* right) {
-    return calculator::default_opMap()["%"][0]->exec(left, op, right);
-  }
-} op1;
+packToken op1(const packToken& left, const std::string& op,
+              const packToken& right) {
+  return calculator::default_opMap()["%"][0].exec(left, op, right);
+}
 
-struct op2 : public Operation {
-  const opID_t getMask() { return build_mask(ANY_TYPE, ANY_TYPE); }
-  packToken exec(packToken left, std::string op, packToken right) {
-    return packToken(calculator::default_opMap()[","][0]->exec(left->clone(), op, right->clone()));
-  }
-} op2;
+packToken op2(const packToken& left, const std::string& op,
+              const packToken& right) {
+  return calculator::default_opMap()[","][0].exec(left, op, right);
+}
 
 struct myCalcStartup {
   myCalcStartup() {
@@ -600,8 +595,8 @@ struct myCalcStartup {
     opp["+"] = 2;
 
     opMap_t& opMap = myCalc::my_opMap();
-    opMap["+"].push_back(&op1);
-    opMap["."].push_back(&op2);
+    opMap.add({STR, "+", TUPLE}, &op1);
+    opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
   }
 } myCalcStartup;
 
