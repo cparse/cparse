@@ -117,9 +117,6 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   // pack<TokenList_t> super class:
   TokenList_t& list() const { return *(ref->obj); }
 
-  // Used to initialize the default list functions.
-  struct Startup;
-
  public:
   struct ListIterator : public Iterator {
     TokenList_t* list;
