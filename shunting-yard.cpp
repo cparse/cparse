@@ -40,8 +40,12 @@ bool match_op_id(opID_t id, opID_t mask) {
 #define EXEC_OPERATION(result, opID, opMap, OP_MASK)\
   for (Operation& operation : opMap[OP_MASK]) {\
     if (match_op_id(opID, operation.getMask())) {\
-      result = operation.exec(b_left, op, b_right);\
-      if (result) break;\
+      try {\
+        result = operation.exec(p_left, op, p_right).release();\
+        break;\
+      } catch (Operation::Reject e) {\
+        continue;\
+      }\
     }\
   }\
 
@@ -134,11 +138,10 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
       packToken* r_value = scope->find(ref->key.asString());
       if (r_value) {
         value = (*r_value)->clone();
-        delete ref->value;
       }
     }
 
-    if (!value) value = ref->value;
+    if (!value) value = std::move(ref->value).release();
     delete ref;
 
     return value;
@@ -557,6 +560,8 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars,
         }
       } else {
         opID_t opID = Operation::build_mask(b_left->type, b_right->type);
+        packToken p_left(b_left);
+        packToken p_right(b_right);
         TokenBase* result = 0;
 
         try {
@@ -566,8 +571,6 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars,
             EXEC_OPERATION(result, opID, opMap, ANY_OP);
           }
         } catch (...) {
-          delete b_left;
-          delete b_right;
           cleanStack(evaluation);
           throw;
         }
@@ -575,11 +578,6 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars,
         if (result) {
           evaluation.push(result);
         } else {
-          packToken p_left(b_left->clone());
-          packToken p_right(b_right->clone());
-          delete b_left;
-          delete b_right;
-
           cleanStack(evaluation);
           throw undefined_operation(op, p_left, p_right);
         }

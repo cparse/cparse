@@ -140,6 +140,22 @@ TokenList& packToken::asList() const {
   return *static_cast<TokenList*>(base);
 }
 
+Tuple& packToken::asTuple() const {
+  if (base->type != TUPLE) {
+    throw bad_cast(
+      "The Token is not a tuple!");
+  }
+  return *static_cast<Tuple*>(base);
+}
+
+STuple& packToken::asSTuple() const {
+  if (base->type != STUPLE) {
+    throw bad_cast(
+      "The Token is not an special tuple!");
+  }
+  return *static_cast<STuple*>(base);
+}
+
 Function* packToken::asFunc() const {
   if (base->type != FUNC) {
     throw bad_cast(

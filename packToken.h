@@ -37,6 +37,7 @@ class packToken {
   const packToken& operator[](const std::string& key) const;
   const packToken& operator[](const char* key) const;
   operator TokenBase*() { return base; }
+  operator const TokenBase*() const { return base; }
   TokenBase* token() { return base; }
 
   bool asBool() const;
@@ -45,6 +46,8 @@ class packToken {
   std::string& asString() const;
   TokenMap& asMap() const;
   TokenList& asList() const;
+  Tuple& asTuple() const;
+  STuple& asSTuple() const;
   Function* asFunc() const;
 
   std::string str() const;
@@ -59,6 +62,17 @@ class packToken {
   // - packToken(token->clone())
   //
   explicit packToken(TokenBase* t) : base(t) {}
+
+ public:
+  // Used to recover the original pointer.
+  // The intance whose pointer was removed must be an rvalue.
+  TokenBase* release() && {
+    TokenBase* b = base;
+    // Setting base to 0 leaves the class in an invalid state,
+    // except for destruction.
+    base = 0;
+    return b;
+  }
 };
 
 // To allow cout to print it:

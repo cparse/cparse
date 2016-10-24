@@ -6,60 +6,43 @@
 
 namespace builtin_operations {
 
-TokenBase* Comma(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  TokenBase* result;
-  if (b_left->type == TUPLE) {
-    Tuple* tuple = static_cast<Tuple*>(b_left);
-    tuple->list().push_back(packToken(b_right));
-    result = tuple;
+packToken Comma(const packToken& left, const std::string& op, const packToken& right) {
+  if (left->type == TUPLE) {
+    left.asTuple().list().push_back(right);
+    return left;
   } else {
-    result = new Tuple(b_left, b_right);
-    delete b_left;
-    delete b_right;
+    return Tuple(left, right);
   }
-  return result;
 }
 
-TokenBase* Colon(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  TokenBase* result;
-  if (b_left->type == STUPLE) {
-    STuple* tuple = static_cast<STuple*>(b_left);
-    tuple->list().push_back(packToken(b_right));
-    result = tuple;
+packToken Colon(const packToken& left, const std::string& op, const packToken& right) {
+  if (left->type == STUPLE) {
+    left.asSTuple().list().push_back(right);
+    return left;
   } else {
-    result = new STuple(b_left, b_right);
-    delete b_left;
-    delete b_right;
+    return STuple(left, right);
   }
-  return result;
 }
 
-  // If it is an assignment operation:
-TokenBase* Equal(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  if (b_left->type == VAR || b_right->type == VAR) {
-    throw undefined_operation(op, b_left, b_right);
+packToken Equal(const packToken& left, const std::string& op, const packToken& right) {
+  if (left->type == VAR || right->type == VAR) {
+    throw undefined_operation(op, left, right);
   }
 
-  packToken left(b_left);
-  packToken right(b_right);
-
-  return new Token<int64_t>(left == right, INT);
+  return left == right;
 }
 
-TokenBase* Different(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  if (b_left->type == VAR || b_right->type == VAR) {
-    throw undefined_operation(op, b_left, b_right);
+packToken Different(const packToken& left, const std::string& op, const packToken& right) {
+  if (left->type == VAR || right->type == VAR) {
+    throw undefined_operation(op, left, right);
   }
 
-  packToken left(b_left);
-  packToken right(b_right);
-
-  return new Token<int64_t>(left != right, INT);
+  return left != right;
 }
 
-TokenBase* MapIndex(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  TokenMap left = *static_cast<TokenMap*>(b_left);
-  std::string right = static_cast<Token<std::string>*>(b_right)->val;
+packToken MapIndex(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  TokenMap& left = p_left.asMap();
+  std::string& right = p_right.asString();
 
   if (!op.compare("[]") || !op.compare(".")) {
     packToken* p_value = left.find(right);
@@ -71,113 +54,95 @@ TokenBase* MapIndex(TokenBase* b_left, const std::string& op, TokenBase* b_right
       value = new TokenNone();
     }
 
-    delete b_left;
-    delete b_right;
-    return new RefToken(right, value, left);
+    return RefToken(right, value, left);
   } else {
-    throw undefined_operation(op, b_left, b_right);
+    throw undefined_operation(op, left, right);
   }
 }
 
 // Resolve build-in operations for non-map types, e.g.: 'str'.len()
-TokenBase* TypeSpecificFunction(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  if (b_left->type == MAP) return 0;
+packToken TypeSpecificFunction(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  if (p_left->type == MAP) throw Operation::Reject();
 
-  TokenMap& left = calculator::type_attribute_map()[b_left->type];
-  std::string right = static_cast<Token<std::string>*>(b_right)->val;
+  TokenMap& attr_map = calculator::type_attribute_map()[p_left->type];
+  std::string& key = p_right.asString();
 
-  packToken* attr = left.find(right);
+  packToken* attr = attr_map.find(key);
   if (attr) {
     TokenBase* value = (*attr)->clone();
-    packToken source = packToken(b_left);
-    delete b_right;
+    const packToken& source = p_left;
 
     // Note: If attr is a function, it will receive have
     // scope["this"] == source, so it can make changes on this object.
     // Or just read some information for example: its length.
-    return new RefToken(right, value, source);
+    return RefToken(key, value, source);
   } else {
-    throw undefined_operation(op, b_left, b_right);
+    throw undefined_operation(op, p_left, p_right);
   }
 }
 
-TokenBase* NumeralOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  double left, right;
+packToken NumeralOperation(const packToken& left, const std::string& op, const packToken& right) {
+  double left_d, right_d;
   int64_t left_i, right_i;
-  TokenBase* result;
 
   // Extract integer and real values of the operators:
-  if (b_left->type == REAL) {
-    left = static_cast<Token<double>*>(b_left)->val;
-    left_i = static_cast<int64_t>(left);
-  } else {
-    left_i = static_cast<Token<int64_t>*>(b_left)->val;
-    left = static_cast<double>(left_i);
-  }
+  left_d = left.asDouble();
+  left_i = left.asInt();
 
-  if (b_right->type == REAL) {
-    right = static_cast<Token<double>*>(b_right)->val;
-    right_i = static_cast<int64_t>(right);
-  } else {
-    right_i = static_cast<Token<int64_t>*>(b_right)->val;
-    right = static_cast<double>(right_i);
-  }
+  right_d = right.asDouble();
+  right_i = right.asInt();
 
   if (!op.compare("+")) {
-    result = new Token<double>(left + right, REAL);
+    return left_d + right_d;
   } else if (!op.compare("*")) {
-    result = new Token<double>(left * right, REAL);
+    return left_d * right_d;
   } else if (!op.compare("-")) {
-    result = new Token<double>(left - right, REAL);
+    return left_d - right_d;
   } else if (!op.compare("/")) {
-    result = new Token<double>(left / right, REAL);
+    return left_d / right_d;
   } else if (!op.compare("<<")) {
-    result = new Token<double>(left_i << right_i, REAL);
+    return left_i << right_i;
   } else if (!op.compare("**")) {
-    result = new Token<double>(pow(left, right), REAL);
+    return pow(left_d, right_d);
   } else if (!op.compare(">>")) {
-    result = new Token<double>(left_i >> right_i, REAL);
+    return left_i >> right_i;
   } else if (!op.compare("%")) {
-    result = new Token<double>(left_i % right_i, REAL);
+    return left_i % right_i;
   } else if (!op.compare("<")) {
-    result = new Token<double>(left < right, REAL);
+    return left_d < right_d;
   } else if (!op.compare(">")) {
-    result = new Token<double>(left > right, REAL);
+    return left_d > right_d;
   } else if (!op.compare("<=")) {
-    result = new Token<double>(left <= right, REAL);
+    return left_d <= right_d;
   } else if (!op.compare(">=")) {
-    result = new Token<double>(left >= right, REAL);
+    return left_d >= right_d;
   } else if (!op.compare("&&")) {
-    result = new Token<double>(left_i && right_i, REAL);
+    return left_i && right_i;
   } else if (!op.compare("||")) {
-    result = new Token<double>(left_i || right_i, REAL);
+    return left_i || right_i;
   } else {
-    throw undefined_operation(op, b_left, b_right);
+    throw undefined_operation(op, left, right);
   }
-
-  delete b_left;
-  delete b_right;
-  return result;
 }
 
-TokenBase* FormatOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  std::string s_left = static_cast<Token<std::string>*>(b_left)->val;
+packToken FormatOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  std::string& s_left = p_left.asString();
   const char* left = s_left.c_str();
 
   Tuple right;
 
-  if (b_right->type == TUPLE) {
-    right = *static_cast<Tuple*>(b_right);
+  if (p_right->type == TUPLE) {
+    right = p_right.asTuple();
   } else {
-    right = Tuple(b_right);
+    right = Tuple(p_right);
   }
 
-  std::string output;
-  for (const TokenBase* token : right.list()) {
+  std::string result;
+  for (const packToken& token : right.list()) {
     // Find the next occurrence of "%s"
     while (*left && (*left != '%' || left[1] != 's')) {
       if (*left == '\\' && left[1] == '%') ++left;
-      output.push_back(*left);
+      result.push_back(*left);
       ++left;
     }
 
@@ -191,123 +156,84 @@ TokenBase* FormatOperation(TokenBase* b_left, const std::string& op, TokenBase* 
     if (token->type == STR) {
       // Avoid using packToken::str for strings
       // or it will enclose it quotes `"str"`
-      output += static_cast<const Token<std::string>*>(token)->val;
+      result += token.asString();
     } else {
-      output += packToken::str(token);
+      result += token.str();
     }
   }
 
-  // Find the next occurrence of "%s"
+  // Find the next occurrence of "%s" if exists:
   while (*left && (*left != '%' || left[1] != 's')) {
     if (*left == '\\' && left[1] == '%') ++left;
-    output.push_back(*left);
+    result.push_back(*left);
     ++left;
   }
 
   if (*left != '\0') {
     throw type_error("Not enough arguments for format string");
   } else {
-    delete b_left;
-    delete b_right;
-    return new Token<std::string>(output, STR);
+    return result;
   }
 }
 
-TokenBase* StringOnStringOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  std::string left = static_cast<Token<std::string>*>(b_left)->val;
-  std::string right = static_cast<Token<std::string>*>(b_right)->val;
-  TokenBase* result;
+packToken StringOnStringOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  std::string& left = p_left.asString();
+  std::string& right = p_right.asString();
 
   if (!op.compare("+")) {
-    result = new Token<std::string>(left + right, STR);
+    return left + right;
   } else if (!op.compare("==")) {
-    result = new Token<int64_t>(left.compare(right) == 0, INT);
+    return (left.compare(right) == 0);
   } else if (!op.compare("!=")) {
-    result = new Token<int64_t>(left.compare(right) != 0, INT);
+    return (left.compare(right) != 0);
   } else {
-    throw undefined_operation(op, b_left, b_right);
+    throw undefined_operation(op, p_left, p_right);
   }
-
-  delete b_left;
-  delete b_right;
-  return result;
 }
 
-TokenBase* StringOnNumberOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  std::string left = static_cast<Token<std::string>*>(b_left)->val;
-  double right;
-  TokenBase* result;
-
-  if (b_right->type == REAL) {
-    right = static_cast<Token<double>*>(b_right)->val;
-  } else {
-    right = static_cast<Token<int64_t>*>(b_right)->val;
-  }
+packToken StringOnNumberOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  std::string& left = p_left.asString();
 
   std::stringstream ss;
   if (!op.compare("+")) {
-    ss << left << right;
-    result = new Token<std::string>(ss.str(), STR);
+    ss << left << p_right.asDouble();
+    return ss.str();
   } else if (!op.compare("[]")) {
-    int64_t index = right;
+    int64_t index = p_right.asInt();
 
     if (index < 0) {
       // Reverse index, i.e. list[-1] = list[list.size()-1]
       index += left.size();
     }
-
     if (index < 0 || static_cast<size_t>(index) >= left.size()) {
-      delete b_left;
       throw std::domain_error("String index out of range!");
     }
 
-    std::string value;
-    value.push_back(left[index]);
-
-    result = new Token<std::string>(value, STR);
+    ss << left[index];
+    return ss.str();
   } else {
-    throw undefined_operation(op, left, right);
+    throw undefined_operation(op, p_left, p_right);
   }
-
-  delete b_left;
-  delete b_right;
-  return result;
 }
 
-TokenBase* NumberOnStringOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  double left;
-  std::string right = static_cast<Token<std::string>*>(b_right)->val;
-
-  if (b_left->type == REAL) {
-    left = static_cast<Token<double>*>(b_left)->val;
-  } else {
-    left = static_cast<Token<int64_t>*>(b_left)->val;
-  }
+packToken NumberOnStringOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  double left = p_left.asDouble();
+  std::string& right = p_right.asString();
 
   std::stringstream ss;
   if (!op.compare("+")) {
     ss << left << right;
-
-    delete b_left;
-    delete b_right;
-    return new Token<std::string>(ss.str(), STR);
+    return ss.str();
   } else {
-    throw undefined_operation(op, left, right);
+    throw undefined_operation(op, p_left, p_right);
   }
 }
 
-TokenBase* ListOnNumberOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  TokenList left = *static_cast<TokenList*>(b_left);
-  int64_t right = static_cast<Token<double>*>(b_right)->val;
-
-  if (b_right->type == REAL) {
-    right = static_cast<Token<double>*>(b_right)->val;
-  } else {
-    right = static_cast<Token<int64_t>*>(b_right)->val;
-  }
+packToken ListOnNumberOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  TokenList left = p_left.asList();
 
   if (!op.compare("[]")) {
-    int64_t index = right;
+    int64_t index = p_right.asInt();
 
     if (index < 0) {
       // Reverse index, i.e. list[-1] = list[list.size()-1]
@@ -320,16 +246,15 @@ TokenBase* ListOnNumberOperation(TokenBase* b_left, const std::string& op, Token
 
     TokenBase* value = left.list()[index]->clone();
 
-    delete b_right;
-    return new RefToken(index, value, packToken(b_left));
+    return RefToken(index, value, packToken(p_left));
   } else {
-    throw undefined_operation(op, b_left, b_right);
+    throw undefined_operation(op, p_left, p_right);
   }
 }
 
-TokenBase* ListOnListOperation(TokenBase* b_left, const std::string& op, TokenBase* b_right) {
-  TokenList left = *static_cast<TokenList*>(b_left);
-  TokenList right = *static_cast<TokenList*>(b_right);
+packToken ListOnListOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+  TokenList& left = p_left.asList();
+  TokenList& right = p_right.asList();
 
   if (!op.compare("+")) {
     // Deep copy the first list:
@@ -341,9 +266,7 @@ TokenBase* ListOnListOperation(TokenBase* b_left, const std::string& op, TokenBa
       result.list().push_back(p);
     }
 
-    delete b_left;
-    delete b_right;
-    return new TokenList(result);
+    return result;
   } else {
     throw undefined_operation(op, left, right);
   }

@@ -578,11 +578,13 @@ struct myCalc : public calculator {
   using calculator::calculator;
 };
 
-TokenBase* op1(TokenBase* left, const std::string& op, TokenBase* right) {
+packToken op1(const packToken& left, const std::string& op,
+              const packToken& right) {
   return calculator::default_opMap()["%"][0].exec(left, op, right);
 }
 
-TokenBase* op2(TokenBase* left, const std::string& op, TokenBase* right) {
+packToken op2(const packToken& left, const std::string& op,
+              const packToken& right) {
   return calculator::default_opMap()[","][0].exec(left, op, right);
 }
 

@@ -155,12 +155,12 @@ class TokenList : public pack<TokenList_t>, public Iterable {
 class Tuple : public TokenList {
  public:
   Tuple() { this->type = TUPLE; }
-  Tuple(TokenBase* first) {
+  Tuple(const TokenBase* first) {
     this->type = TUPLE;
     list().push_back(packToken(first->clone()));
   }
 
-  Tuple(TokenBase* first, TokenBase* second) {
+  Tuple(const TokenBase* first, const TokenBase* second) {
     this->type = TUPLE;
     list().push_back(packToken(first->clone()));
     list().push_back(packToken(second->clone()));
@@ -185,12 +185,12 @@ class Tuple : public TokenList {
 class STuple : public Tuple {
  public:
   STuple() { this->type = STUPLE; }
-  STuple(TokenBase* first) {
+  STuple(const TokenBase* first) {
     this->type = STUPLE;
     list().push_back(packToken(first->clone()));
   }
 
-  STuple(TokenBase* first, TokenBase* second) {
+  STuple(const TokenBase* first, const TokenBase* second) {
     this->type = STUPLE;
     list().push_back(packToken(first->clone()));
     list().push_back(packToken(second->clone()));
