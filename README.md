@@ -1,4 +1,4 @@
-# Expression Parser • [ ![Build Status] [travis-image] ] [travis] [ ![License] [license-image] ] [license]
+# CParser • [ ![Build Status] [travis-image] ] [travis] [ ![License] [license-image] ] [license]
 
 [travis-image]: https://travis-ci.org/bamos/cpp-expression-parser.png?branch=master
 [travis]: http://travis-ci.org/bamos/cpp-expression-parser
