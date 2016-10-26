@@ -17,6 +17,10 @@ which modifies
 
 *This project was developed by [Brandon Amos](http://bamos.github.io) and Vinícius Garcia.*
 
+## Wiki
+
+If you want to use this library in your project please take a look at our [Wiki](https://github.com/cparse/cparse/wiki)
+
 ---
 
 # Modifications and Uses of This Code
