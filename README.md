@@ -1,7 +1,7 @@
 # CParser • [ ![Build Status] [travis-image] ] [travis] [ ![License] [license-image] ] [license]
 
-[travis-image]: https://travis-ci.org/bamos/cpp-expression-parser.png?branch=master
-[travis]: http://travis-ci.org/bamos/cpp-expression-parser
+[travis-image]: https://travis-ci.org/cparse/cparse.png?branch=master
+[travis]: http://travis-ci.org/cparse/cparse
 
 [release-image]: http://img.shields.io/badge/release-0.2.1-blue.svg?style=flat
 [releases]: https://github.com/cmusatyalab/openface/releases
