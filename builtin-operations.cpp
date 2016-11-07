@@ -321,16 +321,32 @@ packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
 packToken noneToken = TokenNone();
 
-TokenBase* True(const char* expr, const char** rest, rpnBuilder* data) {
-  return trueToken->clone();
+void True(const char* expr, const char** rest, rpnBuilder* data) {
+  data->rpn.push(trueToken->clone());
 }
 
-TokenBase* False(const char* expr, const char** rest, rpnBuilder* data) {
-  return falseToken->clone();
+void False(const char* expr, const char** rest, rpnBuilder* data) {
+  data->rpn.push(falseToken->clone());
 }
 
-TokenBase* None(const char* expr, const char** rest, rpnBuilder* data) {
-  return noneToken->clone();
+void None(const char* expr, const char** rest, rpnBuilder* data) {
+  data->rpn.push(noneToken->clone());
+}
+
+void LineComment(const char* expr, const char** rest, rpnBuilder* data) {
+  while (*expr && *expr != '\n') ++expr;
+  if (*expr != '\0') ++expr;
+  *rest = expr;
+}
+
+void SlashStarComment(const char* expr, const char** rest, rpnBuilder* data) {
+  while (*expr && !(expr[0] == '*' && expr[1] == '/')) ++expr;
+  if (*expr == '\0') {
+    throw syntax_error("Unexpected end of file after '/*' comment!");
+  }
+  // Drop the characters `*/`:
+  expr += 2;
+  *rest = expr;
 }
 
 struct Startup {
@@ -339,6 +355,9 @@ struct Startup {
     rwMap["True"] = &True;
     rwMap["False"] = &False;
     rwMap["None"] = &None;
+    rwMap["#"] = &LineComment;
+    rwMap["//"] = &LineComment;
+    rwMap["/*"] = &SlashStarComment;
   }
 } Startup;
 
