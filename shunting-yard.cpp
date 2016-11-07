@@ -224,8 +224,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
       if (data.lastTokenWasOp == '.') {
         data.rpn.push(new Token<std::string>(key, STR));
       } else if ((it=rWordMap.find(key)) != rWordMap.end()) {
-        // Parse reserved words:
-        data.rpn.push(it->second(expr, &expr, &data));
+        // Parse reserved operators:
+        try {
+          it->second(expr, &expr, &data);
+        } catch (...) {
+          cleanRPN(&data.rpn);
+          throw;
+        }
       } else {
         packToken* value = vars.find(key);
 
@@ -365,17 +370,24 @@ TokenQueue_t calculator::toRPN(const char* expr,
             ss << *expr;
             ++expr;
           }
-          ss.clear();
-          std::string op;
+          std::string op = ss.str();
 
-          ss >> op;
+          rWordMap_t::iterator it;
+          if ((it=rWordMap.find(op)) != rWordMap.end()) {
+            // Parse reserved words:
+            try {
+              it->second(expr, &expr, &data);
+            } catch (...) {
+              cleanRPN(&data.rpn);
+              throw;
+            }
+          } else {
+            data.lastTokenWasUnary = handle_unary(op, &data.rpn,
+                                                  data.lastTokenWasOp);
+            handle_op(op, &data.rpn, &data.opStack, opPrecedence);
 
-          data.lastTokenWasUnary = handle_unary(op, &data.rpn,
-                                                data.lastTokenWasOp);
-
-          handle_op(op, &data.rpn, &data.opStack, opPrecedence);
-
-          data.lastTokenWasOp = op[0];
+            data.lastTokenWasOp = op[0];
+          }
         }
       }
     }

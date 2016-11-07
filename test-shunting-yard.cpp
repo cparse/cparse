@@ -551,6 +551,7 @@ TEST_CASE("Parsing as slave parser") {
   REQUIRE_THROWS(calculator::calculate(error_test, vars, "\n;", &code));
 }
 
+// This function is for internal use only:
 TEST_CASE("operation_id() function", "[op_id]") {
   #define opID(t1, t2) Operation::build_mask(t1, t2)
   REQUIRE((opID(NONE, NONE)) == 0x0000000100000001);
@@ -627,6 +628,18 @@ TEST_CASE("Resource management") {
   REQUIRE_NOTHROW(calculator C3(C2));
   // Assignment:
   REQUIRE_NOTHROW(C1 = C2);
+}
+
+/* * * * * Testing adhoc operator parser * * * * */
+
+TEST_CASE("Adhoc operator parser", "[operator]") {
+  // Testing comments:
+  REQUIRE(calculator::calculate("1 + 1 # And a comment!").asInt() == 2);
+  REQUIRE(calculator::calculate("1 + 1 /*And a comment!*/").asInt() == 2);
+  REQUIRE(calculator::calculate("1 /* + 1 */").asInt() == 1);
+  REQUIRE(calculator::calculate("1 /* in-between */ + 1").asInt() == 2);
+
+  REQUIRE_THROWS(calculator::calculate("1 + 1 /* Never ending comment"));
 }
 
 TEST_CASE("Exception management") {

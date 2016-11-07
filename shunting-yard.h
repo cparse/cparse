@@ -107,8 +107,8 @@ struct rpnBuilder {
 
 // The reservedWordParser_t is the function type called when
 // a reserved word is found at parsing time.
-typedef TokenBase* rWordParser_t(const char* expr, const char** rest,
-                                 rpnBuilder* data);
+typedef void rWordParser_t(const char* expr, const char** rest,
+                           rpnBuilder* data);
 typedef std::map<std::string, rWordParser_t*> rWordMap_t;
 
 struct RefToken : public TokenBase {
