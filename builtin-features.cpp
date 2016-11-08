@@ -319,7 +319,7 @@ namespace builtin_reservedWords {
 // Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
-packToken noneToken = TokenNone();
+packToken noneToken = packToken::None;
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {
   data->rpn.push(trueToken->clone());
@@ -335,7 +335,6 @@ void None(const char* expr, const char** rest, rpnBuilder* data) {
 
 void LineComment(const char* expr, const char** rest, rpnBuilder* data) {
   while (*expr && *expr != '\n') ++expr;
-  if (*expr != '\0') ++expr;
   *rest = expr;
 }
 

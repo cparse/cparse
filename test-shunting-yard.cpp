@@ -640,6 +640,14 @@ TEST_CASE("Adhoc operator parser", "[operator]") {
   REQUIRE(calculator::calculate("1 /* in-between */ + 1").asInt() == 2);
 
   REQUIRE_THROWS(calculator::calculate("1 + 1 /* Never ending comment"));
+
+  TokenMap vars;
+  const char* expr = "#12345\n - 10";
+  REQUIRE_NOTHROW(calculator::calculate(expr, vars, "\n", &expr));
+  REQUIRE(*expr == '\n');
+
+  ++expr;
+  REQUIRE(calculator::calculate(expr).asInt() == -10);
 }
 
 TEST_CASE("Exception management") {
