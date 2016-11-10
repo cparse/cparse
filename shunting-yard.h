@@ -193,6 +193,8 @@ class calculator {
                             rWordMap_t rWordMap = default_rWordMap());
 
   static void handle_unary(const std::string& op, rpnBuilder* data);
+
+ public:
   static void handle_op(const std::string& op, rpnBuilder* data);
 
   // Used to dealloc a TokenQueue_t safely.
