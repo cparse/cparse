@@ -91,19 +91,18 @@ void calculator::handle_unary(const std::string& op, rpnBuilder* data) {
 }
 
 // Consume operators with precedence >= than op then add op
-void calculator::handle_op(const std::string& op, rpnBuilder* data,
-                           OppMap_t opPrecedence) {
+void calculator::handle_op(const std::string& op, rpnBuilder* data) {
   // "Convert" unary operators into binary, so they can
   // be treated as if they were the same:
   handle_unary(op, data);
 
   // Check if operator exists:
-  if (opPrecedence.find(op) == opPrecedence.end()) {
+  if (data->opp.find(op) == data->opp.end()) {
     cleanRPN(&(data->rpn));
     throw std::domain_error("Undefined operator: `" + op + "`!");
   }
 
-  float cur_opp = opPrecedence[op];
+  float cur_opp = data->opp.at(op);
   // To force "=" to be evaluated from the right to the left:
   if (op == "=") cur_opp -= 0.1;
 
@@ -114,7 +113,7 @@ void calculator::handle_op(const std::string& op, rpnBuilder* data,
   //       and p(o1) <= p(o2), then
   //     pop o2 off the stack onto the output queue.
   //   Push o1 on the stack.
-  while (!data->opStack.empty() && cur_opp >= opPrecedence[data->opStack.top()]) {
+  while (!data->opStack.empty() && cur_opp >= data->opp.at(data->opStack.top())) {
     data->rpn.push(new Token<std::string>(data->opStack.top(), OP));
     data->opStack.pop();
   }
@@ -178,7 +177,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
                                TokenMap vars, const char* delim,
                                const char** rest, OppMap_t opPrecedence,
                                rWordMap_t rWordMap) {
-  rpnBuilder data(vars);
+  rpnBuilder data(vars, opPrecedence);
   char* nextChar;
 
   static char c = '\0';
@@ -306,7 +305,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          handle_op("()", &data, opPrecedence);
+          handle_op("()", &data);
           // Add it as a bracket to the op stack:
         }
         data.opStack.push("(");
@@ -316,7 +315,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case '[':
         // This counts as a bracket and as an operator:
-        handle_op("[]", &data, opPrecedence);
+        handle_op("[]", &data);
         // Add it as a bracket to the op stack:
         data.opStack.push("[");
         data.lastTokenWasOp = true;
@@ -379,7 +378,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
               throw;
             }
           } else {
-            handle_op(op, &data, opPrecedence);
+            handle_op(op, &data);
 
             data.lastTokenWasOp = op[0];
           }

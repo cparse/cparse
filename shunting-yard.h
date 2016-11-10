@@ -96,13 +96,14 @@ struct rpnBuilder {
   uint8_t lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
   TokenMap scope;
+  const OppMap_t& opp;
 
   // Used to make sure the expression won't
   // end inside a bracket evaluation just because
   // found a delimiter like '\n' or ')'
   uint32_t bracketLevel = 0;
 
-  rpnBuilder(TokenMap scope) : scope(scope) {}
+  rpnBuilder(TokenMap scope, const OppMap_t& opp) : scope(scope), opp(opp) {}
 };
 
 // The reservedWordParser_t is the function type called when
@@ -192,8 +193,7 @@ class calculator {
                             rWordMap_t rWordMap = default_rWordMap());
 
   static void handle_unary(const std::string& op, rpnBuilder* data);
-  static void handle_op(const std::string& op, rpnBuilder* data,
-                        OppMap_t opPrecedence);
+  static void handle_op(const std::string& op, rpnBuilder* data);
 
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
