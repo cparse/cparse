@@ -93,6 +93,10 @@ void calculator::handle_unary(const std::string& op, rpnBuilder* data) {
 // Consume operators with precedence >= than op then add op
 void calculator::handle_op(const std::string& op, rpnBuilder* data,
                            OppMap_t opPrecedence) {
+  // "Convert" unary operators into binary, so they can
+  // be treated as if they were the same:
+  handle_unary(op, data);
+
   // Check if operator exists:
   if (opPrecedence.find(op) == opPrecedence.end()) {
     cleanRPN(&(data->rpn));
@@ -302,7 +306,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
         lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          handle_unary("()", &data);
           handle_op("()", &data, opPrecedence);
           // Add it as a bracket to the op stack:
         }
@@ -313,7 +316,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case '[':
         // This counts as a bracket and as an operator:
-        handle_unary("[]", &data);
         handle_op("[]", &data, opPrecedence);
         // Add it as a bracket to the op stack:
         data.opStack.push("[");
@@ -377,7 +379,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
               throw;
             }
           } else {
-            handle_unary(op, &data);
             handle_op(op, &data, opPrecedence);
 
             data.lastTokenWasOp = op[0];
