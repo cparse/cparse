@@ -75,30 +75,27 @@ rWordMap_t& calculator::default_rWordMap() {
 /* * * * * Calculator Class: * * * * */
 
 // Check for unary operators and "convert" them to binary:
-bool calculator::handle_unary(const std::string& op,
-                              TokenQueue_t* rpnQueue, bool lastTokenWasOp) {
-  if (lastTokenWasOp) {
+void calculator::handle_unary(const std::string& op, rpnBuilder* data) {
+  if (data->lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
     if (!op.compare("-") || !op.compare("+")) {
-      rpnQueue->push(new Token<int64_t>(0, INT));
-      return true;
+      data->rpn.push(new Token<int64_t>(0, INT));
+      data->lastTokenWasUnary = true;
     } else {
-      cleanRPN(rpnQueue);
+      cleanRPN(&(data->rpn));
       throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
     }
+  } else {
+    data->lastTokenWasUnary = false;
   }
-
-  return false;
 }
 
 // Consume operators with precedence >= than op then add op
-void calculator::handle_op(const std::string& op,
-                           TokenQueue_t* rpnQueue,
-                           std::stack<std::string>* operatorStack,
+void calculator::handle_op(const std::string& op, rpnBuilder* data,
                            OppMap_t opPrecedence) {
   // Check if operator exists:
   if (opPrecedence.find(op) == opPrecedence.end()) {
-    cleanRPN(rpnQueue);
+    cleanRPN(&(data->rpn));
     throw std::domain_error("Undefined operator: `" + op + "`!");
   }
 
@@ -113,11 +110,11 @@ void calculator::handle_op(const std::string& op,
   //       and p(o1) <= p(o2), then
   //     pop o2 off the stack onto the output queue.
   //   Push o1 on the stack.
-  while (!operatorStack->empty() && cur_opp >= opPrecedence[operatorStack->top()]) {
-    rpnQueue->push(new Token<std::string>(operatorStack->top(), OP));
-    operatorStack->pop();
+  while (!data->opStack.empty() && cur_opp >= opPrecedence[data->opStack.top()]) {
+    data->rpn.push(new Token<std::string>(data->opStack.top(), OP));
+    data->opStack.pop();
   }
-  operatorStack->push(op);
+  data->opStack.push(op);
 }
 
 // Use this function to discard a reference to an object
@@ -305,9 +302,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
         lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          data.lastTokenWasUnary = handle_unary("()", &data.rpn,
-                                                data.lastTokenWasOp);
-          handle_op("()", &data.rpn, &data.opStack, opPrecedence);
+          handle_unary("()", &data);
+          handle_op("()", &data, opPrecedence);
           // Add it as a bracket to the op stack:
         }
         data.opStack.push("(");
@@ -317,9 +313,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case '[':
         // This counts as a bracket and as an operator:
-        data.lastTokenWasUnary = handle_unary("[]", &data.rpn,
-                                              data.lastTokenWasOp);
-        handle_op("[]", &data.rpn, &data.opStack, opPrecedence);
+        handle_unary("[]", &data);
+        handle_op("[]", &data, opPrecedence);
         // Add it as a bracket to the op stack:
         data.opStack.push("[");
         data.lastTokenWasOp = true;
@@ -382,9 +377,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
               throw;
             }
           } else {
-            data.lastTokenWasUnary = handle_unary(op, &data.rpn,
-                                                  data.lastTokenWasOp);
-            handle_op(op, &data.rpn, &data.opStack, opPrecedence);
+            handle_unary(op, &data);
+            handle_op(op, &data, opPrecedence);
 
             data.lastTokenWasOp = op[0];
           }

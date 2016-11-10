@@ -191,11 +191,8 @@ class calculator {
                             OppMap_t opPrecedence = default_opPrecedence(),
                             rWordMap_t rWordMap = default_rWordMap());
 
-  static bool handle_unary(const std::string& op,
-                           TokenQueue_t* rpnQueue, bool lastTokenWasOp);
-  static void handle_op(const std::string& op,
-                        TokenQueue_t* rpnQueue,
-                        std::stack<std::string>* operatorStack,
+  static void handle_unary(const std::string& op, rpnBuilder* data);
+  static void handle_op(const std::string& op, rpnBuilder* data,
                         OppMap_t opPrecedence);
 
   // Used to dealloc a TokenQueue_t safely.
