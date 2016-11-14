@@ -49,6 +49,10 @@ bool match_op_id(opID_t id, opID_t mask) {
     }\
   }\
 
+// Map constructor used for operator '{}', e.g.: {'a':2}
+packToken _map_constructor(TokenMap scope) { return scope["kwargs"]; }
+const CppFunction map_constructor = CppFunction(&_map_constructor, "map");
+
 /* * * * * Static containers: * * * * */
 
 // Builds the opPrecedence map only once:
@@ -322,6 +326,18 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++data.bracketLevel;
         ++expr;
         break;
+      case '{':
+        // Add a map constructor call to the rpn:
+        data.rpn.push(map_constructor.clone());
+        data.lastTokenWasOp = false;
+
+        // We make the program believe it is a normal function call:
+        calculator::handle_op("()", &data);
+        data.opStack.push("{");
+        data.lastTokenWasOp = '{';
+        ++data.bracketLevel;
+        ++expr;
+        break;
       case ')':
         if (data.lastTokenWasOp == '(') {
           data.rpn.push(new Tuple());
@@ -350,6 +366,24 @@ TokenQueue_t calculator::toRPN(const char* expr,
         if (data.opStack.size() == 0) {
           cleanRPN(&data.rpn);
           throw syntax_error("Extra ']' on the expression!");
+        }
+
+        data.opStack.pop();
+        --data.bracketLevel;
+        ++expr;
+        break;
+      case '}':
+        if (data.lastTokenWasOp == '{') {
+          data.rpn.push(new Tuple());
+          data.lastTokenWasOp = false;
+        }
+        while (data.opStack.size() && data.opStack.top().compare("{")) {
+          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
+          data.opStack.pop();
+        }
+
+        if (data.opStack.size() == 0) {
+          throw syntax_error("Extra '}' on the expression!");
         }
 
         data.opStack.pop();

@@ -255,6 +255,17 @@ TEST_CASE("List and map constructors usage") {
   REQUIRE(vars["my_list"].str() == "[ \"a\", \"b\" ]");
 }
 
+TEST_CASE("Map '{}' constructor usage") {
+  calculator c1;
+  TokenMap vars;
+
+  REQUIRE_NOTHROW(c1.compile("{ 'a': 1 }.a"));
+  REQUIRE(c1.eval().asInt() == 1);
+
+  REQUIRE_NOTHROW(c1.compile("M = {'a': 1}"));
+  REQUIRE(c1.eval().asMap()["a"].asInt() == 1);
+}
+
 TEST_CASE("Test list iterable behavior") {
   GlobalScope vars;
   REQUIRE_NOTHROW(calculator::calculate("L = list(1,2,3)", vars));

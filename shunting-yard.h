@@ -70,7 +70,7 @@ struct OppMap_t : public std::map<std::string, int> {
     // These operations are hard-coded inside the calculator,
     // thus their precedence should always be defined:
     (*this)["[]"] = -1; (*this)["()"] = -1;
-    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF;
+    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF; (*this)["{"] = 0x7FFFFFFF;
   }
 };
 
