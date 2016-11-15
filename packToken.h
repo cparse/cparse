@@ -14,6 +14,7 @@ class packToken {
   packToken() : base(new TokenNone()) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
   packToken(const packToken& t) : base(t.base->clone()) {}
+  packToken(packToken&& t) : base(t.base) { t.base = 0; }
   packToken& operator=(const packToken& t);
 
   template<class C>
