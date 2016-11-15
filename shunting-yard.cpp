@@ -49,10 +49,6 @@ bool match_op_id(opID_t id, opID_t mask) {
     }\
   }\
 
-// Map constructor used for operator '{}', e.g.: {'a':2}
-packToken _map_constructor(TokenMap scope) { return scope["kwargs"]; }
-const CppFunction map_constructor = CppFunction(&_map_constructor, "map");
-
 /* * * * * Static containers: * * * * */
 
 // Builds the opPrecedence map only once:
@@ -328,7 +324,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case '{':
         // Add a map constructor call to the rpn:
-        data.rpn.push(map_constructor.clone());
+        data.rpn.push(new CppFunction(&TokenMap::default_constructor, "map"));
         data.lastTokenWasOp = false;
 
         // We make the program believe it is a normal function call:

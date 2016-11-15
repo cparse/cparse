@@ -21,6 +21,10 @@ TokenMap& TokenMap::default_global() {
   return global_map;
 }
 
+packToken TokenMap::default_constructor(TokenMap scope) {
+  return scope["kwargs"];
+}
+
 TokenMap TokenMap::empty = TokenMap(&default_global());
 
 
@@ -44,6 +48,30 @@ packToken* TokenMap::MapIterator::next() {
 }
 
 void TokenMap::MapIterator::reset() { it = map.begin(); }
+
+/* * * * * TokenList functions: * * * * */
+
+packToken TokenList::default_constructor(TokenMap scope) {
+  // Get the arguments:
+  TokenList list = scope["args"].asList();
+
+  // If the only argument is iterable:
+  if (list.list().size() == 1 && list.list()[0]->type & IT) {
+    TokenList new_list;
+    Iterator* it = static_cast<Iterable*>(list.list()[0].token())->getIterator();
+
+    packToken* next = it->next();
+    while (next) {
+      new_list.list().push_back(*next);
+      next = it->next();
+    }
+
+    delete it;
+    return new_list;
+  } else {
+    return list;
+  }
+}
 
 /* * * * * TokenList iterator implemented functions * * * * */
 
