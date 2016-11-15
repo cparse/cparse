@@ -255,7 +255,7 @@ TEST_CASE("List and map constructors usage") {
   REQUIRE(vars["my_list"].str() == "[ \"a\", \"b\" ]");
 }
 
-TEST_CASE("Map '{}' constructor usage") {
+TEST_CASE("Map '{}' and list '[]' constructor usage") {
   calculator c1;
   TokenMap vars;
 
@@ -263,7 +263,13 @@ TEST_CASE("Map '{}' constructor usage") {
   REQUIRE(c1.eval().asInt() == 1);
 
   REQUIRE_NOTHROW(c1.compile("M = {'a': 1}"));
-  REQUIRE(c1.eval().asMap()["a"].asInt() == 1);
+  REQUIRE(c1.eval().str() == "{ \"a\": 1 }");
+
+  REQUIRE_NOTHROW(c1.compile("[ 1, 2 ].len()"));
+  REQUIRE(c1.eval().asInt() == 2);
+
+  REQUIRE_NOTHROW(c1.compile("L = [1,2]"));
+  REQUIRE(c1.eval().str() == "[ 1, 2 ]");
 }
 
 TEST_CASE("Test list iterable behavior") {

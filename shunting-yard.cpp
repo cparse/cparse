@@ -314,11 +314,21 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
         break;
       case '[':
-        // This counts as a bracket and as an operator:
-        handle_op("[]", &data);
+        if (data.lastTokenWasOp == false) {
+          // If it is an operator:
+          handle_op("[]", &data);
+        } else {
+          // If it is the list constructor:
+          // Add the list constructor to the rpn:
+          data.rpn.push(new CppFunction(&TokenList::default_constructor, "list"));
+          data.lastTokenWasOp = false;
+
+          // We make the program see it as a normal function call:
+          calculator::handle_op("()", &data);
+        }
         // Add it as a bracket to the op stack:
         data.opStack.push("[");
-        data.lastTokenWasOp = true;
+        data.lastTokenWasOp = '[';
         ++data.bracketLevel;
         ++expr;
         break;
@@ -327,7 +337,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         data.rpn.push(new CppFunction(&TokenMap::default_constructor, "map"));
         data.lastTokenWasOp = false;
 
-        // We make the program believe it is a normal function call:
+        // We make the program see it as a normal function call:
         calculator::handle_op("()", &data);
         data.opStack.push("{");
         data.lastTokenWasOp = '{';
@@ -354,6 +364,10 @@ TokenQueue_t calculator::toRPN(const char* expr,
         ++expr;
         break;
       case ']':
+        if (data.lastTokenWasOp == '[') {
+          data.rpn.push(new Tuple());
+          data.lastTokenWasOp = false;
+        }
         while (data.opStack.size() && data.opStack.top().compare("[")) {
           data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
           data.opStack.pop();
