@@ -157,6 +157,31 @@ void rpnBuilder::handle_op(const std::string& op) {
   this->opStack.push(op);
 }
 
+void rpnBuilder::open_bracket(const std::string& bracket) {
+  this->opStack.push(bracket);
+  this->lastTokenWasOp = bracket[0];
+  ++this->bracketLevel;
+}
+
+void rpnBuilder::close_bracket(const std::string& bracket) {
+  if (this->lastTokenWasOp == bracket[0]) {
+    this->rpn.push(new Tuple());
+    this->lastTokenWasOp = false;
+  }
+  while (this->opStack.size() && this->opStack.top() != bracket) {
+    this->rpn.push(new Token<std::string>(this->opStack.top(), OP));
+    this->opStack.pop();
+  }
+
+  if (this->opStack.size() == 0) {
+    rpnBuilder::cleanRPN(&this->rpn);
+    throw syntax_error("Extra '" + bracket + "' on the expression!");
+  }
+
+  this->opStack.pop();
+  --this->bracketLevel;
+}
+
 /* * * * * RAII_TokenQueue_t struct  * * * * */
 
 // Used to make sure an rpn is dealloc'd correctly
@@ -315,9 +340,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           data.handle_op("()");
           // Add it as a bracket to the op stack:
         }
-        data.opStack.push("(");
-        data.lastTokenWasOp = '(';
-        ++data.bracketLevel;
+        data.open_bracket("(");
         ++expr;
         break;
       case '[':
@@ -334,9 +357,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           data.handle_op("()");
         }
         // Add it as a bracket to the op stack:
-        data.opStack.push("[");
-        data.lastTokenWasOp = '[';
-        ++data.bracketLevel;
+        data.open_bracket("[");
         ++expr;
         break;
       case '{':
@@ -346,65 +367,19 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
         // We make the program see it as a normal function call:
         data.handle_op("()");
-        data.opStack.push("{");
-        data.lastTokenWasOp = '{';
-        ++data.bracketLevel;
+        data.open_bracket("{");
         ++expr;
         break;
       case ')':
-        if (data.lastTokenWasOp == '(') {
-          data.rpn.push(new Tuple());
-          data.lastTokenWasOp = false;
-        }
-        while (data.opStack.size() && data.opStack.top().compare("(")) {
-          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
-          data.opStack.pop();
-        }
-
-        if (data.opStack.size() == 0) {
-          rpnBuilder::cleanRPN(&data.rpn);
-          throw syntax_error("Extra ')' on the expression!");
-        }
-
-        data.opStack.pop();
-        --data.bracketLevel;
+        data.close_bracket("(");
         ++expr;
         break;
       case ']':
-        if (data.lastTokenWasOp == '[') {
-          data.rpn.push(new Tuple());
-          data.lastTokenWasOp = false;
-        }
-        while (data.opStack.size() && data.opStack.top().compare("[")) {
-          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
-          data.opStack.pop();
-        }
-
-        if (data.opStack.size() == 0) {
-          rpnBuilder::cleanRPN(&data.rpn);
-          throw syntax_error("Extra ']' on the expression!");
-        }
-
-        data.opStack.pop();
-        --data.bracketLevel;
+        data.close_bracket("[");
         ++expr;
         break;
       case '}':
-        if (data.lastTokenWasOp == '{') {
-          data.rpn.push(new Tuple());
-          data.lastTokenWasOp = false;
-        }
-        while (data.opStack.size() && data.opStack.top().compare("{")) {
-          data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
-          data.opStack.pop();
-        }
-
-        if (data.opStack.size() == 0) {
-          throw syntax_error("Extra '}' on the expression!");
-        }
-
-        data.opStack.pop();
-        --data.bracketLevel;
+        data.close_bracket("{");
         ++expr;
         break;
       default:
