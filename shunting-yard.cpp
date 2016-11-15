@@ -28,7 +28,7 @@ const opID_t Operation::build_mask(tokType_t left, tokType_t right) {
   return (result << 32) | mask(right);
 }
 
-/* * * * * Operation Utilities: * * * * */
+/* * * * * Utility functions: * * * * */
 
 bool match_op_id(opID_t id, opID_t mask) {
   uint64_t result = id & mask;
@@ -48,77 +48,6 @@ bool match_op_id(opID_t id, opID_t mask) {
       }\
     }\
   }\
-
-/* * * * * Static containers: * * * * */
-
-// Builds the opPrecedence map only once:
-OppMap_t& calculator::default_opPrecedence() {
-  static OppMap_t opp;
-  return opp;
-}
-
-typeMap_t& calculator::type_attribute_map() {
-  static typeMap_t type_map;
-  return type_map;
-}
-
-opMap_t& calculator::default_opMap() {
-  static opMap_t opMap;
-  return opMap;
-}
-
-rWordMap_t& calculator::default_rWordMap() {
-  static rWordMap_t rwMap;
-  return rwMap;
-}
-
-/* * * * * Calculator Class: * * * * */
-
-// Check for unary operators and "convert" them to binary:
-void calculator::handle_unary(const std::string& op, rpnBuilder* data) {
-  if (data->lastTokenWasOp) {
-    // Convert unary operators to binary in the RPN.
-    if (!op.compare("-") || !op.compare("+")) {
-      data->rpn.push(new Token<int64_t>(0, INT));
-      data->lastTokenWasUnary = true;
-    } else {
-      cleanRPN(&(data->rpn));
-      throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
-    }
-  } else {
-    data->lastTokenWasUnary = false;
-  }
-}
-
-// Consume operators with precedence >= than op then add op
-void calculator::handle_op(const std::string& op, rpnBuilder* data) {
-  // "Convert" unary operators into binary, so they can
-  // be treated as if they were the same:
-  handle_unary(op, data);
-
-  // Check if operator exists:
-  if (data->opp.find(op) == data->opp.end()) {
-    cleanRPN(&(data->rpn));
-    throw std::domain_error("Undefined operator: `" + op + "`!");
-  }
-
-  float cur_opp = data->opp.at(op);
-  // To force "=" to be evaluated from the right to the left:
-  if (op == "=") cur_opp -= 0.1;
-
-  // Let p(o) denote the precedence of an operator o.
-  //
-  // If the token is an operator, o1, then
-  //   While there is an operator token, o2, at the top
-  //       and p(o1) <= p(o2), then
-  //     pop o2 off the stack onto the output queue.
-  //   Push o1 on the stack.
-  while (!data->opStack.empty() && cur_opp >= data->opp.at(data->opStack.top())) {
-    data->rpn.push(new Token<std::string>(data->opStack.top(), OP));
-    data->opStack.pop();
-  }
-  data->opStack.push(op);
-}
 
 // Use this function to discard a reference to an object
 // And obtain the original TokenBase*.
@@ -150,6 +79,84 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
   }
 }
 
+/* * * * * Static containers: * * * * */
+
+// Builds the opPrecedence map only once:
+OppMap_t& calculator::default_opPrecedence() {
+  static OppMap_t opp;
+  return opp;
+}
+
+typeMap_t& calculator::type_attribute_map() {
+  static typeMap_t type_map;
+  return type_map;
+}
+
+opMap_t& calculator::default_opMap() {
+  static opMap_t opMap;
+  return opMap;
+}
+
+rWordMap_t& calculator::default_rWordMap() {
+  static rWordMap_t rwMap;
+  return rwMap;
+}
+
+/* * * * * rpnBuilder Class: * * * * */
+
+void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
+  while (rpn->size()) {
+    delete resolve_reference(rpn->front());
+    rpn->pop();
+  }
+}
+
+// Check for unary operators and "convert" them to binary:
+void rpnBuilder::handle_unary(const std::string& op) {
+  if (this->lastTokenWasOp) {
+    // Convert unary operators to binary in the RPN.
+    if (!op.compare("-") || !op.compare("+")) {
+      this->rpn.push(new Token<int64_t>(0, INT));
+      this->lastTokenWasUnary = true;
+    } else {
+      cleanRPN(&(this->rpn));
+      throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
+    }
+  } else {
+    this->lastTokenWasUnary = false;
+  }
+}
+
+// Consume operators with precedence >= than op then add op
+void rpnBuilder::handle_op(const std::string& op) {
+  // "Convert" unary operators into binary, so they can
+  // be treated as if they were the same:
+  handle_unary(op);
+
+  // Check if operator exists:
+  if (this->opp.find(op) == this->opp.end()) {
+    cleanRPN(&(this->rpn));
+    throw std::domain_error("Undefined operator: `" + op + "`!");
+  }
+
+  float cur_opp = this->opp.at(op);
+  // To force "=" to be evaluated from the right to the left:
+  if (op == "=") cur_opp -= 0.1;
+
+  // Let p(o) denote the precedence of an operator o.
+  //
+  // If the token is an operator, o1, then
+  //   While there is an operator token, o2, at the top
+  //       and p(o1) <= p(o2), then
+  //     pop o2 off the stack onto the output queue.
+  //   Push o1 on the stack.
+  while (!this->opStack.empty() && cur_opp >= this->opp.at(this->opStack.top())) {
+    this->rpn.push(new Token<std::string>(this->opStack.top(), OP));
+    this->opStack.pop();
+  }
+  this->opStack.push(op);
+}
+
 /* * * * * RAII_TokenQueue_t struct  * * * * */
 
 // Used to make sure an rpn is dealloc'd correctly
@@ -160,7 +167,7 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
 struct calculator::RAII_TokenQueue_t : TokenQueue_t {
   RAII_TokenQueue_t() {}
   RAII_TokenQueue_t(const TokenQueue_t& rpn) : TokenQueue_t(rpn) {}
-  ~RAII_TokenQueue_t() { cleanRPN(this); }
+  ~RAII_TokenQueue_t() { rpnBuilder::cleanRPN(this); }
 
   RAII_TokenQueue_t(const RAII_TokenQueue_t& rpn) {
     throw std::runtime_error("You should not copy this class!");
@@ -228,7 +235,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         try {
           it->second(expr, &expr, &data);
         } catch (...) {
-          cleanRPN(&data.rpn);
+          rpnBuilder::cleanRPN(&data.rpn);
           throw;
         }
       } else {
@@ -277,7 +284,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if (*expr != quote) {
         std::string squote = (quote == '"' ? "\"": "'");
-        cleanRPN(&data.rpn);
+        rpnBuilder::cleanRPN(&data.rpn);
         throw syntax_error("Expected quote (" + squote +
                            ") at end of string declaration: " + squote + ss.str() + ".");
       }
@@ -293,7 +300,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       if (data.lastTokenWasUnary) {
         std::string op;
         op.push_back(*expr);
-        cleanRPN(&data.rpn);
+        rpnBuilder::cleanRPN(&data.rpn);
         throw syntax_error("Expected operand after unary operator `" + data.opStack.top() +
                            "` but found: `" + op + "` instead.");
       }
@@ -305,7 +312,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
         if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
           // This counts as a bracket and as an operator:
-          handle_op("()", &data);
+          data.handle_op("()");
           // Add it as a bracket to the op stack:
         }
         data.opStack.push("(");
@@ -316,7 +323,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       case '[':
         if (data.lastTokenWasOp == false) {
           // If it is an operator:
-          handle_op("[]", &data);
+          data.handle_op("[]");
         } else {
           // If it is the list constructor:
           // Add the list constructor to the rpn:
@@ -324,7 +331,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           data.lastTokenWasOp = false;
 
           // We make the program see it as a normal function call:
-          calculator::handle_op("()", &data);
+          data.handle_op("()");
         }
         // Add it as a bracket to the op stack:
         data.opStack.push("[");
@@ -338,7 +345,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         data.lastTokenWasOp = false;
 
         // We make the program see it as a normal function call:
-        calculator::handle_op("()", &data);
+        data.handle_op("()");
         data.opStack.push("{");
         data.lastTokenWasOp = '{';
         ++data.bracketLevel;
@@ -355,7 +362,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
 
         if (data.opStack.size() == 0) {
-          cleanRPN(&data.rpn);
+          rpnBuilder::cleanRPN(&data.rpn);
           throw syntax_error("Extra ')' on the expression!");
         }
 
@@ -374,7 +381,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         }
 
         if (data.opStack.size() == 0) {
-          cleanRPN(&data.rpn);
+          rpnBuilder::cleanRPN(&data.rpn);
           throw syntax_error("Extra ']' on the expression!");
         }
 
@@ -418,11 +425,11 @@ TokenQueue_t calculator::toRPN(const char* expr,
             try {
               it->second(expr, &expr, &data);
             } catch (...) {
-              cleanRPN(&data.rpn);
+              rpnBuilder::cleanRPN(&data.rpn);
               throw;
             }
           } else {
-            handle_op(op, &data);
+            data.handle_op(op);
 
             data.lastTokenWasOp = op[0];
           }
@@ -436,7 +443,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
   if (data.lastTokenWasUnary) {
-    cleanRPN(&data.rpn);
+    rpnBuilder::cleanRPN(&data.rpn);
     throw syntax_error("Expected operand after unary operator `" + data.opStack.top() + "`");
   }
 
@@ -655,17 +662,10 @@ TokenBase* calculator::calculate(TokenQueue_t _rpn, TokenMap vars,
   return evaluation.top();
 }
 
-void calculator::cleanRPN(TokenQueue_t* rpn) {
-  while (rpn->size()) {
-    delete resolve_reference(rpn->front());
-    rpn->pop();
-  }
-}
-
 /* * * * * Non Static Functions * * * * */
 
 calculator::~calculator() {
-  cleanRPN(&this->RPN);
+  rpnBuilder::cleanRPN(&this->RPN);
 }
 
 calculator::calculator(const calculator& calc) {
@@ -692,7 +692,7 @@ calculator::calculator(const char* expr, TokenMap vars, const char* delim,
 void calculator::compile(const char* expr, TokenMap vars, const char* delim,
                          const char** rest) {
   // Make sure it is empty:
-  cleanRPN(&this->RPN);
+  rpnBuilder::cleanRPN(&this->RPN);
 
   this->RPN = calculator::toRPN(expr, vars, delim, rest,
                                 opPrecedence(), rWordMap());
@@ -710,7 +710,7 @@ packToken calculator::eval(TokenMap vars, bool keep_refs) const {
 
 calculator& calculator::operator=(const calculator& calc) {
   // Make sure the RPN is empty:
-  cleanRPN(&this->RPN);
+  rpnBuilder::cleanRPN(&this->RPN);
 
   // Deep copy the token list, so everything can be
   // safely deallocated:

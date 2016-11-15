@@ -104,6 +104,15 @@ struct rpnBuilder {
   uint32_t bracketLevel = 0;
 
   rpnBuilder(TokenMap scope, const OppMap_t& opp) : scope(scope), opp(opp) {}
+
+ public:
+  static void cleanRPN(TokenQueue_t* rpn);
+
+ public:
+  void handle_op(const std::string& op);
+
+ private:
+  void handle_unary(const std::string& op);
 };
 
 // The reservedWordParser_t is the function type called when
@@ -186,17 +195,12 @@ class calculator {
  private:
   static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars,
                               opMap_t opMap = default_opMap());
-  static void cleanRPN(TokenQueue_t* rpn);
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = default_opPrecedence(),
                             rWordMap_t rWordMap = default_rWordMap());
 
-  static void handle_unary(const std::string& op, rpnBuilder* data);
-
  public:
-  static void handle_op(const std::string& op, rpnBuilder* data);
-
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
 
