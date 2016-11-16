@@ -474,32 +474,6 @@ packToken default_type(TokenMap scope) {
   }
 }
 
-packToken default_extend(TokenMap scope) {
-  packToken tok = scope["value"];
-
-  if (tok->type == MAP) {
-    return tok.asMap().getChild();
-  } else {
-    throw std::runtime_error(tok.str() + " is not extensible!");
-  }
-}
-
-packToken default_instanceof(TokenMap scope) {
-  TokenMap _super = scope["value"].asMap();
-  TokenMap* _this = scope["this"].asMap().parent();
-
-  TokenMap* parent = _this;
-  while (parent) {
-    if ((*parent) == _super) {
-      return true;
-    }
-
-    parent = parent->parent();
-  }
-
-  return false;
-}
-
 const args_t num_arg = {"number"};
 packToken default_sqrt(TokenMap scope) {
   // Get a single argument:
@@ -592,6 +566,34 @@ packToken default_list(TokenMap scope) {
 
 packToken default_map(TokenMap scope) {
   return scope["kwargs"];
+}
+
+/* * * * * Object inheritance tools: * * * * */
+
+packToken default_extend(TokenMap scope) {
+  packToken tok = scope["value"];
+
+  if (tok->type == MAP) {
+    return tok.asMap().getChild();
+  } else {
+    throw std::runtime_error(tok.str() + " is not extensible!");
+  }
+}
+
+packToken default_instanceof(TokenMap scope) {
+  TokenMap _super = scope["value"].asMap();
+  TokenMap* _this = scope["this"].asMap().parent();
+
+  TokenMap* parent = _this;
+  while (parent) {
+    if ((*parent) == _super) {
+      return true;
+    }
+
+    parent = parent->parent();
+  }
+
+  return false;
 }
 
 }  // namespace builtin_functions
