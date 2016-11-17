@@ -194,7 +194,7 @@ class calculator {
   static packToken calculate(const char* expr, TokenMap vars = &TokenMap::empty,
                              const char* delim = 0, const char** rest = 0);
 
- private:
+ public:
   static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars,
                               opMap_t opMap = default_opMap());
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
