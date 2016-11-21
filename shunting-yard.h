@@ -117,6 +117,19 @@ struct rpnBuilder {
   void handle_unary(const std::string& op);
 };
 
+class opMap_t;
+struct evaluationData {
+  TokenQueue_t rpn;
+  TokenMap scope;
+  const opMap_t& opMap;
+
+  std::string op;
+  opID_t opID;
+
+  evaluationData(TokenQueue_t rpn, TokenMap scope, const opMap_t& opMap)
+                : rpn(rpn), scope(scope), opMap(opMap) {}
+};
+
 // The reservedWordParser_t is the function type called when
 // a reserved word is found at parsing time.
 typedef void rWordParser_t(const char* expr, const char** rest,
@@ -166,9 +179,9 @@ class Operation {
            : _mask(build_mask(sig.left, sig.right)), _exec(func) {}
 
  public:
-  const opID_t getMask() { return _mask; }
+  const opID_t getMask() const { return _mask; }
   packToken exec(const packToken& left, const std::string& op,
-                 const packToken& right) {
+                 const packToken& right) const {
     return _exec(left, op, right);
   }
 };
@@ -195,8 +208,8 @@ class calculator {
                              const char* delim = 0, const char** rest = 0);
 
  public:
-  static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars,
-                              opMap_t opMap = default_opMap());
+  static TokenBase* calculate(const TokenQueue_t& RPN, TokenMap scope,
+                              const opMap_t& opMap = default_opMap());
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = default_opPrecedence(),
