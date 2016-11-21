@@ -596,14 +596,14 @@ struct myCalc : public calculator {
   using calculator::calculator;
 };
 
-packToken op1(const packToken& left, const std::string& op,
-              const packToken& right) {
-  return calculator::default_opMap()["%"][0].exec(left, op, right);
+packToken op1(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return calculator::default_opMap()["%"][0].exec(left, right, data);
 }
 
-packToken op2(const packToken& left, const std::string& op,
-              const packToken& right) {
-  return calculator::default_opMap()[","][0].exec(left, op, right);
+packToken op2(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return calculator::default_opMap()[","][0].exec(left, right, data);
 }
 
 struct myCalcStartup {

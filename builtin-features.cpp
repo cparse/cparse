@@ -13,7 +13,7 @@
 
 namespace builtin_operations {
 
-packToken Comma(const packToken& left, const std::string& op, const packToken& right) {
+packToken Comma(const packToken& left, const packToken& right, evaluationData* data) {
   if (left->type == TUPLE) {
     left.asTuple().list().push_back(right);
     return left;
@@ -22,7 +22,7 @@ packToken Comma(const packToken& left, const std::string& op, const packToken& r
   }
 }
 
-packToken Colon(const packToken& left, const std::string& op, const packToken& right) {
+packToken Colon(const packToken& left, const packToken& right, evaluationData* data) {
   if (left->type == STUPLE) {
     left.asSTuple().list().push_back(right);
     return left;
@@ -31,27 +31,28 @@ packToken Colon(const packToken& left, const std::string& op, const packToken& r
   }
 }
 
-packToken Equal(const packToken& left, const std::string& op, const packToken& right) {
+packToken Equal(const packToken& left, const packToken& right, evaluationData* data) {
   if (left->type == VAR || right->type == VAR) {
-    throw undefined_operation(op, left, right);
+    throw undefined_operation(data->op, left, right);
   }
 
   return left == right;
 }
 
-packToken Different(const packToken& left, const std::string& op, const packToken& right) {
+packToken Different(const packToken& left, const packToken& right, evaluationData* data) {
   if (left->type == VAR || right->type == VAR) {
-    throw undefined_operation(op, left, right);
+    throw undefined_operation(data->op, left, right);
   }
 
   return left != right;
 }
 
-packToken MapIndex(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken MapIndex(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   TokenMap& left = p_left.asMap();
   std::string& right = p_right.asString();
+  const std::string& op = data->op;
 
-  if (!op.compare("[]") || !op.compare(".")) {
+  if (op == "[]" || op == ".") {
     packToken* p_value = left.find(right);
 
     if (p_value) {
@@ -65,7 +66,7 @@ packToken MapIndex(const packToken& p_left, const std::string& op, const packTok
 }
 
 // Resolve build-in operations for non-map types, e.g.: 'str'.len()
-packToken TypeSpecificFunction(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken TypeSpecificFunction(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   if (p_left->type == MAP) throw Operation::Reject();
 
   TokenMap& attr_map = calculator::type_attribute_map()[p_left->type];
@@ -78,11 +79,11 @@ packToken TypeSpecificFunction(const packToken& p_left, const std::string& op, c
     // Or just read some information for example: its length.
     return RefToken(key, (*attr), p_left);
   } else {
-    throw undefined_operation(op, p_left, p_right);
+    throw undefined_operation(data->op, p_left, p_right);
   }
 }
 
-packToken NumeralOperation(const packToken& left, const std::string& op, const packToken& right) {
+packToken NumeralOperation(const packToken& left, const packToken& right, evaluationData* data) {
   double left_d, right_d;
   int64_t left_i, right_i;
 
@@ -93,40 +94,42 @@ packToken NumeralOperation(const packToken& left, const std::string& op, const p
   right_d = right.asDouble();
   right_i = right.asInt();
 
-  if (!op.compare("+")) {
+  const std::string& op = data->op;
+
+  if (op == "+") {
     return left_d + right_d;
-  } else if (!op.compare("*")) {
+  } else if (op == "*") {
     return left_d * right_d;
-  } else if (!op.compare("-")) {
+  } else if (op == "-") {
     return left_d - right_d;
-  } else if (!op.compare("/")) {
+  } else if (op == "/") {
     return left_d / right_d;
-  } else if (!op.compare("<<")) {
+  } else if (op == "<<") {
     return left_i << right_i;
-  } else if (!op.compare("**")) {
+  } else if (op == "**") {
     return pow(left_d, right_d);
-  } else if (!op.compare(">>")) {
+  } else if (op == ">>") {
     return left_i >> right_i;
-  } else if (!op.compare("%")) {
+  } else if (op == "%") {
     return left_i % right_i;
-  } else if (!op.compare("<")) {
+  } else if (op == "<") {
     return left_d < right_d;
-  } else if (!op.compare(">")) {
+  } else if (op == ">") {
     return left_d > right_d;
-  } else if (!op.compare("<=")) {
+  } else if (op == "<=") {
     return left_d <= right_d;
-  } else if (!op.compare(">=")) {
+  } else if (op == ">=") {
     return left_d >= right_d;
-  } else if (!op.compare("&&")) {
+  } else if (op == "&&") {
     return left_i && right_i;
-  } else if (!op.compare("||")) {
+  } else if (op == "||") {
     return left_i || right_i;
   } else {
     throw undefined_operation(op, left, right);
   }
 }
 
-packToken FormatOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken FormatOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   std::string& s_left = p_left.asString();
   const char* left = s_left.c_str();
 
@@ -177,29 +180,31 @@ packToken FormatOperation(const packToken& p_left, const std::string& op, const 
   }
 }
 
-packToken StringOnStringOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
-  std::string& left = p_left.asString();
-  std::string& right = p_right.asString();
+packToken StringOnStringOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
+  const std::string& left = p_left.asString();
+  const std::string& right = p_right.asString();
+  const std::string& op = data->op;
 
-  if (!op.compare("+")) {
+  if (op == "+") {
     return left + right;
-  } else if (!op.compare("==")) {
-    return (left.compare(right) == 0);
-  } else if (!op.compare("!=")) {
-    return (left.compare(right) != 0);
+  } else if (op == "==") {
+    return (left == right);
+  } else if (op == "!=") {
+    return (left != right);
   } else {
     throw undefined_operation(op, p_left, p_right);
   }
 }
 
-packToken StringOnNumberOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
-  std::string& left = p_left.asString();
+packToken StringOnNumberOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
+  const std::string& left = p_left.asString();
+  const std::string& op = data->op;
 
   std::stringstream ss;
-  if (!op.compare("+")) {
+  if (op == "+") {
     ss << left << p_right.asDouble();
     return ss.str();
-  } else if (!op.compare("[]")) {
+  } else if (op == "[]") {
     int64_t index = p_right.asInt();
 
     if (index < 0) {
@@ -217,23 +222,23 @@ packToken StringOnNumberOperation(const packToken& p_left, const std::string& op
   }
 }
 
-packToken NumberOnStringOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken NumberOnStringOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   double left = p_left.asDouble();
-  std::string& right = p_right.asString();
+  const std::string& right = p_right.asString();
 
   std::stringstream ss;
-  if (!op.compare("+")) {
+  if (data->op == "+") {
     ss << left << right;
     return ss.str();
   } else {
-    throw undefined_operation(op, p_left, p_right);
+    throw undefined_operation(data->op, p_left, p_right);
   }
 }
 
-packToken ListOnNumberOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken ListOnNumberOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   TokenList left = p_left.asList();
 
-  if (!op.compare("[]")) {
+  if (data->op == "[]") {
     int64_t index = p_right.asInt();
 
     if (index < 0) {
@@ -249,15 +254,15 @@ packToken ListOnNumberOperation(const packToken& p_left, const std::string& op, 
 
     return RefToken(index, value, p_left);
   } else {
-    throw undefined_operation(op, p_left, p_right);
+    throw undefined_operation(data->op, p_left, p_right);
   }
 }
 
-packToken ListOnListOperation(const packToken& p_left, const std::string& op, const packToken& p_right) {
+packToken ListOnListOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
   TokenList& left = p_left.asList();
   TokenList& right = p_right.asList();
 
-  if (!op.compare("+")) {
+  if (data->op == "+") {
     // Deep copy the first list:
     TokenList result;
     result.list() = left.list();
@@ -269,7 +274,7 @@ packToken ListOnListOperation(const packToken& p_left, const std::string& op, co
 
     return result;
   } else {
-    throw undefined_operation(op, left, right);
+    throw undefined_operation(data->op, left, right);
   }
 }
 

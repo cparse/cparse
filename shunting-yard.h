@@ -158,8 +158,8 @@ struct opSignature_t {
 
 class Operation {
  public:
-  typedef packToken (*opFunc_t)(const packToken&, const std::string&,
-                                const packToken&);
+  typedef packToken (*opFunc_t)(const packToken& left, const packToken& right,
+                                evaluationData* data);
 
  public:
   // Use this exception to reject an operation.
@@ -180,9 +180,9 @@ class Operation {
 
  public:
   const opID_t getMask() const { return _mask; }
-  packToken exec(const packToken& left, const std::string& op,
-                 const packToken& right) const {
-    return _exec(left, op, right);
+  packToken exec(const packToken& left, const packToken& right,
+                 evaluationData* data) const {
+    return _exec(left, right, data);
   }
 };
 
