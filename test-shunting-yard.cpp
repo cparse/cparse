@@ -213,6 +213,17 @@ TEST_CASE("List usage expressions", "[list]") {
   REQUIRE_THROWS(calculator::calculate("concat[-10]", vars));
   REQUIRE_THROWS(vars["concat"].asList()[10]);
   REQUIRE_THROWS(vars["concat"].asList()[-10]);
+
+  // Testing push and pop functions:
+  TokenList L;
+  REQUIRE_NOTHROW(L.push("my value"));
+  REQUIRE_NOTHROW(L.push(10));
+  REQUIRE_NOTHROW(L.push(TokenMap()));
+  REQUIRE_NOTHROW(L.push(TokenList()));
+
+  REQUIRE(packToken(L).str() == "[ \"my value\", 10, {}, [] ]");
+  REQUIRE(L.pop().str() == "[]");
+  REQUIRE(packToken(L).str() == "[ \"my value\", 10, {} ]");
 }
 
 TEST_CASE("Tuple usage expressions", "[tuple]") {

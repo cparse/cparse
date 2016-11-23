@@ -144,11 +144,18 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   TokenList() { this->type = LIST; }
   virtual ~TokenList() {}
 
-  packToken& operator[](const uint64_t idx) {
+  packToken& operator[](const uint64_t idx) const {
     if (list().size() <= idx || idx < 0) {
       throw std::out_of_range("List index out of range!");
     }
     return list()[idx];
+  }
+
+  void push(packToken val) const { list().push_back(val); }
+  packToken pop() const {
+    packToken back = list().back();
+    list().pop_back();
+    return back;
   }
 
  public:
