@@ -144,7 +144,12 @@ class TokenList : public pack<TokenList_t>, public Iterable {
   TokenList() { this->type = LIST; }
   virtual ~TokenList() {}
 
-  packToken& operator[](const uint64_t idx) { return list()[idx]; }
+  packToken& operator[](const uint64_t idx) {
+    if (list().size() <= idx || idx < 0) {
+      throw std::out_of_range("List index out of range!");
+    }
+    return list()[idx];
+  }
 
  public:
   // Implement the TokenBase abstract class

@@ -211,6 +211,8 @@ TEST_CASE("List usage expressions", "[list]") {
   // List index out of range:
   REQUIRE_THROWS(calculator::calculate("concat[10]", vars));
   REQUIRE_THROWS(calculator::calculate("concat[-10]", vars));
+  REQUIRE_THROWS(vars["concat"].asList()[10]);
+  REQUIRE_THROWS(vars["concat"].asList()[-10]);
 }
 
 TEST_CASE("Tuple usage expressions", "[tuple]") {
