@@ -255,6 +255,23 @@ TEST_CASE("List and map constructors usage") {
   REQUIRE(vars["my_list"].str() == "[ \"a\", \"b\" ]");
 }
 
+TEST_CASE("Map '{}' and list '[]' constructor usage") {
+  calculator c1;
+  TokenMap vars;
+
+  REQUIRE_NOTHROW(c1.compile("{ 'a': 1 }.a"));
+  REQUIRE(c1.eval().asInt() == 1);
+
+  REQUIRE_NOTHROW(c1.compile("M = {'a': 1}"));
+  REQUIRE(c1.eval().str() == "{ \"a\": 1 }");
+
+  REQUIRE_NOTHROW(c1.compile("[ 1, 2 ].len()"));
+  REQUIRE(c1.eval().asInt() == 2);
+
+  REQUIRE_NOTHROW(c1.compile("L = [1,2]"));
+  REQUIRE(c1.eval().str() == "[ 1, 2 ]");
+}
+
 TEST_CASE("Test list iterable behavior") {
   GlobalScope vars;
   REQUIRE_NOTHROW(calculator::calculate("L = list(1,2,3)", vars));
@@ -579,14 +596,14 @@ struct myCalc : public calculator {
   using calculator::calculator;
 };
 
-packToken op1(const packToken& left, const std::string& op,
-              const packToken& right) {
-  return calculator::default_opMap()["%"][0].exec(left, op, right);
+packToken op1(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return calculator::default_opMap()["%"][0].exec(left, right, data);
 }
 
-packToken op2(const packToken& left, const std::string& op,
-              const packToken& right) {
-  return calculator::default_opMap()[","][0].exec(left, op, right);
+packToken op2(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return calculator::default_opMap()[","][0].exec(left, right, data);
 }
 
 struct myCalcStartup {

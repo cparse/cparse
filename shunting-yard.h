@@ -70,7 +70,7 @@ struct OppMap_t : public std::map<std::string, int> {
     // These operations are hard-coded inside the calculator,
     // thus their precedence should always be defined:
     (*this)["[]"] = -1; (*this)["()"] = -1;
-    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF;
+    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF; (*this)["{"] = 0x7FFFFFFF;
   }
 };
 
@@ -96,13 +96,38 @@ struct rpnBuilder {
   uint8_t lastTokenWasOp = true;
   bool lastTokenWasUnary = false;
   TokenMap scope;
+  const OppMap_t& opp;
 
   // Used to make sure the expression won't
   // end inside a bracket evaluation just because
   // found a delimiter like '\n' or ')'
   uint32_t bracketLevel = 0;
 
-  rpnBuilder(TokenMap scope) : scope(scope) {}
+  rpnBuilder(TokenMap scope, const OppMap_t& opp) : scope(scope), opp(opp) {}
+
+ public:
+  static void cleanRPN(TokenQueue_t* rpn);
+
+ public:
+  void handle_op(const std::string& op);
+  void open_bracket(const std::string& bracket);
+  void close_bracket(const std::string& bracket);
+
+ private:
+  void handle_unary(const std::string& op);
+};
+
+class opMap_t;
+struct evaluationData {
+  TokenQueue_t rpn;
+  TokenMap scope;
+  const opMap_t& opMap;
+
+  std::string op;
+  opID_t opID;
+
+  evaluationData(TokenQueue_t rpn, TokenMap scope, const opMap_t& opMap)
+                : rpn(rpn), scope(scope), opMap(opMap) {}
 };
 
 // The reservedWordParser_t is the function type called when
@@ -133,8 +158,8 @@ struct opSignature_t {
 
 class Operation {
  public:
-  typedef packToken (*opFunc_t)(const packToken&, const std::string&,
-                                const packToken&);
+  typedef packToken (*opFunc_t)(const packToken& left, const packToken& right,
+                                evaluationData* data);
 
  public:
   // Use this exception to reject an operation.
@@ -154,10 +179,10 @@ class Operation {
            : _mask(build_mask(sig.left, sig.right)), _exec(func) {}
 
  public:
-  const opID_t getMask() { return _mask; }
-  packToken exec(const packToken& left, const std::string& op,
-                 const packToken& right) {
-    return _exec(left, op, right);
+  const opID_t getMask() const { return _mask; }
+  packToken exec(const packToken& left, const packToken& right,
+                 evaluationData* data) const {
+    return _exec(left, right, data);
   }
 };
 
@@ -182,22 +207,15 @@ class calculator {
   static packToken calculate(const char* expr, TokenMap vars = &TokenMap::empty,
                              const char* delim = 0, const char** rest = 0);
 
- private:
-  static TokenBase* calculate(TokenQueue_t RPN, TokenMap vars,
-                              opMap_t opMap = default_opMap());
-  static void cleanRPN(TokenQueue_t* rpn);
+ public:
+  static TokenBase* calculate(const TokenQueue_t& RPN, TokenMap scope,
+                              const opMap_t& opMap = default_opMap());
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
                             OppMap_t opPrecedence = default_opPrecedence(),
                             rWordMap_t rWordMap = default_rWordMap());
 
-  static bool handle_unary(const std::string& op,
-                           TokenQueue_t* rpnQueue, bool lastTokenWasOp);
-  static void handle_op(const std::string& op,
-                        TokenQueue_t* rpnQueue,
-                        std::stack<std::string>* operatorStack,
-                        OppMap_t opPrecedence);
-
+ public:
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
 
