@@ -246,6 +246,10 @@ TEST_CASE("Tuple usage expressions", "[tuple]") {
   REQUIRE(t2->list().size() == 2);
   delete t1;
   delete t2;
+
+  GlobalScope global;
+  REQUIRE_NOTHROW(c.compile("pow, None"));
+  REQUIRE(c.eval(global).str() == "([Function: pow], None)");
 }
 
 TEST_CASE("List and map constructors usage") {

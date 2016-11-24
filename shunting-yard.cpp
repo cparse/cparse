@@ -544,7 +544,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
           cleanStack(evaluation);
           throw undefined_operation(data.op, r_left, p_right);
         }
-      } else if (b_left->type == FUNC) {
+      } else if (b_left->type == FUNC && data.op == "()") {
         Function* f_left = static_cast<Function*>(b_left);
 
         if (!data.op.compare("()")) {
