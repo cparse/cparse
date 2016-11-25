@@ -139,27 +139,32 @@ void rpnBuilder::handle_op(const std::string& op) {
   handle_unary(op);
 
   // Check if operator exists:
-  if (this->opp.find(op) == this->opp.end()) {
-    cleanRPN(&(this->rpn));
+  if (!opp.exists(op)) {
+    cleanRPN(&(rpn));
     throw std::domain_error("Undefined operator: `" + op + "`!");
   }
-
-  float cur_opp = this->opp.at(op);
-  // To force "=" to be evaluated from the right to the left:
-  if (op == "=") cur_opp -= 0.1;
 
   // Let p(o) denote the precedence of an operator o.
   //
   // If the token is an operator, o1, then
   //   While there is an operator token, o2, at the top
-  //       and p(o1) <= p(o2), then
+  //       and p(o1) >= p(o2), then (`>` for Right to Left associativity)
   //     pop o2 off the stack onto the output queue.
   //   Push o1 on the stack.
-  while (!this->opStack.empty() && cur_opp >= this->opp.at(this->opStack.top())) {
-    this->rpn.push(new Token<std::string>(this->opStack.top(), OP));
-    this->opStack.pop();
+
+  // If it is associates left to right:
+  if (opp.assoc(op) == 0) {
+    while (!opStack.empty() && opp.prec(op) >= opp.prec(opStack.top())) {
+      rpn.push(new Token<std::string>(opStack.top(), OP));
+      opStack.pop();
+    }
+  } else {
+    while (!opStack.empty() && opp.prec(op) > opp.prec(opStack.top())) {
+      rpn.push(new Token<std::string>(opStack.top(), OP));
+      opStack.pop();
+    }
   }
-  this->opStack.push(op);
+  opStack.push(op);
 }
 
 void rpnBuilder::open_bracket(const std::string& bracket) {

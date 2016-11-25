@@ -623,15 +623,30 @@ packToken op2(const packToken& left, const packToken& right,
   return calculator::default_opMap()[","][0].exec(left, right, data);
 }
 
+packToken op3(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return left.asDouble() - right.asDouble();
+}
+
+packToken op4(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return left.asDouble() * right.asDouble();
+}
+
 struct myCalcStartup {
   myCalcStartup() {
     OppMap_t& opp = myCalc::my_OppMap();
-    opp["."] = 1;
-    opp["+"] = 2;
+    opp.add(".", 1);
+    opp.add("+", 2); opp.add("*", 2);
+
+    // This operator will evaluate from right to left:
+    opp.add("-", -3);
 
     opMap_t& opMap = myCalc::my_opMap();
     opMap.add({STR, "+", TUPLE}, &op1);
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
+    opMap.add({NUM, "-", NUM}, &op3);
+    opMap.add({NUM, "*", NUM}, &op4);
   }
 } myCalcStartup;
 
@@ -650,6 +665,20 @@ TEST_CASE("Adhoc operations", "[operation]") {
   exp = "'Lets create %s operators%s' + 'adhoc' . '!'";
   REQUIRE_NOTHROW(c1.compile(exp));
   REQUIRE(c1.eval() == "Lets create adhoc operators!");
+
+  exp = "2 - 1 * 1";  // 2 - (1 * 1)
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 1);
+
+  // Testing op associativity:
+  exp = "2 - 1";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 1);
+
+  // Associativity right to left, i.e. 2 - (1 - 1)
+  exp = "2 - 1 - 1";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 2);
 }
 
 TEST_CASE("Resource management") {
