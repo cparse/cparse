@@ -332,8 +332,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
       data.handle_token(new Token<std::string>(ss.str(), STR));
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      tokType_t lastType;
-      char lastOp;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (data.lastTokenWasUnary) {
@@ -347,9 +345,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = data.rpn.size() ? data.rpn.back()->type : NONE;
-        lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
-        if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
+        if (data.lastTokenWasOp == false) {
           // This counts as a bracket and as an operator:
           data.handle_op("()");
           // Add it as a bracket to the op stack:
