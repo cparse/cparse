@@ -152,7 +152,7 @@ void rpnBuilder::handle_op(const std::string& op) {
   //     pop o2 off the stack onto the output queue.
   //   Push o1 on the stack.
 
-  // If it is associates left to right:
+  // If it associates from left to right:
   if (opp.assoc(op) == 0) {
     while (!opStack.empty() && opp.prec(op) >= opp.prec(opStack.top())) {
       rpn.push(new Token<std::string>(opStack.top(), OP));
@@ -165,6 +165,8 @@ void rpnBuilder::handle_op(const std::string& op) {
     }
   }
   opStack.push(op);
+
+  lastTokenWasOp = op[0];
 }
 
 void rpnBuilder::open_bracket(const std::string& bracket) {
@@ -326,6 +328,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       ++expr;
       data.rpn.push(new Token<std::string>(ss.str(), STR));
       data.lastTokenWasOp = false;
+      data.lastTokenWasUnary = false;
     } else {
       // Otherwise, the variable is an operator or paranthesis.
       tokType_t lastType;
@@ -415,8 +418,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
             }
           } else {
             data.handle_op(op);
-
-            data.lastTokenWasOp = op[0];
           }
         }
       }
