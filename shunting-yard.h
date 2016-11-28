@@ -131,6 +131,7 @@ struct rpnBuilder {
 
  public:
   void handle_op(const std::string& op);
+  void handle_token(TokenBase* token);
   void open_bracket(const std::string& bracket);
   void close_bracket(const std::string& bracket);
 

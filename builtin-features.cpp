@@ -327,15 +327,15 @@ packToken falseToken = packToken(0);
 packToken noneToken = packToken::None;
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(trueToken->clone());
+  data->handle_token(trueToken->clone());
 }
 
 void False(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(falseToken->clone());
+  data->handle_token(falseToken->clone());
 }
 
 void None(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(noneToken->clone());
+  data->handle_token(noneToken->clone());
 }
 
 void LineComment(const char* expr, const char** rest, rpnBuilder* data) {
