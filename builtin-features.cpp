@@ -284,17 +284,17 @@ struct Startup {
     // precedence order as described on cppreference website:
     // http://en.cppreference.com/w/cpp/language/operator_precedence
     OppMap_t& opp = calculator::default_opPrecedence();
-    opp["[]"] = 2; opp["()"] = 2; opp["."] = 2;
-    opp["**"] = 3;
-    opp["*"]  = 5; opp["/"]  = 5; opp["%"] = 5;
-    opp["+"]  = 6; opp["-"]  = 6;
-    opp["<<"] = 7; opp[">>"] = 7;
-    opp["<"]  = 8; opp["<="] = 8; opp[">="] = 8; opp[">"] = 8;
-    opp["=="] = 9; opp["!="] = 9;
-    opp["&&"] = 13;
-    opp["||"] = 14;
-    opp["="]  = 15; opp[":"] = 15;
-    opp[","]  = 16;
+    opp.add("[]", 2); opp.add("()", 2); opp.add(".", 2);
+    opp.add("**", 3);
+    opp.add("*",  5); opp.add("/", 5); opp.add("%", 5);
+    opp.add("+",  6); opp.add("-", 6);
+    opp.add("<<", 7); opp.add(">>", 7);
+    opp.add("<",  8); opp.add("<=", 8); opp.add(">=", 8); opp.add(">", 8);
+    opp.add("==", 9); opp.add("!=", 9);
+    opp.add("&&", 13);
+    opp.add("||", 14);
+    opp.add("=", 15); opp.add(":", 15);
+    opp.add(",", 16);
 
     // Link operations to respective operators:
     opMap_t& opMap = calculator::default_opMap();
@@ -327,15 +327,15 @@ packToken falseToken = packToken(0);
 packToken noneToken = packToken::None;
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(trueToken->clone());
+  data->handle_token(trueToken->clone());
 }
 
 void False(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(falseToken->clone());
+  data->handle_token(falseToken->clone());
 }
 
 void None(const char* expr, const char** rest, rpnBuilder* data) {
-  data->rpn.push(noneToken->clone());
+  data->handle_token(noneToken->clone());
 }
 
 void LineComment(const char* expr, const char** rest, rpnBuilder* data) {

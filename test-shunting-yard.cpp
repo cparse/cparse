@@ -211,6 +211,19 @@ TEST_CASE("List usage expressions", "[list]") {
   // List index out of range:
   REQUIRE_THROWS(calculator::calculate("concat[10]", vars));
   REQUIRE_THROWS(calculator::calculate("concat[-10]", vars));
+  REQUIRE_THROWS(vars["concat"].asList()[10]);
+  REQUIRE_THROWS(vars["concat"].asList()[-10]);
+
+  // Testing push and pop functions:
+  TokenList L;
+  REQUIRE_NOTHROW(L.push("my value"));
+  REQUIRE_NOTHROW(L.push(10));
+  REQUIRE_NOTHROW(L.push(TokenMap()));
+  REQUIRE_NOTHROW(L.push(TokenList()));
+
+  REQUIRE(packToken(L).str() == "[ \"my value\", 10, {}, [] ]");
+  REQUIRE(L.pop().str() == "[]");
+  REQUIRE(packToken(L).str() == "[ \"my value\", 10, {} ]");
 }
 
 TEST_CASE("Tuple usage expressions", "[tuple]") {
@@ -233,6 +246,10 @@ TEST_CASE("Tuple usage expressions", "[tuple]") {
   REQUIRE(t2->list().size() == 2);
   delete t1;
   delete t2;
+
+  GlobalScope global;
+  REQUIRE_NOTHROW(c.compile("pow, None"));
+  REQUIRE(c.eval(global).str() == "([Function: pow], None)");
 }
 
 TEST_CASE("List and map constructors usage") {
@@ -347,7 +364,7 @@ TEST_CASE("Function usage expressions") {
 
   REQUIRE_THROWS(calculator::calculate("foo(10)"));
   REQUIRE_THROWS(calculator::calculate("foo(10),"));
-  REQUIRE_THROWS(calculator::calculate("foo,(10)"));
+  REQUIRE_NOTHROW(calculator::calculate("foo,(10)"));
 
   REQUIRE(TokenMap::default_global()["abs"].str() == "[Function: abs]");
   REQUIRE(calculator::calculate("1,2,3,4,5").str() == "(1, 2, 3, 4, 5)");
@@ -606,15 +623,30 @@ packToken op2(const packToken& left, const packToken& right,
   return calculator::default_opMap()[","][0].exec(left, right, data);
 }
 
+packToken op3(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return left.asDouble() - right.asDouble();
+}
+
+packToken op4(const packToken& left, const packToken& right,
+              evaluationData* data) {
+  return left.asDouble() * right.asDouble();
+}
+
 struct myCalcStartup {
   myCalcStartup() {
     OppMap_t& opp = myCalc::my_OppMap();
-    opp["."] = 1;
-    opp["+"] = 2;
+    opp.add(".", 1);
+    opp.add("+", 2); opp.add("*", 2);
+
+    // This operator will evaluate from right to left:
+    opp.add("-", -3);
 
     opMap_t& opMap = myCalc::my_opMap();
     opMap.add({STR, "+", TUPLE}, &op1);
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
+    opMap.add({NUM, "-", NUM}, &op3);
+    opMap.add({NUM, "*", NUM}, &op4);
   }
 } myCalcStartup;
 
@@ -633,6 +665,20 @@ TEST_CASE("Adhoc operations", "[operation]") {
   exp = "'Lets create %s operators%s' + 'adhoc' . '!'";
   REQUIRE_NOTHROW(c1.compile(exp));
   REQUIRE(c1.eval() == "Lets create adhoc operators!");
+
+  exp = "2 - 1 * 1";  // 2 - (1 * 1)
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 1);
+
+  // Testing op associativity:
+  exp = "2 - 1";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 1);
+
+  // Associativity right to left, i.e. 2 - (1 - 1)
+  exp = "2 - 1 - 1";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == 2);
 }
 
 TEST_CASE("Resource management") {

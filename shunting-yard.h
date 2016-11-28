@@ -7,6 +7,7 @@
 #include <queue>
 #include <list>
 #include <vector>
+#include <set>
 
 /*
  * About tokType enum:
@@ -65,13 +66,33 @@ struct TokenNone : public TokenBase {
 
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
-struct OppMap_t : public std::map<std::string, int> {
+class OppMap_t {
+  // Set of operators that should be evaluated from right to left:
+  std::set<std::string> RtoL;
+  // Map of operators precedence:
+  std::map<std::string, int> pr_map;
+
+ public:
   OppMap_t() {
     // These operations are hard-coded inside the calculator,
     // thus their precedence should always be defined:
-    (*this)["[]"] = -1; (*this)["()"] = -1;
-    (*this)["["] = 0x7FFFFFFF; (*this)["("] = 0x7FFFFFFF; (*this)["{"] = 0x7FFFFFFF;
+    pr_map["[]"] = -1; pr_map["()"] = -1;
+    pr_map["["] = 0x7FFFFFFF; pr_map["("] = 0x7FFFFFFF; pr_map["{"] = 0x7FFFFFFF;
+    RtoL.insert("=");
   }
+
+  void add(const std::string& op, int precedence) {
+    if (precedence < 0) {
+      RtoL.insert(op);
+      precedence = -precedence;
+    }
+
+    pr_map[op] = precedence;
+  }
+
+  int prec(const std::string& op) const { return pr_map.at(op); }
+  bool assoc(const std::string& op) const { return RtoL.count(op); }
+  bool exists(const std::string& op) const { return pr_map.count(op); }
 };
 
 class TokenMap;
@@ -110,6 +131,7 @@ struct rpnBuilder {
 
  public:
   void handle_op(const std::string& op);
+  void handle_token(TokenBase* token);
   void open_bracket(const std::string& bracket);
   void close_bracket(const std::string& bracket);
 

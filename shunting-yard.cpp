@@ -139,52 +139,67 @@ void rpnBuilder::handle_op(const std::string& op) {
   handle_unary(op);
 
   // Check if operator exists:
-  if (this->opp.find(op) == this->opp.end()) {
-    cleanRPN(&(this->rpn));
+  if (!opp.exists(op)) {
+    cleanRPN(&(rpn));
     throw std::domain_error("Undefined operator: `" + op + "`!");
   }
-
-  float cur_opp = this->opp.at(op);
-  // To force "=" to be evaluated from the right to the left:
-  if (op == "=") cur_opp -= 0.1;
 
   // Let p(o) denote the precedence of an operator o.
   //
   // If the token is an operator, o1, then
   //   While there is an operator token, o2, at the top
-  //       and p(o1) <= p(o2), then
+  //       and p(o1) >= p(o2), then (`>` for Right to Left associativity)
   //     pop o2 off the stack onto the output queue.
   //   Push o1 on the stack.
-  while (!this->opStack.empty() && cur_opp >= this->opp.at(this->opStack.top())) {
-    this->rpn.push(new Token<std::string>(this->opStack.top(), OP));
-    this->opStack.pop();
+
+  // If it associates from left to right:
+  if (opp.assoc(op) == 0) {
+    while (!opStack.empty() && opp.prec(op) >= opp.prec(opStack.top())) {
+      rpn.push(new Token<std::string>(opStack.top(), OP));
+      opStack.pop();
+    }
+  } else {
+    while (!opStack.empty() && opp.prec(op) > opp.prec(opStack.top())) {
+      rpn.push(new Token<std::string>(opStack.top(), OP));
+      opStack.pop();
+    }
   }
-  this->opStack.push(op);
+  opStack.push(op);
+
+  lastTokenWasOp = op[0];
+}
+
+void rpnBuilder::handle_token(TokenBase* token) {
+  rpn.push(token);
+  lastTokenWasOp = false;
+  lastTokenWasUnary = false;
 }
 
 void rpnBuilder::open_bracket(const std::string& bracket) {
-  this->opStack.push(bracket);
-  this->lastTokenWasOp = bracket[0];
-  ++this->bracketLevel;
+  opStack.push(bracket);
+  lastTokenWasOp = bracket[0];
+  lastTokenWasUnary = false;
+  ++bracketLevel;
 }
 
 void rpnBuilder::close_bracket(const std::string& bracket) {
-  if (this->lastTokenWasOp == bracket[0]) {
-    this->rpn.push(new Tuple());
-    this->lastTokenWasOp = false;
+  if (lastTokenWasOp == bracket[0]) {
+    rpn.push(new Tuple());
   }
-  while (this->opStack.size() && this->opStack.top() != bracket) {
-    this->rpn.push(new Token<std::string>(this->opStack.top(), OP));
-    this->opStack.pop();
+  while (opStack.size() && opStack.top() != bracket) {
+    rpn.push(new Token<std::string>(opStack.top(), OP));
+    opStack.pop();
   }
 
-  if (this->opStack.size() == 0) {
-    rpnBuilder::cleanRPN(&this->rpn);
+  if (opStack.size() == 0) {
+    rpnBuilder::cleanRPN(&rpn);
     throw syntax_error("Extra '" + bracket + "' on the expression!");
   }
 
-  this->opStack.pop();
-  --this->bracketLevel;
+  opStack.pop();
+  lastTokenWasOp = false;
+  lastTokenWasUnary = false;
+  --bracketLevel;
 }
 
 /* * * * * RAII_TokenQueue_t struct  * * * * */
@@ -235,15 +250,13 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       // If the number was not a float:
       if (!strchr(".eE", *nextChar)) {
-        data.rpn.push(new Token<int64_t>(_int, INT));
+        data.handle_token(new Token<int64_t>(_int, INT));
       } else {
         double digit = strtod(expr, &nextChar);
-        data.rpn.push(new Token<double>(digit, REAL));
+        data.handle_token(new Token<double>(digit, REAL));
       }
 
       expr = nextChar;
-      data.lastTokenWasOp = false;
-      data.lastTokenWasUnary = false;
     } else if (isvariablechar(*expr)) {
       rWordMap_t::iterator it;
 
@@ -259,7 +272,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       std::string key = ss.str();
 
       if (data.lastTokenWasOp == '.') {
-        data.rpn.push(new Token<std::string>(key, STR));
+        data.handle_token(new Token<std::string>(key, STR));
       } else if ((it=rWordMap.find(key)) != rWordMap.end()) {
         // Parse reserved words:
         try {
@@ -274,15 +287,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
         if (value) {
           // Save a reference token:
           TokenBase* copy = (*value)->clone();
-          data.rpn.push(new RefToken(key, copy));
+          data.handle_token(new RefToken(key, copy));
         } else {
           // Save the variable name:
-          data.rpn.push(new Token<std::string>(key, VAR));
+          data.handle_token(new Token<std::string>(key, VAR));
         }
       }
-
-      data.lastTokenWasOp = false;
-      data.lastTokenWasUnary = false;
     } else if (*expr == '\'' || *expr == '"') {
       // If it is a string literal, parse it and
       // add to the output queue.
@@ -319,12 +329,9 @@ TokenQueue_t calculator::toRPN(const char* expr,
                            ") at end of string declaration: " + squote + ss.str() + ".");
       }
       ++expr;
-      data.rpn.push(new Token<std::string>(ss.str(), STR));
-      data.lastTokenWasOp = false;
+      data.handle_token(new Token<std::string>(ss.str(), STR));
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-      tokType_t lastType;
-      char lastOp;
 
       // Check for syntax errors (excess of operators i.e. 10 + + -1):
       if (data.lastTokenWasUnary) {
@@ -338,9 +345,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       switch (*expr) {
       case '(':
         // If it is a function call:
-        lastType = data.rpn.size() ? data.rpn.back()->type : NONE;
-        lastOp = data.opStack.size() ? data.opStack.top()[0] : '\0';
-        if (lastType == VAR || lastType == (FUNC | REF) || lastOp == '.') {
+        if (data.lastTokenWasOp == false) {
           // This counts as a bracket and as an operator:
           data.handle_op("()");
           // Add it as a bracket to the op stack:
@@ -355,8 +360,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         } else {
           // If it is the list constructor:
           // Add the list constructor to the rpn:
-          data.rpn.push(new CppFunction(&TokenList::default_constructor, "list"));
-          data.lastTokenWasOp = false;
+          data.handle_token(new CppFunction(&TokenList::default_constructor, "list"));
 
           // We make the program see it as a normal function call:
           data.handle_op("()");
@@ -367,8 +371,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
         break;
       case '{':
         // Add a map constructor call to the rpn:
-        data.rpn.push(new CppFunction(&TokenMap::default_constructor, "map"));
-        data.lastTokenWasOp = false;
+        data.handle_token(new CppFunction(&TokenMap::default_constructor, "map"));
 
         // We make the program see it as a normal function call:
         data.handle_op("()");
@@ -410,8 +413,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
             }
           } else {
             data.handle_op(op);
-
-            data.lastTokenWasOp = op[0];
           }
         }
       }
@@ -544,7 +545,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
           cleanStack(evaluation);
           throw undefined_operation(data.op, r_left, p_right);
         }
-      } else if (b_left->type == FUNC) {
+      } else if (b_left->type == FUNC && data.op == "()") {
         Function* f_left = static_cast<Function*>(b_left);
 
         if (!data.op.compare("()")) {
