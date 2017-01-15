@@ -776,6 +776,20 @@ packToken list_len(TokenMap scope) {
   return list.list().size();
 }
 
+packToken list_join(TokenMap scope) {
+  TokenList list = scope["this"].asList();
+  std::string chars = scope["chars"].asString();
+  std::stringstream result;
+
+  std::vector<packToken>::const_iterator it = list.list().begin();
+  result << it->asString();
+  for (++it; it != list.list().end(); ++it) {
+    result << chars << it->asString();
+  }
+
+  return result.str();
+}
+
 /* * * * * Initialize TokenList functions * * * * */
 
 struct Startup {
@@ -784,6 +798,7 @@ struct Startup {
     base_list["push"] = CppFunction(list_push, push_args, "push");
     base_list["pop"] = CppFunction(list_pop, list_pop_args, "pop");
     base_list["len"] = CppFunction(list_len, "len");
+    base_list["join"] = CppFunction(list_join, {"chars"}, "join");
 
     TokenMap& base_map = TokenMap::base_map();
     base_map["pop"] = CppFunction(map_pop, map_pop_args, "pop");
