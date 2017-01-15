@@ -545,6 +545,41 @@ packToken string_upper(TokenMap scope) {
   return out;
 }
 
+packToken string_strip(TokenMap scope) {
+  std::string str = scope["this"].asString();
+
+  std::string::const_iterator it = str.begin();
+  while (it != str.end() && isspace(*it)) ++it;
+
+  std::string::const_reverse_iterator rit = str.rbegin();
+  while (rit.base() != it && isspace(*rit)) ++rit;
+
+  return std::string(it, rit.base());
+}
+
+packToken string_split(TokenMap scope) {
+  TokenList list;
+  std::string str = scope["this"].asString();
+  std::string split_chars = scope["chars"].asString();
+
+  // Split the string:
+  size_t start = 0;
+  size_t i = str.find(split_chars, 0);
+  size_t size = split_chars.size();
+  while (i < str.size()) {
+    // Add a new item:
+    list.push(std::string(str, start, i-start));
+    // Resume search:
+    start = i + size;
+    i = str.find(split_chars, start);
+  }
+
+  // Add a new item:
+  list.push(std::string(str, start, str.size()-start));
+
+  return list;
+}
+
 /* * * * * default constructor functions * * * * */
 
 packToken default_list(TokenMap scope) {
@@ -661,6 +696,8 @@ struct Startup {
     type_map[STR]["len"] = CppFunction(&string_len, "len");
     type_map[STR]["lower"] = CppFunction(&string_lower, "lower");
     type_map[STR]["upper"] = CppFunction(&string_upper, "upper");
+    type_map[STR]["strip"] = CppFunction(&string_strip, "strip");
+    type_map[STR]["split"] = CppFunction(&string_split, {"chars"}, "split");
   }
 } base_functions_startup;
 

@@ -452,11 +452,15 @@ TEST_CASE("Default functions") {
 
 TEST_CASE("Type specific functions") {
   TokenMap vars;
-  vars["s"] = "String";
+  vars["s1"] = "String";
+  vars["s2"] = " a b ";
+  vars["s3"] = "a,b";
 
-  REQUIRE(calculator::calculate("s.len()", vars).asDouble() == 6);
-  REQUIRE(calculator::calculate("s.lower()", vars).asString() == "string");
-  REQUIRE(calculator::calculate("s.upper()", vars).asString() == "STRING");
+  REQUIRE(calculator::calculate("s1.len()", vars).asDouble() == 6);
+  REQUIRE(calculator::calculate("s1.lower()", vars).asString() == "string");
+  REQUIRE(calculator::calculate("s1.upper()", vars).asString() == "STRING");
+  REQUIRE(calculator::calculate("s2.strip()", vars).asString() == "a b");
+  REQUIRE(calculator::calculate("s3.split(',')", vars).str() == "[ \"a\", \"b\" ]");
 }
 
 TEST_CASE("Assignment expressions") {
