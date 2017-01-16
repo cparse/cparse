@@ -15,7 +15,7 @@ class Iterator;
 
 struct Iterable : public TokenBase {
   virtual ~Iterable() {}
-  virtual Iterator* getIterator() = 0;
+  virtual Iterator* getIterator() const = 0;
 };
 
 // Iterator super class.
@@ -28,7 +28,7 @@ struct Iterator : public Iterable {
   virtual packToken* next() = 0;
   virtual void reset() = 0;
 
-  Iterator* getIterator();
+  Iterator* getIterator() const;
 };
 
 class TokenMap;
@@ -74,7 +74,7 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
     }
   };
 
-  Iterator* getIterator() {
+  Iterator* getIterator() const {
     return new MapIterator(map());
   }
 
@@ -136,7 +136,7 @@ class TokenList : public pack<TokenList_t>, public Iterable {
     }
   };
 
-  Iterator* getIterator() {
+  Iterator* getIterator() const {
     return new ListIterator(&list());
   }
 

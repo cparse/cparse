@@ -30,7 +30,7 @@ TokenMap TokenMap::empty = TokenMap(&default_global());
 
 /* * * * * Iterator functions * * * * */
 
-Iterator*  Iterator::getIterator() {
+Iterator*  Iterator::getIterator() const {
   return static_cast<Iterator*>(this->clone());
 }
 
