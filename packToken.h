@@ -40,6 +40,7 @@ class packToken {
   operator TokenBase*() { return base; }
   operator const TokenBase*() const { return base; }
   TokenBase* token() { return base; }
+  const TokenBase* token() const { return base; }
 
   bool asBool() const;
   double asDouble() const;
