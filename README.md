@@ -61,7 +61,7 @@ int main() {
 Here we implement an interpreter for multiple expressions, the delimiter used
 will be `;` or `\n` just like Javascript or Python and the code must start and end on curly brackets.
 
-A similar architecture can be used for interpreting other common programming language statements like `for` loops and `if` statements. If you're interested take a look on the [jSpy programming language](github.com/vingarcia/jspy) that uses this project as the core parsing system.
+A similar architecture can be used for interpreting other common programming language statements like `for` loops and `if` statements. If you're interested take a look on the [jSpy programming language](https://github.com/vingarcia/jspy) that uses this project as the core parsing system.
 
 ```C++
 #include <iostream>
