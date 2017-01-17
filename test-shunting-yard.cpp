@@ -122,7 +122,7 @@ TEST_CASE("Map access expressions") {
 
   REQUIRE(calculator::calculate("map.key3.map1", vars).asString() == "inception1");
   REQUIRE(calculator::calculate("map.key3['map2']", vars).asString() == "inception2");
-  REQUIRE(calculator::calculate("map[\"no_key\"]", vars) == packToken::None);
+  REQUIRE(calculator::calculate("map[\"no_key\"]", vars) == packToken::None());
 }
 
 TEST_CASE("Prototypical inheritance tests") {

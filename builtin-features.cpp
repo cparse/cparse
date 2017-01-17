@@ -58,7 +58,7 @@ packToken MapIndex(const packToken& p_left, const packToken& p_right, evaluation
     if (p_value) {
       return RefToken(right, *p_value, left);
     } else {
-      return RefToken(right, packToken::None, left);
+      return RefToken(right, packToken::None(), left);
     }
   } else {
     throw undefined_operation(op, left, right);
@@ -324,7 +324,7 @@ namespace builtin_reservedWords {
 // Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
-packToken noneToken = packToken::None;
+packToken noneToken = packToken::None();
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_token(trueToken->clone());
@@ -392,7 +392,7 @@ packToken default_print(TokenMap scope) {
 
   std::cout << std::endl;
 
-  return packToken::None;
+  return packToken::None();
 }
 
 packToken default_sum(TokenMap scope) {
@@ -724,7 +724,7 @@ packToken map_pop(TokenMap scope) {
   if (def) {
     return *def;
   } else {
-    return packToken::None;
+    return packToken::None();
   }
 }
 

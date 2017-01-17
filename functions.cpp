@@ -67,7 +67,7 @@ packToken Function::call(packToken _this, Function* func,
   for (; names_it != arg_names.end(); ++names_it) {
     // If not set by a keyword argument:
     if (local.map().count(*names_it) == 0) {
-      local[*names_it] = packToken::None;
+      local[*names_it] = packToken::None();
     }
   }
 

@@ -8,7 +8,7 @@ class packToken {
   TokenBase* base;
 
  public:
-  static const packToken None;
+  static const packToken& None();
 
  public:
   packToken() : base(new TokenNone()) {}
