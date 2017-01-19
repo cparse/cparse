@@ -216,11 +216,19 @@ struct opMap_t : public std::map<std::string, opList_t> {
   }
 };
 
+struct Config_t {
+  rWordMap_t rWordMap;
+  OppMap_t opPrecedence;
+  opMap_t opMap;
+
+  Config_t() {}
+  Config_t(rWordMap_t w, OppMap_t opp, opMap_t opMap)
+          : rWordMap(w), opPrecedence(opp), opMap(opMap) {};
+};
+
 class calculator {
  public:
-  static rWordMap_t& default_rWordMap();
-  static OppMap_t& default_opPrecedence();
-  static opMap_t& default_opMap();
+  static Config_t& Default();
 
  public:
   static typeMap_t& type_attribute_map();
@@ -231,20 +239,17 @@ class calculator {
 
  public:
   static TokenBase* calculate(const TokenQueue_t& RPN, TokenMap scope,
-                              const opMap_t& opMap = default_opMap());
+                              const Config_t& config = Default());
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
-                            OppMap_t opPrecedence = default_opPrecedence(),
-                            rWordMap_t rWordMap = default_rWordMap());
+                            Config_t config = Default());
 
  public:
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
 
  protected:
-  virtual const opMap_t opMap() const { return default_opMap(); }
-  virtual const OppMap_t opPrecedence() const { return default_opPrecedence(); }
-  virtual const rWordMap_t rWordMap() const { return default_rWordMap(); }
+  virtual const Config_t Config() const { return Default(); }
 
  private:
   TokenQueue_t RPN;
@@ -255,8 +260,7 @@ class calculator {
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
-             const OppMap_t& opPrecedence = default_opPrecedence(),
-             const rWordMap_t& rwMap = default_rWordMap());
+             const Config_t& config = Default());
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;

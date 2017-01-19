@@ -86,25 +86,15 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
 
 /* * * * * Static containers: * * * * */
 
-// Builds the opPrecedence map only once:
-OppMap_t& calculator::default_opPrecedence() {
-  static OppMap_t opp;
-  return opp;
+// Build configurations once only:
+Config_t& calculator::Default() {
+  static Config_t conf;
+  return conf;
 }
 
 typeMap_t& calculator::type_attribute_map() {
   static typeMap_t type_map;
   return type_map;
-}
-
-opMap_t& calculator::default_opMap() {
-  static opMap_t opMap;
-  return opMap;
-}
-
-rWordMap_t& calculator::default_rWordMap() {
-  static rWordMap_t rwMap;
-  return rwMap;
 }
 
 /* * * * * rpnBuilder Class: * * * * */
@@ -227,9 +217,8 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 #define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                TokenMap vars, const char* delim,
-                               const char** rest, OppMap_t opPrecedence,
-                               rWordMap_t rWordMap) {
-  rpnBuilder data(vars, opPrecedence);
+                               const char** rest, Config_t config) {
+  rpnBuilder data(vars, config.opPrecedence);
   char* nextChar;
 
   static char c = '\0';
@@ -259,6 +248,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       expr = nextChar;
     } else if (isvariablechar(*expr)) {
       rWordMap_t::iterator it;
+      rWordMap_t& wmap = config.rWordMap;
 
       // If the token is a variable, resolve it and
       // add the parsed number to the output queue.
@@ -273,7 +263,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if (data.lastTokenWasOp == '.') {
         data.handle_token(new Token<std::string>(key, STR));
-      } else if ((it=rWordMap.find(key)) != rWordMap.end()) {
+      } else if ((it=wmap.find(key)) != wmap.end()) {
         // Parse reserved words:
         try {
           it->second(expr, &expr, &data);
@@ -403,7 +393,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
           std::string op = ss.str();
 
           rWordMap_t::iterator it;
-          if ((it=rWordMap.find(op)) != rWordMap.end()) {
+          rWordMap_t& wmap = config.rWordMap;
+          if ((it=wmap.find(op)) != wmap.end()) {
             // Parse reserved operators:
             try {
               it->second(expr, &expr, &data);
@@ -457,8 +448,8 @@ void cleanStack(std::stack<TokenBase*> st) {
 }
 
 TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
-                                 const opMap_t& opMap) {
-  evaluationData data(rpn, scope, opMap);
+                                 const Config_t& config) {
+  evaluationData data(rpn, scope, config.opMap);
 
   // Evaluate the expression in RPN form.
   std::stack<TokenBase*> evaluation;
@@ -653,9 +644,8 @@ calculator::calculator(const calculator& calc) {
 // - Stops at delim or '\0'
 // - Returns the rest of the string as char* rest
 calculator::calculator(const char* expr, TokenMap vars, const char* delim,
-                       const char** rest, const OppMap_t& opp,
-                       const rWordMap_t& rwMap) {
-  this->RPN = calculator::toRPN(expr, vars, delim, rest, opp, rwMap);
+                       const char** rest, const Config_t& config) {
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, config);
 }
 
 void calculator::compile(const char* expr, TokenMap vars, const char* delim,
@@ -663,12 +653,11 @@ void calculator::compile(const char* expr, TokenMap vars, const char* delim,
   // Make sure it is empty:
   rpnBuilder::cleanRPN(&this->RPN);
 
-  this->RPN = calculator::toRPN(expr, vars, delim, rest,
-                                opPrecedence(), rWordMap());
+  this->RPN = calculator::toRPN(expr, vars, delim, rest, Config());
 }
 
 packToken calculator::eval(TokenMap vars, bool keep_refs) const {
-  TokenBase* value = calculate(this->RPN, vars, opMap());
+  TokenBase* value = calculate(this->RPN, vars, Config());
   packToken p = packToken(value->clone());
   if (keep_refs) {
     return packToken(value);

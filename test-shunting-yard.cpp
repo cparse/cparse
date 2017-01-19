@@ -605,30 +605,24 @@ TEST_CASE("operation_id() function", "[op_id]") {
 /* * * * * Declaring adhoc operations * * * * */
 
 struct myCalc : public calculator {
-  static opMap_t& my_opMap() {
-    static opMap_t opMap;
-    return opMap;
+  static Config_t& my_config() {
+    static Config_t conf;
+    return conf;
   }
 
-  static OppMap_t& my_OppMap() {
-    static OppMap_t opp;
-    return opp;
-  }
-
-  const opMap_t opMap() const { return my_opMap(); }
-  const OppMap_t opPrecedence() const { return my_OppMap(); }
+  const Config_t Config() const { return my_config(); }
 
   using calculator::calculator;
 };
 
 packToken op1(const packToken& left, const packToken& right,
               evaluationData* data) {
-  return calculator::default_opMap()["%"][0].exec(left, right, data);
+  return calculator::Default().opMap["%"][0].exec(left, right, data);
 }
 
 packToken op2(const packToken& left, const packToken& right,
               evaluationData* data) {
-  return calculator::default_opMap()[","][0].exec(left, right, data);
+  return calculator::Default().opMap[","][0].exec(left, right, data);
 }
 
 packToken op3(const packToken& left, const packToken& right,
@@ -643,14 +637,14 @@ packToken op4(const packToken& left, const packToken& right,
 
 struct myCalcStartup {
   myCalcStartup() {
-    OppMap_t& opp = myCalc::my_OppMap();
+    OppMap_t& opp = myCalc::my_config().opPrecedence;
     opp.add(".", 1);
     opp.add("+", 2); opp.add("*", 2);
 
     // This operator will evaluate from right to left:
     opp.add("-", -3);
 
-    opMap_t& opMap = myCalc::my_opMap();
+    opMap_t& opMap = myCalc::my_config().opMap;
     opMap.add({STR, "+", TUPLE}, &op1);
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
     opMap.add({NUM, "-", NUM}, &op3);
@@ -664,7 +658,7 @@ TEST_CASE("Adhoc operations", "[operation]") {
   myCalc c1, c2;
   const char* exp = "'Lets create %s operators%s' + ('adhoc' . '!' )";
   REQUIRE_NOTHROW(c1.compile(exp));
-  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_OppMap()));
+  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_config()));
 
   REQUIRE(c1.eval() == "Lets create adhoc operators!");
   REQUIRE(c2.eval() == "Lets create adhoc operators!");

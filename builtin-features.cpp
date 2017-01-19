@@ -283,7 +283,7 @@ struct Startup {
     // Create the operator precedence map based on C++ default
     // precedence order as described on cppreference website:
     // http://en.cppreference.com/w/cpp/language/operator_precedence
-    OppMap_t& opp = calculator::default_opPrecedence();
+    OppMap_t& opp = calculator::Default().opPrecedence;
     opp.add("[]", 2); opp.add("()", 2); opp.add(".", 2);
     opp.add("**", 3);
     opp.add("*",  5); opp.add("/", 5); opp.add("%", 5);
@@ -297,7 +297,7 @@ struct Startup {
     opp.add(",", 16);
 
     // Link operations to respective operators:
-    opMap_t& opMap = calculator::default_opMap();
+    opMap_t& opMap = calculator::Default().opMap;
     opMap.add({ANY_TYPE, ",", ANY_TYPE}, &Comma);
     opMap.add({ANY_TYPE, ":", ANY_TYPE}, &Colon);
     opMap.add({ANY_TYPE, "==", ANY_TYPE}, &Equal);
@@ -355,7 +355,7 @@ void SlashStarComment(const char* expr, const char** rest, rpnBuilder* data) {
 
 struct Startup {
   Startup() {
-    rWordMap_t& rwMap = calculator::default_rWordMap();
+    rWordMap_t& rwMap = calculator::Default().rWordMap;
     rwMap["True"] = &True;
     rwMap["False"] = &False;
     rwMap["None"] = &None;
