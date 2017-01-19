@@ -153,10 +153,46 @@ struct evaluationData {
 };
 
 // The reservedWordParser_t is the function type called when
-// a reserved word is found at parsing time.
+// a reserved word or character is found at parsing time.
 typedef void rWordParser_t(const char* expr, const char** rest,
                            rpnBuilder* data);
 typedef std::map<std::string, rWordParser_t*> rWordMap_t;
+typedef std::map<char, rWordParser_t*> rCharMap_t;
+
+struct parserMap_t {
+  rWordMap_t wmap;
+  rCharMap_t cmap;
+
+  // Add reserved word:
+  void add(const std::string& word, const rWordParser_t* parser) {
+    wmap[word] = parser;
+  }
+
+  // Add reserved character:
+  void add(char c, const rWordParser_t* parser) {
+    cmap[c] = parser;
+  }
+
+  rWordParser_t* find(const std::string text) {
+    rWordMap_t::iterator w_it;
+
+    if ((w_it=wmap.find(text)) != wmap.end()) {
+      return w_it->second;
+    }
+
+    return 0;
+  }
+
+  rWordParser_t* find(char c) {
+    rCharMap_t::iterator c_it;
+
+    if ((c_it=cmap.find(c)) != cmap.end()) {
+      return c_it->second;
+    }
+
+    return 0;
+  }
+};
 
 struct RefToken : public TokenBase {
   packToken key;
@@ -217,13 +253,13 @@ struct opMap_t : public std::map<std::string, opList_t> {
 };
 
 struct Config_t {
-  rWordMap_t rWordMap;
+  parserMap_t parserMap;
   OppMap_t opPrecedence;
   opMap_t opMap;
 
   Config_t() {}
-  Config_t(rWordMap_t w, OppMap_t opp, opMap_t opMap)
-          : rWordMap(w), opPrecedence(opp), opMap(opMap) {};
+  Config_t(parserMap_t p, OppMap_t opp, opMap_t opMap)
+          : parserMap(p), opPrecedence(opp), opMap(opMap) {};
 };
 
 class calculator {

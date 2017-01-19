@@ -247,8 +247,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       expr = nextChar;
     } else if (isvariablechar(*expr)) {
-      rWordMap_t::iterator it;
-      rWordMap_t& wmap = config.rWordMap;
+      rWordParser_t* parser;
 
       // If the token is a variable, resolve it and
       // add the parsed number to the output queue.
@@ -263,10 +262,10 @@ TokenQueue_t calculator::toRPN(const char* expr,
 
       if (data.lastTokenWasOp == '.') {
         data.handle_token(new Token<std::string>(key, STR));
-      } else if ((it=wmap.find(key)) != wmap.end()) {
+      } else if ((parser=config.parserMap.find(key))) {
         // Parse reserved words:
         try {
-          it->second(expr, &expr, &data);
+          parser(expr, &expr, &data);
         } catch (...) {
           rpnBuilder::cleanRPN(&data.rpn);
           throw;
@@ -383,6 +382,8 @@ TokenQueue_t calculator::toRPN(const char* expr,
       default:
         {
           // Then the token is an operator
+
+          const char* start = expr;
           std::stringstream ss;
           ss << *expr;
           ++expr;
@@ -392,18 +393,34 @@ TokenQueue_t calculator::toRPN(const char* expr,
           }
           std::string op = ss.str();
 
-          rWordMap_t::iterator it;
-          rWordMap_t& wmap = config.rWordMap;
-          if ((it=wmap.find(op)) != wmap.end()) {
+          // Check if the word parser applies:
+          rWordParser_t* parser = config.parserMap.find(op);
+
+          // Evaluate the meaning of this operator in the following order:
+          // 1. Is there a word parser for it?
+          // 2. Is it a valid operator?
+          // 3. Is there a character parser for its first character?
+          if (parser) {
             // Parse reserved operators:
             try {
-              it->second(expr, &expr, &data);
+              parser(expr, &expr, &data);
+            } catch (...) {
+              rpnBuilder::cleanRPN(&data.rpn);
+              throw;
+            }
+          } else if (config.opPrecedence.exists(op)) {
+            data.handle_op(op);
+          } else if ((parser=config.parserMap.find(op[0]))) {
+            expr = start+1;
+            try {
+              parser(expr, &expr, &data);
             } catch (...) {
               rpnBuilder::cleanRPN(&data.rpn);
               throw;
             }
           } else {
-            data.handle_op(op);
+            rpnBuilder::cleanRPN(&data.rpn);
+            throw syntax_error("Invalid operator: " + op);
           }
         }
       }

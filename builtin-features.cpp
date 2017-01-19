@@ -355,13 +355,13 @@ void SlashStarComment(const char* expr, const char** rest, rpnBuilder* data) {
 
 struct Startup {
   Startup() {
-    rWordMap_t& rwMap = calculator::Default().rWordMap;
-    rwMap["True"] = &True;
-    rwMap["False"] = &False;
-    rwMap["None"] = &None;
-    rwMap["#"] = &LineComment;
-    rwMap["//"] = &LineComment;
-    rwMap["/*"] = &SlashStarComment;
+    parserMap_t& parser = calculator::Default().parserMap;
+    parser.add("True", &True);
+    parser.add("False", &False);
+    parser.add("None", &None);
+    parser.add("#", &LineComment);
+    parser.add("//", &LineComment);
+    parser.add("/*", &SlashStarComment);
   }
 } Startup;
 

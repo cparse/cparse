@@ -635,11 +635,28 @@ packToken op4(const packToken& left, const packToken& right,
   return left.asDouble() * right.asDouble();
 }
 
+packToken slash_op(const packToken& left, const packToken& right,
+                   evaluationData* data) {
+  return left.asDouble() / right.asDouble();
+}
+
+void slash(const char* expr, const char** rest, rpnBuilder* data) {
+  data->handle_op("*");
+
+  // Eat the next character:
+  *rest = ++expr;
+}
+
+void slash_slash(const char* expr, const char** rest, rpnBuilder* data) {
+  data->handle_op("-");
+}
+
 struct myCalcStartup {
   myCalcStartup() {
     OppMap_t& opp = myCalc::my_config().opPrecedence;
     opp.add(".", 1);
     opp.add("+", 2); opp.add("*", 2);
+    opp.add("/", 3);
 
     // This operator will evaluate from right to left:
     opp.add("-", -3);
@@ -649,12 +666,17 @@ struct myCalcStartup {
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
     opMap.add({NUM, "-", NUM}, &op3);
     opMap.add({NUM, "*", NUM}, &op4);
+    opMap.add({NUM, "/", NUM}, &slash_op);
+
+    parserMap_t& parser = myCalc::my_config().parserMap;
+    parser.add('/', &slash);
+    parser.add("//", &slash_slash);
   }
 } myCalcStartup;
 
 /* * * * * Testing adhoc operations * * * * */
 
-TEST_CASE("Adhoc operations", "[operation]") {
+TEST_CASE("Adhoc operations", "[operation][config]") {
   myCalc c1, c2;
   const char* exp = "'Lets create %s operators%s' + ('adhoc' . '!' )";
   REQUIRE_NOTHROW(c1.compile(exp));
@@ -681,6 +703,22 @@ TEST_CASE("Adhoc operations", "[operation]") {
   exp = "2 - 1 - 1";
   REQUIRE_NOTHROW(c1.compile(exp));
   REQUIRE(c1.eval() == 2);
+}
+
+TEST_CASE("Adhoc parsers", "[parser][config]") {
+  myCalc c1;
+
+  REQUIRE_NOTHROW(c1.compile("2 / 2"));
+  REQUIRE(c1.eval().asInt() == 1);
+
+  REQUIRE_NOTHROW(c1.compile("2 // 2"));
+  REQUIRE(c1.eval().asInt() == 0);
+
+  REQUIRE_NOTHROW(c1.compile("2 /? 2"));
+  REQUIRE(c1.eval().asInt() == 4);
+
+  REQUIRE_NOTHROW(c1.compile("2 /! 2"));
+  REQUIRE(c1.eval().asInt() == 4);
 }
 
 TEST_CASE("Resource management") {
