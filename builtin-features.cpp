@@ -466,7 +466,7 @@ packToken default_type(TokenMap scope) {
   switch (tok->type) {
   case NONE: return "none";
   case VAR: return "variable";
-  case REAL: return "float";
+  case REAL: return "real";
   case INT: return "integer";
   case STR: return "string";
   case FUNC: return "function";
