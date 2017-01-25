@@ -679,6 +679,8 @@ struct Startup {
     global["abs"] = CppFunction(&default_abs, num_arg, "abs");
     global["pow"] = CppFunction(&default_pow, pow_args, "pow");
     global["float"] = CppFunction(&default_float, value_arg, "float");
+    global["real"] = CppFunction(&default_float, value_arg, "real");
+    global["int"] = CppFunction(&default_int, value_arg, "int");
     global["str"] = CppFunction(&default_str, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, value_arg, "eval");
     global["type"] = CppFunction(&default_type, value_arg, "type");
