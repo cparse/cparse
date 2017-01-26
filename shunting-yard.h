@@ -259,7 +259,7 @@ struct Config_t {
 
   Config_t() {}
   Config_t(parserMap_t p, OppMap_t opp, opMap_t opMap)
-          : parserMap(p), opPrecedence(opp), opMap(opMap) {};
+          : parserMap(p), opPrecedence(opp), opMap(opMap) {}
 };
 
 class calculator {
