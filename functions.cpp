@@ -79,3 +79,27 @@ packToken Function::call(packToken _this, Function* func,
 
   return func->exec(local);
 }
+
+/* * * * * class CppFunction * * * * */
+
+CppFunction::CppFunction(packToken (*func)(TokenMap), const args_t args,
+                         std::string name)
+                         : func(func), _args(args) {
+  this->_name = name;
+}
+
+CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
+                         const char** args, std::string name)
+                         : func(func) {
+  this->_name = name;
+  // Add all strings to args list:
+  for (uint32_t i = 0; i < nargs; ++i) {
+    this->_args.push_back(args[i]);
+  }
+}
+
+// Build a function with no named args:
+CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
+                         : func(func) {
+  this->_name = name;
+}
