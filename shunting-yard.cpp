@@ -107,18 +107,18 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
 }
 
 // Check for unary operators and "convert" them to binary:
-void rpnBuilder::handle_unary(const std::string& op) {
+bool rpnBuilder::handle_unary(const std::string& op) {
   if (this->lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
     if (!op.compare("-") || !op.compare("+")) {
       this->rpn.push(new Token<int64_t>(0, INT));
-      this->lastTokenWasUnary = true;
+      return this->lastTokenWasUnary = true;
     } else {
       cleanRPN(&(this->rpn));
       throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
     }
   } else {
-    this->lastTokenWasUnary = false;
+    return this->lastTokenWasUnary = false;
   }
 }
 
@@ -126,7 +126,11 @@ void rpnBuilder::handle_unary(const std::string& op) {
 void rpnBuilder::handle_op(const std::string& op) {
   // "Convert" unary operators into binary, so they can
   // be treated as if they were the same:
-  handle_unary(op);
+  if (handle_unary(op)) {
+    opStack.push(op);
+    lastTokenWasOp = op[0];
+    return;
+  }
 
   // Check if operator exists:
   if (!opp.exists(op)) {

@@ -136,7 +136,7 @@ struct rpnBuilder {
   void close_bracket(const std::string& bracket);
 
  private:
-  void handle_unary(const std::string& op);
+  bool handle_unary(const std::string& op);
 };
 
 class opMap_t;

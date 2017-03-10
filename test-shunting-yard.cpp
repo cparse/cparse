@@ -35,6 +35,7 @@ TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("1 << 4", vars).asDouble() == Approx(16.0));
   REQUIRE(calculator::calculate("1+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("1+_b+(-2*3)", vars).asDouble() == Approx(-5));
+  REQUIRE(calculator::calculate("4 * -3", vars).asInt() == -12);
 }
 
 TEST_CASE("calculate::compile() and calculate::eval()") {
