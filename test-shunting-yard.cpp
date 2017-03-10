@@ -122,7 +122,7 @@ TEST_CASE("Map access expressions") {
 
   REQUIRE(calculator::calculate("map.key3.map1", vars).asString() == "inception1");
   REQUIRE(calculator::calculate("map.key3['map2']", vars).asString() == "inception2");
-  REQUIRE(calculator::calculate("map[\"no_key\"]", vars) == packToken::None);
+  REQUIRE(calculator::calculate("map[\"no_key\"]", vars) == packToken::None());
 }
 
 TEST_CASE("Prototypical inheritance tests") {
@@ -442,7 +442,7 @@ TEST_CASE("Passing keyword arguments to functions") {
 
 TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(None)").asString() == "none");
-  REQUIRE(calculator::calculate("type(10.0)").asString() == "float");
+  REQUIRE(calculator::calculate("type(10.0)").asString() == "real");
   REQUIRE(calculator::calculate("type(10)").asString() == "integer");
   REQUIRE(calculator::calculate("type('str')").asString() == "string");
   REQUIRE(calculator::calculate("type(str)").asString() == "function");
@@ -452,11 +452,19 @@ TEST_CASE("Default functions") {
 
 TEST_CASE("Type specific functions") {
   TokenMap vars;
-  vars["s"] = "String";
+  vars["s1"] = "String";
+  vars["s2"] = " a b ";
 
-  REQUIRE(calculator::calculate("s.len()", vars).asDouble() == 6);
-  REQUIRE(calculator::calculate("s.lower()", vars).asString() == "string");
-  REQUIRE(calculator::calculate("s.upper()", vars).asString() == "STRING");
+  REQUIRE(calculator::calculate("s1.len()", vars).asDouble() == 6);
+  REQUIRE(calculator::calculate("s1.lower()", vars).asString() == "string");
+  REQUIRE(calculator::calculate("s1.upper()", vars).asString() == "STRING");
+  REQUIRE(calculator::calculate("s2.strip()", vars).asString() == "a b");
+
+  calculator c1("L = 'a, b'.split(', ')", vars);
+  REQUIRE(c1.eval(vars).str() == "[ \"a\", \"b\" ]");
+
+  calculator c2("L.join(', ')");
+  REQUIRE(c2.eval(vars).asString() == "a, b");
 }
 
 TEST_CASE("Assignment expressions") {
@@ -597,30 +605,24 @@ TEST_CASE("operation_id() function", "[op_id]") {
 /* * * * * Declaring adhoc operations * * * * */
 
 struct myCalc : public calculator {
-  static opMap_t& my_opMap() {
-    static opMap_t opMap;
-    return opMap;
+  static Config_t& my_config() {
+    static Config_t conf;
+    return conf;
   }
 
-  static OppMap_t& my_OppMap() {
-    static OppMap_t opp;
-    return opp;
-  }
-
-  const opMap_t opMap() const { return my_opMap(); }
-  const OppMap_t opPrecedence() const { return my_OppMap(); }
+  const Config_t Config() const { return my_config(); }
 
   using calculator::calculator;
 };
 
 packToken op1(const packToken& left, const packToken& right,
               evaluationData* data) {
-  return calculator::default_opMap()["%"][0].exec(left, right, data);
+  return calculator::Default().opMap["%"][0].exec(left, right, data);
 }
 
 packToken op2(const packToken& left, const packToken& right,
               evaluationData* data) {
-  return calculator::default_opMap()[","][0].exec(left, right, data);
+  return calculator::Default().opMap[","][0].exec(left, right, data);
 }
 
 packToken op3(const packToken& left, const packToken& right,
@@ -633,30 +635,52 @@ packToken op4(const packToken& left, const packToken& right,
   return left.asDouble() * right.asDouble();
 }
 
+packToken slash_op(const packToken& left, const packToken& right,
+                   evaluationData* data) {
+  return left.asDouble() / right.asDouble();
+}
+
+void slash(const char* expr, const char** rest, rpnBuilder* data) {
+  data->handle_op("*");
+
+  // Eat the next character:
+  *rest = ++expr;
+}
+
+void slash_slash(const char* expr, const char** rest, rpnBuilder* data) {
+  data->handle_op("-");
+}
+
 struct myCalcStartup {
   myCalcStartup() {
-    OppMap_t& opp = myCalc::my_OppMap();
+    OppMap_t& opp = myCalc::my_config().opPrecedence;
     opp.add(".", 1);
     opp.add("+", 2); opp.add("*", 2);
+    opp.add("/", 3);
 
     // This operator will evaluate from right to left:
     opp.add("-", -3);
 
-    opMap_t& opMap = myCalc::my_opMap();
+    opMap_t& opMap = myCalc::my_config().opMap;
     opMap.add({STR, "+", TUPLE}, &op1);
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
     opMap.add({NUM, "-", NUM}, &op3);
     opMap.add({NUM, "*", NUM}, &op4);
+    opMap.add({NUM, "/", NUM}, &slash_op);
+
+    parserMap_t& parser = myCalc::my_config().parserMap;
+    parser.add('/', &slash);
+    parser.add("//", &slash_slash);
   }
 } myCalcStartup;
 
 /* * * * * Testing adhoc operations * * * * */
 
-TEST_CASE("Adhoc operations", "[operation]") {
+TEST_CASE("Adhoc operations", "[operation][config]") {
   myCalc c1, c2;
   const char* exp = "'Lets create %s operators%s' + ('adhoc' . '!' )";
   REQUIRE_NOTHROW(c1.compile(exp));
-  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_OppMap()));
+  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_config()));
 
   REQUIRE(c1.eval() == "Lets create adhoc operators!");
   REQUIRE(c2.eval() == "Lets create adhoc operators!");
@@ -679,6 +703,22 @@ TEST_CASE("Adhoc operations", "[operation]") {
   exp = "2 - 1 - 1";
   REQUIRE_NOTHROW(c1.compile(exp));
   REQUIRE(c1.eval() == 2);
+}
+
+TEST_CASE("Adhoc parsers", "[parser][config]") {
+  myCalc c1;
+
+  REQUIRE_NOTHROW(c1.compile("2 / 2"));
+  REQUIRE(c1.eval().asInt() == 1);
+
+  REQUIRE_NOTHROW(c1.compile("2 // 2"));
+  REQUIRE(c1.eval().asInt() == 0);
+
+  REQUIRE_NOTHROW(c1.compile("2 /? 2"));
+  REQUIRE(c1.eval().asInt() == 4);
+
+  REQUIRE_NOTHROW(c1.compile("2 /! 2"));
+  REQUIRE(c1.eval().asInt() == 4);
 }
 
 TEST_CASE("Resource management") {

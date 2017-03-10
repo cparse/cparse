@@ -6,7 +6,10 @@
 #include "./packToken.h"
 #include "./shunting-yard-exceptions.h"
 
-const packToken packToken::None = packToken(TokenNone());
+const packToken& packToken::None() {
+  static packToken none = packToken(TokenNone());
+  return none;
+}
 
 packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
 packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}

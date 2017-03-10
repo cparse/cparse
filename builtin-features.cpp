@@ -58,7 +58,7 @@ packToken MapIndex(const packToken& p_left, const packToken& p_right, evaluation
     if (p_value) {
       return RefToken(right, *p_value, left);
     } else {
-      return RefToken(right, packToken::None, left);
+      return RefToken(right, packToken::None(), left);
     }
   } else {
     throw undefined_operation(op, left, right);
@@ -283,7 +283,7 @@ struct Startup {
     // Create the operator precedence map based on C++ default
     // precedence order as described on cppreference website:
     // http://en.cppreference.com/w/cpp/language/operator_precedence
-    OppMap_t& opp = calculator::default_opPrecedence();
+    OppMap_t& opp = calculator::Default().opPrecedence;
     opp.add("[]", 2); opp.add("()", 2); opp.add(".", 2);
     opp.add("**", 3);
     opp.add("*",  5); opp.add("/", 5); opp.add("%", 5);
@@ -297,7 +297,7 @@ struct Startup {
     opp.add(",", 16);
 
     // Link operations to respective operators:
-    opMap_t& opMap = calculator::default_opMap();
+    opMap_t& opMap = calculator::Default().opMap;
     opMap.add({ANY_TYPE, ",", ANY_TYPE}, &Comma);
     opMap.add({ANY_TYPE, ":", ANY_TYPE}, &Colon);
     opMap.add({ANY_TYPE, "==", ANY_TYPE}, &Equal);
@@ -324,7 +324,7 @@ namespace builtin_reservedWords {
 // Literal Tokens: True, False and None:
 packToken trueToken = packToken(1);
 packToken falseToken = packToken(0);
-packToken noneToken = packToken::None;
+packToken noneToken = packToken::None();
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_token(trueToken->clone());
@@ -355,13 +355,13 @@ void SlashStarComment(const char* expr, const char** rest, rpnBuilder* data) {
 
 struct Startup {
   Startup() {
-    rWordMap_t& rwMap = calculator::default_rWordMap();
-    rwMap["True"] = &True;
-    rwMap["False"] = &False;
-    rwMap["None"] = &None;
-    rwMap["#"] = &LineComment;
-    rwMap["//"] = &LineComment;
-    rwMap["/*"] = &SlashStarComment;
+    parserMap_t& parser = calculator::Default().parserMap;
+    parser.add("True", &True);
+    parser.add("False", &False);
+    parser.add("None", &None);
+    parser.add("#", &LineComment);
+    parser.add("//", &LineComment);
+    parser.add("/*", &SlashStarComment);
   }
 } Startup;
 
@@ -392,7 +392,7 @@ packToken default_print(TokenMap scope) {
 
   std::cout << std::endl;
 
-  return packToken::None;
+  return packToken::None();
 }
 
 packToken default_sum(TokenMap scope) {
@@ -466,7 +466,7 @@ packToken default_type(TokenMap scope) {
   switch (tok->type) {
   case NONE: return "none";
   case VAR: return "variable";
-  case REAL: return "float";
+  case REAL: return "real";
   case INT: return "integer";
   case STR: return "string";
   case FUNC: return "function";
@@ -543,6 +543,41 @@ packToken string_upper(TokenMap scope) {
     out.push_back(toupper(c));
   }
   return out;
+}
+
+packToken string_strip(TokenMap scope) {
+  std::string str = scope["this"].asString();
+
+  std::string::const_iterator it = str.begin();
+  while (it != str.end() && isspace(*it)) ++it;
+
+  std::string::const_reverse_iterator rit = str.rbegin();
+  while (rit.base() != it && isspace(*rit)) ++rit;
+
+  return std::string(it, rit.base());
+}
+
+packToken string_split(TokenMap scope) {
+  TokenList list;
+  std::string str = scope["this"].asString();
+  std::string split_chars = scope["chars"].asString();
+
+  // Split the string:
+  size_t start = 0;
+  size_t i = str.find(split_chars, 0);
+  size_t size = split_chars.size();
+  while (i < str.size()) {
+    // Add a new item:
+    list.push(std::string(str, start, i-start));
+    // Resume search:
+    start = i + size;
+    i = str.find(split_chars, start);
+  }
+
+  // Add a new item:
+  list.push(std::string(str, start, str.size()-start));
+
+  return list;
 }
 
 /* * * * * default constructor functions * * * * */
@@ -644,6 +679,8 @@ struct Startup {
     global["abs"] = CppFunction(&default_abs, num_arg, "abs");
     global["pow"] = CppFunction(&default_pow, pow_args, "pow");
     global["float"] = CppFunction(&default_float, value_arg, "float");
+    global["real"] = CppFunction(&default_float, value_arg, "real");
+    global["int"] = CppFunction(&default_int, value_arg, "int");
     global["str"] = CppFunction(&default_str, value_arg, "str");
     global["eval"] = CppFunction(&default_eval, value_arg, "eval");
     global["type"] = CppFunction(&default_type, value_arg, "type");
@@ -661,6 +698,8 @@ struct Startup {
     type_map[STR]["len"] = CppFunction(&string_len, "len");
     type_map[STR]["lower"] = CppFunction(&string_lower, "lower");
     type_map[STR]["upper"] = CppFunction(&string_upper, "upper");
+    type_map[STR]["strip"] = CppFunction(&string_strip, "strip");
+    type_map[STR]["split"] = CppFunction(&string_split, {"chars"}, "split");
   }
 } base_functions_startup;
 
@@ -687,7 +726,7 @@ packToken map_pop(TokenMap scope) {
   if (def) {
     return *def;
   } else {
-    return packToken::None;
+    return packToken::None();
   }
 }
 
@@ -739,6 +778,20 @@ packToken list_len(TokenMap scope) {
   return list.list().size();
 }
 
+packToken list_join(TokenMap scope) {
+  TokenList list = scope["this"].asList();
+  std::string chars = scope["chars"].asString();
+  std::stringstream result;
+
+  std::vector<packToken>::const_iterator it = list.list().begin();
+  result << it->asString();
+  for (++it; it != list.list().end(); ++it) {
+    result << chars << it->asString();
+  }
+
+  return result.str();
+}
+
 /* * * * * Initialize TokenList functions * * * * */
 
 struct Startup {
@@ -747,6 +800,7 @@ struct Startup {
     base_list["push"] = CppFunction(list_push, push_args, "push");
     base_list["pop"] = CppFunction(list_pop, list_pop_args, "pop");
     base_list["len"] = CppFunction(list_len, "len");
+    base_list["join"] = CppFunction(list_join, {"chars"}, "join");
 
     TokenMap& base_map = TokenMap::base_map();
     base_map["pop"] = CppFunction(map_pop, map_pop_args, "pop");

@@ -153,18 +153,54 @@ struct evaluationData {
 };
 
 // The reservedWordParser_t is the function type called when
-// a reserved word is found at parsing time.
+// a reserved word or character is found at parsing time.
 typedef void rWordParser_t(const char* expr, const char** rest,
                            rpnBuilder* data);
 typedef std::map<std::string, rWordParser_t*> rWordMap_t;
+typedef std::map<char, rWordParser_t*> rCharMap_t;
+
+struct parserMap_t {
+  rWordMap_t wmap;
+  rCharMap_t cmap;
+
+  // Add reserved word:
+  void add(const std::string& word, const rWordParser_t* parser) {
+    wmap[word] = parser;
+  }
+
+  // Add reserved character:
+  void add(char c, const rWordParser_t* parser) {
+    cmap[c] = parser;
+  }
+
+  rWordParser_t* find(const std::string text) {
+    rWordMap_t::iterator w_it;
+
+    if ((w_it=wmap.find(text)) != wmap.end()) {
+      return w_it->second;
+    }
+
+    return 0;
+  }
+
+  rWordParser_t* find(char c) {
+    rCharMap_t::iterator c_it;
+
+    if ((c_it=cmap.find(c)) != cmap.end()) {
+      return c_it->second;
+    }
+
+    return 0;
+  }
+};
 
 struct RefToken : public TokenBase {
   packToken key;
   packToken value;
   packToken source;
-  RefToken(packToken k, TokenBase* v, packToken m = packToken::None) :
+  RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
     key(k), value(v), source(m) { this->type = v->type | REF; }
-  RefToken(packToken k, packToken v, packToken m = packToken::None) :
+  RefToken(packToken k, packToken v, packToken m = packToken::None()) :
     key(k), value(v), source(m) { this->type = v->type | REF; }
 
   virtual TokenBase* clone() const {
@@ -216,11 +252,19 @@ struct opMap_t : public std::map<std::string, opList_t> {
   }
 };
 
+struct Config_t {
+  parserMap_t parserMap;
+  OppMap_t opPrecedence;
+  opMap_t opMap;
+
+  Config_t() {}
+  Config_t(parserMap_t p, OppMap_t opp, opMap_t opMap)
+          : parserMap(p), opPrecedence(opp), opMap(opMap) {}
+};
+
 class calculator {
  public:
-  static rWordMap_t& default_rWordMap();
-  static OppMap_t& default_opPrecedence();
-  static opMap_t& default_opMap();
+  static Config_t& Default();
 
  public:
   static typeMap_t& type_attribute_map();
@@ -231,20 +275,17 @@ class calculator {
 
  public:
   static TokenBase* calculate(const TokenQueue_t& RPN, TokenMap scope,
-                              const opMap_t& opMap = default_opMap());
+                              const Config_t& config = Default());
   static TokenQueue_t toRPN(const char* expr, TokenMap vars,
                             const char* delim = 0, const char** rest = 0,
-                            OppMap_t opPrecedence = default_opPrecedence(),
-                            rWordMap_t rWordMap = default_rWordMap());
+                            Config_t config = Default());
 
  public:
   // Used to dealloc a TokenQueue_t safely.
   struct RAII_TokenQueue_t;
 
  protected:
-  virtual const opMap_t opMap() const { return default_opMap(); }
-  virtual const OppMap_t opPrecedence() const { return default_opPrecedence(); }
-  virtual const rWordMap_t rWordMap() const { return default_rWordMap(); }
+  virtual const Config_t Config() const { return Default(); }
 
  private:
   TokenQueue_t RPN;
@@ -255,8 +296,7 @@ class calculator {
   calculator(const calculator& calc);
   calculator(const char* expr, TokenMap vars = &TokenMap::empty,
              const char* delim = 0, const char** rest = 0,
-             const OppMap_t& opPrecedence = default_opPrecedence(),
-             const rWordMap_t& rwMap = default_rWordMap());
+             const Config_t& config = Default());
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;
