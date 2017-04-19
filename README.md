@@ -23,14 +23,6 @@ If you want to use this library in your project please take a look at our [Wiki]
 
 [wiki]: https://github.com/cparse/cparse/wiki
 
-## Modifications and Uses of This Code
-+ In [Andrew Steiner's](https://github.com/awsteiner)
-  [o2scl](https://github.com/awsteiner/o2scl):
-  + Adds simple unary functions like sin, cos, and exp.
-  + [shunting_yard.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.cpp)
-  + [shunting_yard.h](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.h)
-  + [shunting_yard_ts.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard_ts.cpp)
-
 ## Builtin Features
  + Unary operators. +, -
  + Binary operators. +, -, /, *, %, <<, >>, ^
@@ -57,7 +49,7 @@ For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
  
 ## Minimal examples
 
-### A simple calculator
+### As a simple calculator
 
 ```C++
 #include <iostream>
