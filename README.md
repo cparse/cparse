@@ -33,6 +33,23 @@ If you want to use this library in your project please take a look at our [Wiki]
  + Easy to implement object-to-object inheritance (with the prototype concept)
  + Built-in garbage collector (does not handle cyclic references yet)
 
+
+## Setup
+
+### Download and Compile
+
+```bash
+cd 'my/project/dir'
+git clone https://github.com/cparse/cparse.git
+make release -C cparse
+```
+
+### Link with your project:
+
+```bash
+g++ cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
+```
+
 ## Customizing your Library
 To customize your calculator:
 
@@ -41,7 +58,7 @@ To customize your calculator:
  3. Then build the project:
     1. Compile the library: `make release -C cparse/`
     2. Compile your modified features: `g++ -c builtin-features.cpp -o my-features.o`
-    3. Link your poject with `my-features.o` and `cparse/core-shunting-yard.o`
+    3. Link your project: `g++ my-features.o cparse/core-shunting-yard.o main.cpp -o main`
 
 For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
  
