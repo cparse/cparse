@@ -34,11 +34,14 @@ If you want to use this library in your project please take a look at our [Wiki]
  + Built-in garbage collector (does not handle cyclic references yet)
 
 ## Customizing your Library
-Customizing the library is as easy as:
+To customize your calculator:
 
- 1. Copying the `builtin-features.cpp` file and `builtin-features` directory to your project.
- 2. Edit the `builtin-features/*.hpp` files.
- 3. Compiling your code and making sure to including your copy of `builtin-features.cpp` instead of the original `builtin-features.o`.
+ 1. Copy the `builtin-features.cpp` file and `builtin-features/` directory to your project.
+ 2. Edit the `builtin-features/*.hpp` files as you like.
+ 3. Then build the project:
+   1. Compile the library: `make release -C cparse/`
+   2. Compile your modified features: `g++ -c builtin-features.cpp -o my-features.o`
+   3. Link your poject with `my-features.o` and `cparse/core-shunting-yard.o`
 
 For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
  
