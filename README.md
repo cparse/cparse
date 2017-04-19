@@ -17,7 +17,7 @@ which modifies
 
 *This project was developed by [Brandon Amos](http://bamos.github.io) and Vinícius Garcia.*
 
-## Wiki
+## Getting Started
 
 If you want to use this library in your project please take a look at our [Wiki][wiki]
 
