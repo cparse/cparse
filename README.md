@@ -23,7 +23,7 @@ If you want to use this library in your project please take a look at our [Wiki]
 
 [wiki]: https://github.com/cparse/cparse/wiki
 
-# Modifications and Uses of This Code
+## Modifications and Uses of This Code
 + In [Andrew Steiner's](https://github.com/awsteiner)
   [o2scl](https://github.com/awsteiner/o2scl):
   + Adds simple unary functions like sin, cos, and exp.
@@ -31,9 +31,9 @@ If you want to use this library in your project please take a look at our [Wiki]
   + [shunting_yard.h](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.h)
   + [shunting_yard_ts.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard_ts.cpp)
 
-# Minimal examples
+## Minimal examples
 
-## A simple calculator
+### A simple calculator
 
 ```C++
 #include <iostream>
@@ -56,7 +56,7 @@ int main() {
 }
 ```
 
-## As a sub-parser for a programming language
+### As a sub-parser for a programming language
 
 Here we implement an interpreter for multiple expressions, the delimiter used
 will be `;` or `\n` just like Javascript or Python and the code must start and end on curly brackets.
