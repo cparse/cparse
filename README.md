@@ -31,6 +31,30 @@ If you want to use this library in your project please take a look at our [Wiki]
   + [shunting_yard.h](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard.h)
   + [shunting_yard_ts.cpp](https://github.com/awsteiner/o2scl/blob/master/src/base/shunting_yard_ts.cpp)
 
+## Builtin Features
+ + Unary operators. +, -
+ + Binary operators. +, -, /, *, %, <<, >>, ^
+ + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
+ + Functions. sin, cos, tan, abs, print
+ + Support for an hierarchy of scopes with local scope, global scope etc.
+ + Easy to add new operators, operations, functions and even new types
+ + Easy to implement object-to-object inheritance (with the prototype concept)
+ + Built-in garbage collector (does not handle cyclic references yet)
+
+## Customizing your Library
+Customizing the library is as easy as:
+
+ 1. Copying the `builtin-features.cpp` file and `builtin-features` directory to your project.
+ 2. Edit the `builtin-features/*.hpp` files.
+ 3. Compiling your code and making sure to including your copy of `builtin-features.cpp` instead of the original `builtin-features.o`.
+
+For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
+ 
+ + [Defining New Functions](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Functions)
+ + [Defining New Operations](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Operations)
+ + [Defining New Types](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Types)
+ + [Defining New Reserved Words](https://github.com/bamos/cpp-expression-parser/wiki/Defining-Reserved-Words)
+ 
 ## Minimal examples
 
 ### A simple calculator
@@ -117,27 +141,3 @@ Please note that a calculator can compile an expression so that it can efficient
 ## More examples
 
  + For more examples and a comprehensible guide please read our [Wiki][wiki]
-
-## Builtin Features
- + Unary operators. +, -
- + Binary operators. +, -, /, *, %, <<, >>, ^
- + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
- + Functions. sin, cos, tan, abs, print
- + Support for an hierarchy of scopes with local scope, global scope etc.
- + Easy to add new operators, operations, functions and even new types
- + Easy to implement object-to-object inheritance (with the prototype concept)
- + Built-in garbage collector (does not handle cyclic references yet)
-
-## Customizing your Library
-Customizing the library is as easy as:
-
- 1. Copying the `builtin-features.cpp` file and `builtin-features` directory to your project.
- 2. Edit the `builtin-features/*.hpp` files.
- 3. Compiling your code and making sure to including your copy of `builtin-features.cpp` instead of the original `builtin-features.o`.
-
-For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
- 
- + [Defining New Functions](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Functions)
- + [Defining New Operations](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Operations)
- + [Defining New Types](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Types)
- + [Defining New Reserved Words](https://github.com/bamos/cpp-expression-parser/wiki/Defining-Reserved-Words)
