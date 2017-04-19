@@ -118,7 +118,7 @@ Please note that a calculator can compile an expression so that it can efficient
 
  + For more examples and a comprehensible guide please read our [Wiki][wiki]
 
-# Features
+## Builtin Features
  + Unary operators. +, -
  + Binary operators. +, -, /, *, %, <<, >>, ^
  + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
@@ -128,7 +128,7 @@ Please note that a calculator can compile an expression so that it can efficient
  + Easy to implement object-to-object inheritance (with the prototype concept)
  + Built-in garbage collector (does not handle cyclic references yet)
 
-# Writing your own operations, functions and types
+## Customizing your Library
 Customizing the library is as easy as:
 
  1. Copying the `builtin-features.cpp` file and `builtin-features` directory to your project.
