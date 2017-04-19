@@ -17,7 +17,7 @@ which modifies
 
 *This project was developed by [Brandon Amos](http://bamos.github.io) and Vinícius Garcia.*
 
-## Getting Started
+# Getting Started
 
 If you want to use this library in your project please take a look at our [Wiki][wiki]
 
@@ -44,7 +44,6 @@ For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
  
  + [Defining New Functions](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Functions)
  + [Defining New Operations](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Operations)
- + [Defining New Types](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Types)
  + [Defining New Reserved Words](https://github.com/bamos/cpp-expression-parser/wiki/Defining-Reserved-Words)
  
 ## Minimal examples
