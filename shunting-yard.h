@@ -19,24 +19,29 @@
 typedef uint8_t tokType_t;
 typedef uint64_t opID_t;
 enum tokType {
+  // Internal types:
+  NONE, OP, VAR,
+
   // Base types:
   // Note: The mask system accepts at most 29 (32-3) different base types.
-  NONE, OP, VAR, STR, FUNC,
+  STR, FUNC,
 
   // Numerals:
   NUM = 0x20,   // Everything with the bit 0x20 set is a number.
-  REAL = 0x21,  // == 0x20 => Real numbers.
-  INT = 0x22,   // == 0x20 + 0x1 => Integers are numbers.
+  REAL = 0x21,  // == 0x20 + 0x1 => Real numbers.
+  INT = 0x22,   // == 0x20 + 0x2 => Integral numbers.
 
   // Complex types:
-  IT = 0x40,      // Everything with the bit 0x20 set is an iterator.
-  LIST = 0x41,    // == 0x20 + 0x01 => Lists are iterators.
-  TUPLE = 0x42,   // == 0x20 + 0x02 => Tuples are iterators.
-  STUPLE = 0x43,  // == 0x20 + 0x03 => ArgTuples are iterators.
-  MAP = 0x44,     // == 0x20 + 0x04 => Maps are Iterators
+  IT = 0x40,      // Everything with the bit 0x40 set are iterators.
+  LIST = 0x41,    // == 0x40 + 0x01 => Lists are iterators.
+  TUPLE = 0x42,   // == 0x40 + 0x02 => Tuples are iterators.
+  STUPLE = 0x43,  // == 0x40 + 0x03 => ArgTuples are iterators.
+  MAP = 0x44,     // == 0x40 + 0x04 => Maps are Iterators
 
+  // References are internal tokens used by the calculator:
   REF = 0x80,
 
+  // Mask used when defining operations:
   ANY_TYPE = 0xFF
 };
 
