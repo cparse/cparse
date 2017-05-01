@@ -54,7 +54,7 @@ g++ cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
 To customize your calculator:
 
  1. Copy the `builtin-features.cpp` file and `builtin-features/` directory to your project.
- 2. Edit the `builtin-features/*.hpp` files as you like.
+ 2. Edit the `builtin-features/*.h` files as you like.
  3. Then build the project:
     1. Compile the library: `make release -C cparse/`
     2. Compile your modified features: `g++ -c builtin-features.cpp -o my-features.o`
