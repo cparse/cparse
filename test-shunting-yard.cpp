@@ -68,6 +68,11 @@ TEST_CASE("Boolean expressions") {
   REQUIRE(calculator::calculate("10 != None").asBool());
   REQUIRE_FALSE(calculator::calculate("10 == 'str'").asBool());
   REQUIRE(calculator::calculate("10 != 'str'").asBool());
+
+  REQUIRE(calculator::calculate("True")->type == BOOL);
+  REQUIRE(calculator::calculate("False")->type == BOOL);
+  REQUIRE(calculator::calculate("10 == 'str'")->type == BOOL);
+  REQUIRE(calculator::calculate("10 == 10")->type == BOOL);
 }
 
 TEST_CASE("String expressions") {
@@ -445,6 +450,7 @@ TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(None)").asString() == "none");
   REQUIRE(calculator::calculate("type(10.0)").asString() == "real");
   REQUIRE(calculator::calculate("type(10)").asString() == "integer");
+  REQUIRE(calculator::calculate("type(True)").asString() == "boolean");
   REQUIRE(calculator::calculate("type('str')").asString() == "string");
   REQUIRE(calculator::calculate("type(str)").asString() == "function");
   REQUIRE(calculator::calculate("type(list())").asString() == "list");

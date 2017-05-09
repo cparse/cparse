@@ -2,8 +2,8 @@
 namespace builtin_reservedWords {
 
 // Literal Tokens: True, False and None:
-packToken trueToken = packToken(1);
-packToken falseToken = packToken(0);
+packToken trueToken = packToken(true);
+packToken falseToken = packToken(false);
 packToken noneToken = packToken::None();
 
 void True(const char* expr, const char** rest, rpnBuilder* data) {

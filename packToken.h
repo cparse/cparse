@@ -19,8 +19,9 @@ class packToken {
 
   template<class C>
   packToken(C c, tokType type) : base(new Token<C>(c, type)) {}
-  packToken(int d) : base(new Token<int64_t>(d, INT)) {}
+  packToken(int i) : base(new Token<int64_t>(i, INT)) {}
   packToken(int64_t l) : base(new Token<int64_t>(l, INT)) {}
+  packToken(bool b) : base(new Token<uint8_t>(b, BOOL)) {}
   packToken(size_t s) : base(new Token<int64_t>(s, INT)) {}
   packToken(float f) : base(new Token<double>(f, REAL)) {}
   packToken(double d) : base(new Token<double>(d, REAL)) {}

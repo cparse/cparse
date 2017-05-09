@@ -99,6 +99,7 @@ packToken default_type(TokenMap scope) {
   case VAR: return "variable";
   case REAL: return "real";
   case INT: return "integer";
+  case BOOL: return "boolean";
   case STR: return "string";
   case FUNC: return "function";
   case IT: return "iterable";

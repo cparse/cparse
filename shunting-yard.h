@@ -30,6 +30,7 @@ enum tokType {
   NUM = 0x20,   // Everything with the bit 0x20 set is a number.
   REAL = 0x21,  // == 0x20 + 0x1 => Real numbers.
   INT = 0x22,   // == 0x20 + 0x2 => Integral numbers.
+  BOOL = 0x23,  // == 0x20 + 0x3 => Boolean Type.
 
   // Complex types:
   IT = 0x40,      // Everything with the bit 0x40 set are iterators.

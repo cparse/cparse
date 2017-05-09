@@ -80,6 +80,8 @@ bool packToken::asBool() const {
       return static_cast<Token<double>*>(base)->val != 0;
     case INT:
       return static_cast<Token<int64_t>*>(base)->val != 0;
+    case BOOL:
+      return static_cast<Token<uint8_t>*>(base)->val != 0;
     case STR:
       return static_cast<Token<std::string>*>(base)->val != std::string();
     case MAP:
@@ -96,26 +98,40 @@ bool packToken::asBool() const {
 }
 
 double packToken::asDouble() const {
-  if (!(base->type & NUM)) {
-    throw bad_cast(
-      "The Token is not a number!");
-  }
-  if (base->type == REAL) {
+  switch (base->type) {
+  case REAL:
     return static_cast<Token<double>*>(base)->val;
-  } else {
+  case INT:
     return static_cast<Token<int64_t>*>(base)->val;
+  case BOOL:
+    return static_cast<Token<uint8_t>*>(base)->val;
+  default:
+    if (!(base->type & NUM)) {
+      throw bad_cast(
+        "The Token is not a number!");
+    } else {
+      throw bad_cast(
+        "Unknown numerical type, can't convert it to double!");
+    }
   }
 }
 
 int64_t packToken::asInt() const {
-  if (!(base->type & NUM)) {
-    throw bad_cast(
-      "The Token is not a number!");
-  }
-  if (base->type == REAL) {
+  switch (base->type) {
+  case REAL:
     return static_cast<Token<double>*>(base)->val;
-  } else {
+  case INT:
     return static_cast<Token<int64_t>*>(base)->val;
+  case BOOL:
+    return static_cast<Token<uint8_t>*>(base)->val;
+  default:
+    if (!(base->type & NUM)) {
+      throw bad_cast(
+        "The Token is not a number!");
+    } else {
+      throw bad_cast(
+        "Unknown numerical type, can't convert it to integer!");
+    }
   }
 }
 
@@ -179,7 +195,7 @@ std::string packToken::str(const TokenBase* base) {
   TokenList_t* tlist;
   TokenList_t::iterator l_it;
   const Function* func;
-  bool first;
+  bool first, boolval;
   std::string name;
 
   if (!base) return "undefined";
@@ -202,6 +218,9 @@ std::string packToken::str(const TokenBase* base) {
     case INT:
       ss << static_cast<const Token<int64_t>*>(base)->val;
       return ss.str();
+    case BOOL:
+      boolval = static_cast<const Token<uint8_t>*>(base)->val;
+      return boolval ? "True" : "False";
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
     case FUNC:
