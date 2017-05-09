@@ -183,11 +183,11 @@ Function* packToken::asFunc() const {
   return static_cast<Function*>(base);
 }
 
-std::string packToken::str() const {
-  return packToken::str(base);
+std::string packToken::str(uint32_t nest) const {
+  return packToken::str(base, nest);
 }
 
-std::string packToken::str(const TokenBase* base) {
+std::string packToken::str(const TokenBase* base, uint32_t nest) {
   std::stringstream ss;
   TokenMap_t* tmap;
   TokenMap_t::iterator m_it;
@@ -230,6 +230,7 @@ std::string packToken::str(const TokenBase* base) {
       return "[Function]";
     case TUPLE:
     case STUPLE:
+      if (nest == 0) return "[Tuple]";
       ss << "(";
       first = true;
       for (const TokenBase* token : static_cast<const Tuple*>(base)->list()) {
@@ -238,7 +239,7 @@ std::string packToken::str(const TokenBase* base) {
         } else {
           first = false;
         }
-        ss << str(token);
+        ss << str(token, nest-1);
       }
       if (first) {
         // Its an empty tuple:
@@ -249,22 +250,24 @@ std::string packToken::str(const TokenBase* base) {
       }
       return ss.str();
     case MAP:
+      if (nest == 0) return "[Map]";
       tmap = &(static_cast<const TokenMap*>(base)->map());
       if (tmap->size() == 0) return "{}";
       ss << "{";
       for (m_it = tmap->begin(); m_it != tmap->end(); ++m_it) {
         ss << (m_it == tmap->begin() ? "" : ",");
-        ss << " \"" << m_it->first << "\": " << m_it->second.str();
+        ss << " \"" << m_it->first << "\": " << m_it->second.str(nest-1);
       }
       ss << " }";
       return ss.str();
     case LIST:
+      if (nest == 0) return "[List]";
       tlist = &(static_cast<const TokenList*>(base)->list());
       if (tlist->size() == 0) return "[]";
       ss << "[";
       for (l_it = tlist->begin(); l_it != tlist->end(); ++l_it) {
         ss << (l_it == tlist->begin() ? "" : ",");
-        ss << " " << l_it->str();
+        ss << " " << l_it->str(nest-1);
       }
       ss << " ]";
       return ss.str();

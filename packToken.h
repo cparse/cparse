@@ -53,8 +53,10 @@ class packToken {
   STuple& asSTuple() const;
   Function* asFunc() const;
 
-  std::string str() const;
-  static std::string str(const TokenBase* t);
+  // The nest argument defines how many times
+  // it will recursively print nested structures:
+  std::string str(uint32_t nest = 3) const;
+  static std::string str(const TokenBase* t, uint32_t nest = 3);
 
  public:
   // This constructor makes sure the TokenBase*
