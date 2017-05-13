@@ -93,8 +93,9 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
   }
 
  public:
-  packToken* find(std::string key);
-  TokenMap* findMap(std::string key);
+  packToken* find(const std::string& key);
+  const packToken* find(const std::string& key) const;
+  TokenMap* findMap(const std::string& key);
   void assign(std::string key, TokenBase* value);
   void insert(std::string key, TokenBase* value);
 

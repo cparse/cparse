@@ -8,7 +8,7 @@ typedef std::list<std::string> args_t;
 
 class Function : public TokenBase {
  public:
-  static packToken call(packToken _this, Function* func,
+  static packToken call(packToken _this, const Function* func,
                         TokenList* args, TokenMap scope);
  public:
   Function() { this->type = FUNC; }

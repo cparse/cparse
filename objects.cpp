@@ -110,7 +110,7 @@ MapData_t& MapData_t::operator=(const MapData_t& other) {
 
 /* * * * * TokenMap Class: * * * * */
 
-packToken* TokenMap::find(std::string key) {
+packToken* TokenMap::find(const std::string& key) {
   TokenMap_t::iterator it = map().find(key);
 
   if (it != map().end()) {
@@ -122,7 +122,19 @@ packToken* TokenMap::find(std::string key) {
   }
 }
 
-TokenMap* TokenMap::findMap(std::string key) {
+const packToken* TokenMap::find(const std::string& key) const {
+  TokenMap_t::const_iterator it = map().find(key);
+
+  if (it != map().end()) {
+    return &it->second;
+  } else if (parent()) {
+    return parent()->find(key);
+  } else {
+    return 0;
+  }
+}
+
+TokenMap* TokenMap::findMap(const std::string& key) {
   TokenMap_t::iterator it = map().find(key);
 
   if (it != map().end()) {

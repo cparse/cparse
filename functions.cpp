@@ -3,7 +3,7 @@
 #include "./shunting-yard-exceptions.h"
 
 /* * * * * class Function * * * * */
-packToken Function::call(packToken _this, Function* func,
+packToken Function::call(packToken _this, const Function* func,
                          TokenList* args, TokenMap scope) {
   // Build the local namespace:
   TokenMap kwargs;
