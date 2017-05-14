@@ -94,6 +94,8 @@ packToken default_str(TokenMap scope) {
 
 packToken default_type(TokenMap scope) {
   packToken tok = scope["value"];
+  packToken* p_type;
+
   switch (tok->type) {
   case NONE: return "none";
   case VAR: return "variable";
@@ -106,7 +108,13 @@ packToken default_type(TokenMap scope) {
   case TUPLE: return "tuple";
   case STUPLE: return "argument tuple";
   case LIST: return "list";
-  case MAP: return "map";
+  case MAP:
+    p_type = tok.asMap().find("__type__");
+    if (p_type && (*p_type)->type == STR) {
+      return *p_type;
+    } else  {
+      return "map";
+    }
   default: return "unknown_type";
   }
 }

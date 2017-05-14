@@ -466,6 +466,11 @@ TEST_CASE("Default functions") {
   REQUIRE(calculator::calculate("type(str)").asString() == "function");
   REQUIRE(calculator::calculate("type(list())").asString() == "list");
   REQUIRE(calculator::calculate("type(map())").asString() == "map");
+
+  TokenMap vars;
+  vars["mymap"] = TokenMap();
+  vars["mymap"]["__type__"] = "my_type";
+  REQUIRE(calculator::calculate("type(mymap)", vars).asString() == "my_type");
 }
 
 TEST_CASE("Type specific functions") {
