@@ -185,6 +185,6 @@ struct Startup {
     base_map["instanceof"] = CppFunction(&default_instanceof,
                                          {"value"}, "instanceof");
   }
-} list_startup;
+} Startup;
 
 }  // namespace builtin_typeSpecificFunctions
