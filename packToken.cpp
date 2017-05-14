@@ -11,6 +11,11 @@ const packToken& packToken::None() {
   return none;
 }
 
+packToken::strFunc_t& packToken::str_custom() {
+  static strFunc_t func = 0;
+  return func;
+}
+
 packToken::packToken(const TokenMap& map) : base(new TokenMap(map)) {}
 packToken::packToken(const TokenList& list) : base(new TokenList(list)) {}
 
@@ -204,6 +209,17 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
     base = static_cast<const RefToken*>(base)->value;
     name = static_cast<const RefToken*>(base)->key.str();
   }
+
+  /* * * * * Check for a user defined functions: * * * * */
+
+  if (packToken::str_custom()) {
+    std::string result = packToken::str_custom()(base, nest);
+    if (result != "") {
+      return result;
+    }
+  }
+
+  /* * * * * Stringify the token: * * * * */
 
   switch (base->type) {
     case NONE:

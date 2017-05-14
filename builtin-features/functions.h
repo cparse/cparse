@@ -191,6 +191,25 @@ packToken default_extend(TokenMap scope) {
   }
 }
 
+// Example of replacement function for packToken::str():
+std::string packToken_str(const TokenBase* base, uint32_t nest) {
+  if (base->type == MAP) {
+    const TokenMap* map = static_cast<const TokenMap*>(base);
+    // Check if this class has a custom stringify function:
+    const packToken* p_func = map->find("__str__");
+    if (p_func && (*p_func)->type == FUNC) {
+      const Function* func = p_func->asFunc();
+      TokenList args;
+      args.push(static_cast<int64_t>(nest));
+      return Function::call(*map, func, &args, TokenMap()).asString();
+    }
+  }
+
+  // Return "" to ask for the normal `packToken::str()`
+  // function to complete the job.
+  return "";
+}
+
 struct Startup {
   Startup() {
     TokenMap& global = TokenMap::default_global();
@@ -214,6 +233,9 @@ struct Startup {
     // Default constructors:
     global["list"] = CppFunction(&default_list, "list");
     global["map"] = CppFunction(&default_map, "map");
+
+    // Set the custom str function to `packToken_str()`
+    packToken::str_custom() = packToken_str;
   }
 } base_functions_startup;
 

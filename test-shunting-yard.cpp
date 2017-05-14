@@ -415,6 +415,11 @@ TEST_CASE("Built-in extend() function") {
   REQUIRE(calculator::calculate("c.instanceof(b)", vars).asBool() == true);
 }
 
+// Used on the test case below:
+packToken map_str(TokenMap scope) {
+  return "custom map str";
+}
+
 TEST_CASE("Built-in str() function") {
   REQUIRE(calculator::calculate(" str(None) ").asString() == "None");
   REQUIRE(calculator::calculate(" str(10) ").asString() == "10");
@@ -427,6 +432,12 @@ TEST_CASE("Built-in str() function") {
   vars["iterator"] = packToken(new TokenList());
   vars["iterator"]->type = IT;
   REQUIRE(calculator::calculate("str(iterator)", vars).asString() == "[Iterator]");
+
+  TokenMap vars;
+  vars["my_map"] = TokenMap();
+  vars["my_map"]["__str__"] = CppFunction(&map_str, {}, "map_str");
+  // Test `packToken_str()` function declared on builtin-features/functions.h:
+  REQUIRE(calculator::calculate(" str(my_map) ", vars) == "custom map str");
 }
 
 TEST_CASE("Multiple argument functions") {

@@ -10,6 +10,9 @@ class packToken {
  public:
   static const packToken& None();
 
+  typedef std::string (*strFunc_t)(const TokenBase*, uint32_t);
+  static strFunc_t& str_custom();
+
  public:
   packToken() : base(new TokenNone()) {}
   packToken(const TokenBase& t) : base(t.clone()) {}
