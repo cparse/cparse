@@ -6,10 +6,23 @@
 #include <list>
 #include <vector>
 #include <string>
+#include <memory>
 
-// The pack template class manages
-// reference counting.
-#include "./pack.h"
+template <typename T>
+class Container {
+ protected:
+  std::shared_ptr<T> ref;
+
+ public:
+  Container() : ref(std::make_shared<T>()) {}
+  Container(const T& t) : ref(std::make_shared<T>(t)) {}
+
+ public:
+  operator T*() const { return ref.get(); }
+  friend bool operator==(Container<T> first, Container<T> second) {
+    return first.ref == second.ref;
+  }
+};
 
 class Iterator;
 
@@ -44,7 +57,7 @@ struct MapData_t {
   MapData_t& operator=(const MapData_t& other);
 };
 
-struct TokenMap : public pack<MapData_t>, public Iterable {
+struct TokenMap : public Container<MapData_t>, public Iterable {
   // Static factories:
   static TokenMap empty;
   static TokenMap& base_map();
@@ -52,10 +65,9 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
   static packToken default_constructor(TokenMap scope);
 
  public:
-  // Attribute getters for the
-  // pack<MapData_t> super class:
-  TokenMap_t& map() const { return ref->obj->map; }
-  TokenMap* parent() const { return ref->obj->parent; }
+  // Attribute getters for the `MapData_t` content:
+  TokenMap_t& map() const { return ref->map; }
+  TokenMap* parent() const { return ref->parent; }
 
  public:
   // Implement the Iterable Interface:
@@ -79,11 +91,15 @@ struct TokenMap : public pack<MapData_t>, public Iterable {
   }
 
  public:
-  TokenMap(TokenMap* parent = &TokenMap::base_map()) : pack(parent) {
+  TokenMap(TokenMap* parent = &TokenMap::base_map())
+          : Container(parent) {
     // For the TokenBase super class
     this->type = MAP;
   }
-  TokenMap(const TokenMap& other) : pack(other) { this->type = MAP; }
+  TokenMap(const TokenMap& other) : Container(other) {
+    this->type = MAP;
+  }
+
   virtual ~TokenMap() {}
 
  public:
@@ -113,14 +129,12 @@ struct GlobalScope : public TokenMap {
 
 typedef std::vector<packToken> TokenList_t;
 
-class TokenList : public pack<TokenList_t>, public Iterable {
- public:
+struct TokenList : public Container<TokenList_t>, public Iterable {
   static packToken default_constructor(TokenMap scope);
 
  public:
-  // Attribute getter for the
-  // pack<TokenList_t> super class:
-  TokenList_t& list() const { return *(ref->obj); }
+  // Attribute getter for the `TokenList_t` content:
+  TokenList_t& list() const { return *ref; }
 
  public:
   struct ListIterator : public Iterator {
