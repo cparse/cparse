@@ -100,6 +100,74 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
+struct Test;
+struct TestData_t {
+  Test* t;
+  TestData_t() : t(0) {}
+  TestData_t(const Test& t);
+  ~TestData_t();
+};
+
+struct Test : public Container<TestData_t> {
+  Test() {}
+  void set(Test t) { ref->t = new Test(t); }
+  Test* get() { return ref->t; }
+
+  std::weak_ptr<TestData_t> wkref() { return ref; }
+  void reset() { ref.reset(); }
+};
+
+TestData_t::TestData_t(const Test& t) : t(new Test(t)) {}
+TestData_t::~TestData_t() { delete t; }
+
+TEST_CASE("Reference counting system", "[rc]") {
+  SECTION("Testing constructors:") {
+    Test t1;
+    Test t2;
+    t2.set(t1);
+
+    REQUIRE(t1.get() == 0);
+    REQUIRE(*(t2.get()) == t1);
+  }
+  // t1 and t2 should have been deleted by now.
+  // If no exceptions were thrown it is working.
+
+  SECTION("Testing cycles") {
+    std::weak_ptr<TestData_t> r1, r2, r3, r4;
+    {
+      Test t1;
+      Test t2;
+      t2.set(t1);
+
+      // Build a cycle:
+      REQUIRE_NOTHROW(t1.set(t2));
+
+      // Add some non cyclic references:
+      Test t3;
+      Test t4;
+      t4.set(t2);
+
+      // Save some weak refs for later tests:
+      r1 = t1.wkref(); r2 = t2.wkref();
+      r3 = t3.wkref(); r4 = t4.wkref();
+    }
+
+    CHECK(r1.expired() == false);
+    CHECK(r2.expired() == false);
+    CHECK(r3.expired() == true);
+    CHECK(r4.expired() == true);
+    REQUIRE_NOTHROW(r1.lock()->t->reset());
+    CHECK(r1.expired() == true);
+    CHECK(r2.expired() == true);
+  }
+  // t1, t2, t3 and t4 should have been deleted by now.
+  // If no exceptions were thrown it is working.
+
+  // Note:
+  // There should be no memory leaks and no "still reachable"
+  // blocks when testing with valgrind.
+}
+
 TEST_CASE("String operations") {
   // String formatting:
   REQUIRE(calculator::calculate("'the test %s working' % 'is'").asString() == "the test is working");
