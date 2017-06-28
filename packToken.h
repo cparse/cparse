@@ -41,8 +41,6 @@ class packToken {
   packToken& operator[](const char* key);
   const packToken& operator[](const std::string& key) const;
   const packToken& operator[](const char* key) const;
-  operator TokenBase*() { return base; }
-  operator const TokenBase*() const { return base; }
   TokenBase* token() { return base; }
   const TokenBase* token() const { return base; }
 

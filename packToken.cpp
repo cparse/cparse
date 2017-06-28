@@ -206,7 +206,7 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
   if (!base) return "undefined";
 
   if (base->type & REF) {
-    base = static_cast<const RefToken*>(base)->value;
+    base = static_cast<const RefToken*>(base)->value.token();
     name = static_cast<const RefToken*>(base)->key.str();
   }
 
@@ -249,13 +249,13 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
       if (nest == 0) return "[Tuple]";
       ss << "(";
       first = true;
-      for (const TokenBase* token : static_cast<const Tuple*>(base)->list()) {
+      for (const packToken token : static_cast<const Tuple*>(base)->list()) {
         if (!first) {
           ss << ", ";
         } else {
           first = false;
         }
-        ss << str(token, nest-1);
+        ss << str(token.token(), nest-1);
       }
       if (first) {
         // Its an empty tuple:

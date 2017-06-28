@@ -187,12 +187,15 @@ class Tuple : public TokenList {
     this->type = TUPLE;
     list().push_back(packToken(first->clone()));
   }
+  Tuple(const packToken first) : Tuple(first.token()) {}
 
   Tuple(const TokenBase* first, const TokenBase* second) {
     this->type = TUPLE;
     list().push_back(packToken(first->clone()));
     list().push_back(packToken(second->clone()));
   }
+  Tuple(const packToken first, const packToken second)
+       : Tuple(first.token(), second.token()) {}
 
  public:
   // Implement the TokenBase abstract class
@@ -217,12 +220,15 @@ class STuple : public Tuple {
     this->type = STUPLE;
     list().push_back(packToken(first->clone()));
   }
+  STuple(const packToken first) : STuple(first.token()) {}
 
   STuple(const TokenBase* first, const TokenBase* second) {
     this->type = STUPLE;
     list().push_back(packToken(first->clone()));
     list().push_back(packToken(second->clone()));
   }
+  STuple(const packToken first, const packToken second)
+       : STuple(first.token(), second.token()) {}
 
  public:
   // Implement the TokenBase abstract class
