@@ -54,6 +54,15 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
   return 0;
 }
 
+inline std::string normalize_op(std::string op) {
+  if (op[0] == 'U') {
+    op.erase(0, 1);
+    return op;
+  } else {
+    return op;
+  }
+}
+
 // Use this function to discard a reference to an object
 // And obtain the original TokenBase*.
 // Please note that it only deletes memory if the token
@@ -110,8 +119,8 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
 bool rpnBuilder::handle_unary(const std::string& op) {
   if (this->lastTokenWasOp) {
     // Convert unary operators to binary in the RPN.
-    if (!op.compare("-") || !op.compare("+")) {
-      this->rpn.push(new Token<int64_t>(0, INT));
+    if (opp.exists("U"+op)) {
+      this->rpn.push(new TokenUnary());
       return this->lastTokenWasUnary = true;
     } else {
       cleanRPN(&(this->rpn));
@@ -127,7 +136,7 @@ void rpnBuilder::handle_op(const std::string& op) {
   // "Convert" unary operators into binary, so they can
   // be treated as if they were the same:
   if (handle_unary(op)) {
-    opStack.push(op);
+    opStack.push("U"+op);
     lastTokenWasOp = op[0];
     return;
   }
@@ -148,13 +157,19 @@ void rpnBuilder::handle_op(const std::string& op) {
 
   // If it associates from left to right:
   if (opp.assoc(op) == 0) {
+    std::string cur_op;
+
     while (!opStack.empty() && opp.prec(op) >= opp.prec(opStack.top())) {
-      rpn.push(new Token<std::string>(opStack.top(), OP));
+      cur_op = normalize_op(opStack.top());
+      rpn.push(new Token<std::string>(cur_op, OP));
       opStack.pop();
     }
   } else {
+    std::string cur_op;
+
     while (!opStack.empty() && opp.prec(op) > opp.prec(opStack.top())) {
-      rpn.push(new Token<std::string>(opStack.top(), OP));
+      cur_op = normalize_op(opStack.top());
+      rpn.push(new Token<std::string>(cur_op, OP));
       opStack.pop();
     }
   }
@@ -180,8 +195,11 @@ void rpnBuilder::close_bracket(const std::string& bracket) {
   if (lastTokenWasOp == bracket[0]) {
     rpn.push(new Tuple());
   }
+
+  std::string cur_op;
   while (opStack.size() && opStack.top() != bracket) {
-    rpn.push(new Token<std::string>(opStack.top(), OP));
+    cur_op = normalize_op(opStack.top());
+    rpn.push(new Token<std::string>(cur_op, OP));
     opStack.pop();
   }
 
@@ -412,7 +430,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
               rpnBuilder::cleanRPN(&data.rpn);
               throw;
             }
-          } else if (config.opPrecedence.exists(op)) {
+          } else if (data.opp.exists(op)) {
             data.handle_op(op);
           } else if ((parser=config.parserMap.find(op[0]))) {
             expr = start+1;
@@ -440,8 +458,10 @@ TokenQueue_t calculator::toRPN(const char* expr,
     throw syntax_error("Expected operand after unary operator `" + data.opStack.top() + "`");
   }
 
+  std::string cur_op;
   while (!data.opStack.empty()) {
-    data.rpn.push(new Token<std::string>(data.opStack.top(), OP));
+    cur_op = normalize_op(data.opStack.top());
+    data.rpn.push(new Token<std::string>(cur_op, OP));
     data.opStack.pop();
   }
 

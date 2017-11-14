@@ -224,6 +224,8 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
   switch (base->type) {
     case NONE:
       return "None";
+    case UNARY:
+      return "UnaryToken";
     case OP:
       return static_cast<const Token<std::string>*>(base)->val;
     case VAR:

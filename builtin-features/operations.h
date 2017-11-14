@@ -71,6 +71,18 @@ packToken TypeSpecificFunction(const packToken& p_left, const packToken& p_right
   }
 }
 
+packToken UnaryNumeralOperation(const packToken& left, const packToken& right, evaluationData* data) {
+  const std::string& op = data->op;
+
+  if (op == "+") {
+    return right;
+  } else if (op == "-") {
+    return -right.asDouble();
+  } else {
+    throw undefined_operation(data->op, left, right);
+  }
+}
+
 packToken NumeralOperation(const packToken& left, const packToken& right, evaluationData* data) {
   double left_d, right_d;
   int64_t left_i, right_i;
@@ -284,6 +296,9 @@ struct Startup {
     opp.add("=", 15); opp.add(":", 15);
     opp.add(",", 16);
 
+    // Add unary operators:
+    opp.addUnary("+",  3); opp.addUnary("-", 3);
+
     // Link operations to respective operators:
     opMap_t& opMap = calculator::Default().opMap;
     opMap.add({ANY_TYPE, ",", ANY_TYPE}, &Comma);
@@ -297,6 +312,7 @@ struct Startup {
 
     // Note: The order is important:
     opMap.add({NUM, ANY_OP, NUM}, &NumeralOperation);
+    opMap.add({UNARY, ANY_OP, NUM}, &UnaryNumeralOperation);
     opMap.add({STR, ANY_OP, STR}, &StringOnStringOperation);
     opMap.add({STR, ANY_OP, NUM}, &StringOnNumberOperation);
     opMap.add({NUM, ANY_OP, STR}, &NumberOnStringOperation);

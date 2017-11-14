@@ -1,5 +1,6 @@
 #ifndef SHUNTING_YARD_H_
 #define SHUNTING_YARD_H_
+#include <iostream>
 
 #include <map>
 #include <stack>
@@ -20,7 +21,7 @@ typedef uint8_t tokType_t;
 typedef uint64_t opID_t;
 enum tokType {
   // Internal types:
-  NONE, OP, VAR,
+  NONE, OP, UNARY, VAR,
 
   // Base types:
   // Note: The mask system accepts at most 29 (32-3) different base types.
@@ -70,6 +71,13 @@ struct TokenNone : public TokenBase {
   }
 };
 
+struct TokenUnary : public TokenBase {
+  TokenUnary() { this->type = UNARY; }
+  virtual TokenBase* clone() const {
+    return new TokenUnary(*this);
+  }
+};
+
 class packToken;
 typedef std::queue<TokenBase*> TokenQueue_t;
 class OppMap_t {
@@ -94,6 +102,17 @@ class OppMap_t {
     }
 
     pr_map[op] = precedence;
+  }
+
+  void addUnary(const std::string& op, int precedence) {
+    add("U"+op, precedence);
+
+    // Also add a binary operator with same precedence so
+    // it is possible to verify if an op exists just by checking
+    // the binary set of operators:
+    if (!exists(op)) {
+      add(op, precedence);
+    }
   }
 
   int prec(const std::string& op) const { return pr_map.at(op); }

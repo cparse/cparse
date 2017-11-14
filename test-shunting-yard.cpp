@@ -688,9 +688,9 @@ TEST_CASE("Parsing as slave parser") {
 TEST_CASE("operation_id() function", "[op_id]") {
   #define opID(t1, t2) Operation::build_mask(t1, t2)
   REQUIRE((opID(NONE, NONE)) == 0x0000000100000001);
-  REQUIRE((opID(FUNC, FUNC)) == 0x0000001000000010);
-  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
-  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000100000FFFF);
+  REQUIRE((opID(FUNC, FUNC)) == 0x0000002000000020);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000200000FFFF);
+  REQUIRE((opID(FUNC, ANY_TYPE)) == 0x000000200000FFFF);
 }
 
 /* * * * * Declaring adhoc operations * * * * */
@@ -731,6 +731,11 @@ packToken slash_op(const packToken& left, const packToken& right,
   return left.asDouble() / right.asDouble();
 }
 
+packToken not_unary_op(const packToken& left, const packToken& right,
+                       evaluationData* data) {
+  return ~right.asInt();
+}
+
 void slash(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_op("*");
 
@@ -752,12 +757,18 @@ struct myCalcStartup {
     // This operator will evaluate from right to left:
     opp.add("-", -3);
 
+    // Unary operator:
+    opp.addUnary("~", 4);
+    opp.addUnary("!", 4);
+
     opMap_t& opMap = myCalc::my_config().opMap;
     opMap.add({STR, "+", TUPLE}, &op1);
     opMap.add({ANY_TYPE, ".", ANY_TYPE}, &op2);
     opMap.add({NUM, "-", NUM}, &op3);
     opMap.add({NUM, "*", NUM}, &op4);
     opMap.add({NUM, "/", NUM}, &slash_op);
+    opMap.add({UNARY, "~", NUM}, &not_unary_op);
+    opMap.add({UNARY, "!", NUM}, &not_unary_op);
 
     parserMap_t& parser = myCalc::my_config().parserMap;
     parser.add('/', &slash);
@@ -794,6 +805,47 @@ TEST_CASE("Adhoc operations", "[operation][config]") {
   exp = "2 - 1 - 1";
   REQUIRE_NOTHROW(c1.compile(exp));
   REQUIRE(c1.eval() == 2);
+}
+
+TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
+  myCalc c1, c2;
+  const char* exp = "~10";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_config()));
+
+  REQUIRE(c1.eval() == ~10l);
+  REQUIRE(c2.eval() == ~10l);
+
+  exp = "1 * ~10";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == ~10l);
+
+  // Test with a subsequent operator:
+  exp = "1 * ~10 * 1";
+  REQUIRE_NOTHROW(c1.compile(exp));
+  REQUIRE(c1.eval() == ~10l);
+
+  // Test inside brackets:
+  exp = "1 * (-10 * 1)";
+  REQUIRE(calculator::calculate(exp, vars) == -10);
+
+  std::string expected;
+  calculator c3, c4;
+
+  // Testing opPrecedence:
+  REQUIRE_NOTHROW(c3.compile("-10 - 2")); // (-10) - 2
+  expected = "calculator { RPN: [ UnaryToken, 10, -, 2, - ] }";
+  REQUIRE(c3.str() == expected);
+  REQUIRE(c3.eval() == -12);
+
+  TokenMap vars;
+  vars["scope_map"] = TokenMap();
+  vars["scope_map"]["my_var"] = 10;
+
+  REQUIRE_NOTHROW(c3.compile("- scope_map . my_var")); // - (map . key2)
+  expected = "calculator { RPN: [ UnaryToken, scope_map, \"my_var\", ., - ] }";
+  REQUIRE(c3.str() == expected);
+  REQUIRE(c3.eval(vars) == -10);
 }
 
 TEST_CASE("Adhoc parsers", "[parser][config]") {
