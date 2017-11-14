@@ -23,6 +23,6 @@ test: $(EXE); ./$(EXE) $(args)
 
 check: $(EXE); valgrind --leak-check=full ./$(EXE) $(args)
 
-simul: $(EXE); cgdb ./$(EXE) $(args)
+simul: $(EXE); cgdb --args ./$(EXE) $(args)
 
 clean: ; rm -f $(EXE) $(OBJ) core-shunting-yard.o full-shunting-yard.o
