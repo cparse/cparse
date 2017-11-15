@@ -161,6 +161,7 @@ struct rpnBuilder {
   void close_bracket(const std::string& bracket);
 
  private:
+  void insert_op(const std::string& op);
   bool handle_unary(const std::string& op);
 };
 

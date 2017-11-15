@@ -115,6 +115,48 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
   }
 }
 
+/**
+ * Drop operators from opStack considering it's precedence
+ * order and associativity to make sure the rpn is
+ * built correctly then add the op to what is left of the stack.
+ *
+ * The algorithm works as follows:
+ *
+ * Let p(o) denote the precedence of an operator o.
+ *
+ * If the token is an operator, o1, then
+ *   While there is an operator token, o2, at the top
+ *       and p(o1) >= p(o2) (`>` for Right to Left associativity)
+ *     then:
+ *
+ *     pop o2 off the stack onto the output queue.
+ *   Push o1 on the stack.
+ */
+void rpnBuilder::insert_op(const std::string& op) {
+  std::string cur_op;
+
+  // If it associates from left to right:
+  if (opp.assoc(op) == 0) {
+    while (!opStack.empty() &&
+        opp.prec(op) >= opp.prec(opStack.top())) {
+
+      cur_op = normalize_op(opStack.top());
+      rpn.push(new Token<std::string>(cur_op, OP));
+      opStack.pop();
+    }
+  } else {
+    while (!opStack.empty() &&
+        opp.prec(op) > opp.prec(opStack.top())) {
+
+      cur_op = normalize_op(opStack.top());
+      rpn.push(new Token<std::string>(cur_op, OP));
+      opStack.pop();
+    }
+  }
+
+  opStack.push(op);
+}
+
 // Check for unary operators and "convert" them to binary:
 bool rpnBuilder::handle_unary(const std::string& op) {
   if (this->lastTokenWasOp) {
@@ -147,33 +189,8 @@ void rpnBuilder::handle_op(const std::string& op) {
     throw std::domain_error("Undefined operator: `" + op + "`!");
   }
 
-  // Let p(o) denote the precedence of an operator o.
-  //
-  // If the token is an operator, o1, then
-  //   While there is an operator token, o2, at the top
-  //       and p(o1) >= p(o2), then (`>` for Right to Left associativity)
-  //     pop o2 off the stack onto the output queue.
-  //   Push o1 on the stack.
-
-  // If it associates from left to right:
-  if (opp.assoc(op) == 0) {
-    std::string cur_op;
-
-    while (!opStack.empty() && opp.prec(op) >= opp.prec(opStack.top())) {
-      cur_op = normalize_op(opStack.top());
-      rpn.push(new Token<std::string>(cur_op, OP));
-      opStack.pop();
-    }
-  } else {
-    std::string cur_op;
-
-    while (!opStack.empty() && opp.prec(op) > opp.prec(opStack.top())) {
-      cur_op = normalize_op(opStack.top());
-      rpn.push(new Token<std::string>(cur_op, OP));
-      opStack.pop();
-    }
-  }
-  opStack.push(op);
+  // Add op to the stack in the correct precedence order:
+  insert_op(op);
 
   lastTokenWasOp = op[0];
 }
