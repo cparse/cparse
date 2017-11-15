@@ -161,8 +161,8 @@ struct rpnBuilder {
   void close_bracket(const std::string& bracket);
 
  private:
-  void insert_op(const std::string& op);
-  bool handle_unary(const std::string& op);
+  void handle_binary(const std::string& op);
+  void handle_left_unary(const std::string& op);
 };
 
 class opMap_t;

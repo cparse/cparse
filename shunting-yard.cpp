@@ -132,7 +132,7 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
  *     pop o2 off the stack onto the output queue.
  *   Push o1 on the stack.
  */
-void rpnBuilder::insert_op(const std::string& op) {
+void rpnBuilder::handle_binary(const std::string& op) {
   std::string cur_op;
 
   // If it associates from left to right:
@@ -157,40 +157,38 @@ void rpnBuilder::insert_op(const std::string& op) {
   opStack.push(op);
 }
 
-// Check for unary operators and "convert" them to binary:
-bool rpnBuilder::handle_unary(const std::string& op) {
-  if (this->lastTokenWasOp) {
-    // Convert Left unary operators to binary in the RPN.
-    if (opp.exists("L"+op)) {
-      this->rpn.push(new TokenUnary());
-      return this->lastTokenWasUnary = true;
-    } else {
-      cleanRPN(&(this->rpn));
-      throw std::domain_error("Unrecognized unary operator: '" + op + "'.");
-    }
-  } else {
-    return this->lastTokenWasUnary = false;
-  }
+// Check for left unary operators and "convert" them to binary:
+void rpnBuilder::handle_left_unary(const std::string& op) {
+  this->rpn.push(new TokenUnary());
+  opStack.push("L"+op);
 }
 
 // Consume operators with precedence >= than op then add op
 void rpnBuilder::handle_op(const std::string& op) {
-  // "Convert" unary operators into binary, so they can
-  // be treated as if they were the same:
-  if (handle_unary(op)) {
-    opStack.push("L"+op);
-    lastTokenWasOp = op[0];
-    return;
-  }
 
-  // Check if operator exists:
-  if (!opp.exists(op)) {
-    cleanRPN(&(rpn));
-    throw std::domain_error("Undefined operator: `" + op + "`!");
-  }
+  // If its a left unary operator:
+  if (this->lastTokenWasOp) {
+    if (opp.exists("L"+op)) {
+      handle_left_unary(op);
+      this->lastTokenWasUnary = true;
+    } else {
+      cleanRPN(&(this->rpn));
+      throw std::domain_error(
+          "Unrecognized unary operator: '" + op + "'.");
+    }
 
-  // Add op to the stack in the correct precedence order:
-  insert_op(op);
+  // If it is a binary operator:
+  } else {
+    if (opp.exists(op)) {
+      handle_binary(op);
+    } else {
+      cleanRPN(&(rpn));
+      throw std::domain_error(
+          "Undefined operator: `" + op + "`!");
+    }
+
+    this->lastTokenWasUnary = false;
+  }
 
   lastTokenWasOp = op[0];
 }
