@@ -1,6 +1,6 @@
 
-#ifndef OBJECTS_H_
-#define OBJECTS_H_
+#ifndef CONTAINERS_H_
+#define CONTAINERS_H_
 
 #include <map>
 #include <list>
@@ -237,4 +237,4 @@ class STuple : public Tuple {
   }
 };
 
-#endif  // OBJECTS_H_
+#endif  // CONTAINERS_H_

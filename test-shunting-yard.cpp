@@ -1,4 +1,6 @@
 #include <iostream>
+#include <memory>
+#include <string>
 #include "catch.hpp"
 
 #include "./shunting-yard.h"
@@ -38,7 +40,7 @@ TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("4 * -3", vars).asInt() == -12);
 }
 
-TEST_CASE("calculate::compile() and calculate::eval()") {
+TEST_CASE("calculate::compile() and calculate::eval()", "[compile]") {
   calculator c1;
   c1.compile("-pi+1", vars);
   REQUIRE(c1.eval().asDouble() == Approx(-2.14));
@@ -833,7 +835,7 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
   calculator c3, c4;
 
   // Testing opPrecedence:
-  REQUIRE_NOTHROW(c3.compile("-10 - 2")); // (-10) - 2
+  REQUIRE_NOTHROW(c3.compile("-10 - 2"));  // (-10) - 2
   expected = "calculator { RPN: [ UnaryToken, 10, -, 2, - ] }";
   REQUIRE(c3.str() == expected);
   REQUIRE(c3.eval() == -12);
@@ -842,7 +844,7 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
   vars["scope_map"] = TokenMap();
   vars["scope_map"]["my_var"] = 10;
 
-  REQUIRE_NOTHROW(c3.compile("- scope_map . my_var")); // - (map . key2)
+  REQUIRE_NOTHROW(c3.compile("- scope_map . my_var"));  // - (map . key2)
   expected = "calculator { RPN: [ UnaryToken, scope_map, \"my_var\", ., - ] }";
   REQUIRE(c3.str() == expected);
   REQUIRE(c3.eval(vars) == -10);
