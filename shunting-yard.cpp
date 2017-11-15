@@ -55,7 +55,7 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
 }
 
 inline std::string normalize_op(std::string op) {
-  if (op[0] == 'U') {
+  if (op[0] == 'L') {
     op.erase(0, 1);
     return op;
   } else {
@@ -118,8 +118,8 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
 // Check for unary operators and "convert" them to binary:
 bool rpnBuilder::handle_unary(const std::string& op) {
   if (this->lastTokenWasOp) {
-    // Convert unary operators to binary in the RPN.
-    if (opp.exists("U"+op)) {
+    // Convert Left unary operators to binary in the RPN.
+    if (opp.exists("L"+op)) {
       this->rpn.push(new TokenUnary());
       return this->lastTokenWasUnary = true;
     } else {
@@ -136,7 +136,7 @@ void rpnBuilder::handle_op(const std::string& op) {
   // "Convert" unary operators into binary, so they can
   // be treated as if they were the same:
   if (handle_unary(op)) {
-    opStack.push("U"+op);
+    opStack.push("L"+op);
     lastTokenWasOp = op[0];
     return;
   }

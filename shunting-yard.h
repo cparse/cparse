@@ -105,7 +105,7 @@ class OppMap_t {
   }
 
   void addUnary(const std::string& op, int precedence) {
-    add("U"+op, precedence);
+    add("L"+op, precedence);
 
     // Also add a binary operator with same precedence so
     // it is possible to verify if an op exists just by checking
