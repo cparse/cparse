@@ -115,6 +115,24 @@ class OppMap_t {
     }
   }
 
+  void addRightUnary(const std::string& op, int precedence) {
+    add("R"+op, precedence);
+
+    // Also add a binary operator with same precedence so
+    // it is possible to verify if an op exists just by checking
+    // the binary set of operators:
+    if (!exists(op)) {
+      add(op, precedence);
+    } else {
+      // Note that using a unary and binary operators with
+      // the same left operand is ambiguous and that the unary
+      // operator will take precedence.
+      //
+      // So only do it if you know the expected left operands
+      // have distinct types.
+    }
+  }
+
   int prec(const std::string& op) const { return pr_map.at(op); }
   bool assoc(const std::string& op) const { return RtoL.count(op); }
   bool exists(const std::string& op) const { return pr_map.count(op); }
@@ -161,8 +179,10 @@ struct rpnBuilder {
   void close_bracket(const std::string& bracket);
 
  private:
+  void handle_opStack(const std::string& op);
   void handle_binary(const std::string& op);
   void handle_left_unary(const std::string& op);
+  void handle_right_unary(const std::string& op);
 };
 
 class opMap_t;

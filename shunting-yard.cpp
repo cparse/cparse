@@ -55,7 +55,7 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
 }
 
 inline std::string normalize_op(std::string op) {
-  if (op[0] == 'L') {
+  if (op[0] == 'L' || op[0] == 'R') {
     op.erase(0, 1);
     return op;
   } else {
@@ -116,9 +116,8 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
 }
 
 /**
- * Drop operators from opStack considering it's precedence
- * order and associativity to make sure the rpn is
- * built correctly then add the op to what is left of the stack.
+ * Consume operators with precedence >= than op
+ * and add them to the RPN
  *
  * The algorithm works as follows:
  *
@@ -132,14 +131,13 @@ void rpnBuilder::cleanRPN(TokenQueue_t* rpn) {
  *     pop o2 off the stack onto the output queue.
  *   Push o1 on the stack.
  */
-void rpnBuilder::handle_binary(const std::string& op) {
+void rpnBuilder::handle_opStack(const std::string& op) {
   std::string cur_op;
 
   // If it associates from left to right:
   if (opp.assoc(op) == 0) {
     while (!opStack.empty() &&
         opp.prec(op) >= opp.prec(opStack.top())) {
-
       cur_op = normalize_op(opStack.top());
       rpn.push(new Token<std::string>(cur_op, OP));
       opStack.pop();
@@ -147,35 +145,59 @@ void rpnBuilder::handle_binary(const std::string& op) {
   } else {
     while (!opStack.empty() &&
         opp.prec(op) > opp.prec(opStack.top())) {
-
       cur_op = normalize_op(opStack.top());
       rpn.push(new Token<std::string>(cur_op, OP));
       opStack.pop();
     }
   }
+}
 
+void rpnBuilder::handle_binary(const std::string& op) {
+  // Handle OP precedence
+  handle_opStack(op);
+  // Then push the current op into the stack:
   opStack.push(op);
 }
 
-// Check for left unary operators and "convert" them to binary:
-void rpnBuilder::handle_left_unary(const std::string& op) {
+// Convert left unary operators to binary and handle them:
+void rpnBuilder::handle_left_unary(const std::string& unary_op) {
   this->rpn.push(new TokenUnary());
-  opStack.push("L"+op);
+  // Only put it on the stack and wait to check op precedence:
+  opStack.push(unary_op);
 }
 
-// Consume operators with precedence >= than op then add op
-void rpnBuilder::handle_op(const std::string& op) {
+// Convert right unary operators to binary and handle them:
+void rpnBuilder::handle_right_unary(const std::string& unary_op) {
+  // Handle OP precedence:
+  handle_opStack(unary_op);
+  // Add the unary token:
+  this->rpn.push(new TokenUnary());
+  // Then add the current op directly into the rpn:
+  rpn.push(new Token<std::string>(normalize_op(unary_op), OP));
+}
 
+// Find out if op is a binary or unary operator and handle it:
+void rpnBuilder::handle_op(const std::string& op) {
   // If its a left unary operator:
   if (this->lastTokenWasOp) {
     if (opp.exists("L"+op)) {
-      handle_left_unary(op);
+      handle_left_unary("L"+op);
       this->lastTokenWasUnary = true;
+      this->lastTokenWasOp = op[0];
     } else {
       cleanRPN(&(this->rpn));
       throw std::domain_error(
           "Unrecognized unary operator: '" + op + "'.");
     }
+
+  // If its a right unary operator:
+  } else if (opp.exists("R"+op)) {
+    handle_right_unary("R"+op);
+
+    // Set it to false, since we have already added
+    // an unary token and operand to the stack:
+    this->lastTokenWasUnary = false;
+    this->lastTokenWasOp = false;
 
   // If it is a binary operator:
   } else {
@@ -188,9 +210,8 @@ void rpnBuilder::handle_op(const std::string& op) {
     }
 
     this->lastTokenWasUnary = false;
+    this->lastTokenWasOp = op[0];
   }
-
-  lastTokenWasOp = op[0];
 }
 
 void rpnBuilder::handle_token(TokenBase* token) {
@@ -358,16 +379,6 @@ TokenQueue_t calculator::toRPN(const char* expr,
       data.handle_token(new Token<std::string>(ss.str(), STR));
     } else {
       // Otherwise, the variable is an operator or paranthesis.
-
-      // Check for syntax errors (excess of operators i.e. 10 + + -1):
-      if (data.lastTokenWasUnary) {
-        std::string op;
-        op.push_back(*expr);
-        rpnBuilder::cleanRPN(&data.rpn);
-        throw syntax_error("Expected operand after unary operator `" + data.opStack.top() +
-                           "` but found: `" + op + "` instead.");
-      }
-
       switch (*expr) {
       case '(':
         // If it is a function call:

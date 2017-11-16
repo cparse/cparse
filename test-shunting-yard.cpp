@@ -738,6 +738,11 @@ packToken not_unary_op(const packToken& left, const packToken& right,
   return ~right.asInt();
 }
 
+packToken not_right_unary_op(const packToken& left, const packToken& right,
+                             evaluationData* data) {
+  return ~left.asInt();
+}
+
 void slash(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_op("*");
 
@@ -759,9 +764,10 @@ struct myCalcStartup {
     // This operator will evaluate from right to left:
     opp.add("-", -3);
 
-    // Unary operator:
+    // Unary operators:
     opp.addUnary("~", 4);
-    opp.addUnary("!", 4);
+    opp.addRightUnary("~", 4);
+    opp.addRightUnary("!", 1);
 
     opMap_t& opMap = myCalc::my_config().opMap;
     opMap.add({STR, "+", TUPLE}, &op1);
@@ -770,7 +776,8 @@ struct myCalcStartup {
     opMap.add({NUM, "*", NUM}, &op4);
     opMap.add({NUM, "/", NUM}, &slash_op);
     opMap.add({UNARY, "~", NUM}, &not_unary_op);
-    opMap.add({UNARY, "!", NUM}, &not_unary_op);
+    opMap.add({NUM, "~", UNARY}, &not_right_unary_op);
+    opMap.add({NUM, "!", UNARY}, &not_right_unary_op);
 
     parserMap_t& parser = myCalc::my_config().parserMap;
     parser.add('/', &slash);
@@ -810,44 +817,79 @@ TEST_CASE("Adhoc operations", "[operation][config]") {
 }
 
 TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
-  myCalc c1, c2;
-  const char* exp = "~10";
-  REQUIRE_NOTHROW(c1.compile(exp));
-  REQUIRE_NOTHROW(c2 = myCalc(exp, vars, 0, 0, myCalc::my_config()));
+  SECTION("Left Unary Operators") {
+    myCalc c1;
 
-  REQUIRE(c1.eval() == ~10l);
-  REQUIRE(c2.eval() == ~10l);
+    // * * Using custom unary operators: * * //
 
-  exp = "1 * ~10";
-  REQUIRE_NOTHROW(c1.compile(exp));
-  REQUIRE(c1.eval() == ~10l);
+    REQUIRE_NOTHROW(c1.compile("~10"));
+    REQUIRE(c1.eval() == ~10l);
 
-  // Test with a subsequent operator:
-  exp = "1 * ~10 * 1";
-  REQUIRE_NOTHROW(c1.compile(exp));
-  REQUIRE(c1.eval() == ~10l);
+    REQUIRE_NOTHROW(c1.compile("2 * ~10"));
+    REQUIRE(c1.eval() == 2 * ~10l);
 
-  // Test inside brackets:
-  exp = "1 * (-10 * 1)";
-  REQUIRE(calculator::calculate(exp, vars) == -10);
+    REQUIRE_NOTHROW(c1.compile("2 * ~10 * 3"));
+    REQUIRE(c1.eval() == 2 * ~(10l*3));
 
-  std::string expected;
-  calculator c3, c4;
+    calculator c2;
 
-  // Testing opPrecedence:
-  REQUIRE_NOTHROW(c3.compile("-10 - 2"));  // (-10) - 2
-  expected = "calculator { RPN: [ UnaryToken, 10, -, 2, - ] }";
-  REQUIRE(c3.str() == expected);
-  REQUIRE(c3.eval() == -12);
+    // * * Using built-in unary operators: * * //
 
-  TokenMap vars;
-  vars["scope_map"] = TokenMap();
-  vars["scope_map"]["my_var"] = 10;
+    // Testing inside brackets:
+    REQUIRE_NOTHROW(c2.compile("(2 * -10) * 3"));
+    REQUIRE(c2.eval() == 2 * -10 * 3);
 
-  REQUIRE_NOTHROW(c3.compile("- scope_map . my_var"));  // - (map . key2)
-  expected = "calculator { RPN: [ UnaryToken, scope_map, \"my_var\", ., - ] }";
-  REQUIRE(c3.str() == expected);
-  REQUIRE(c3.eval(vars) == -10);
+    REQUIRE_NOTHROW(c2.compile("2 * (-10 * 3)"));
+    REQUIRE(c2.eval() == 2 * (-10 * 3));
+
+    REQUIRE_NOTHROW(c2.compile("2 * -(10 * 3)"));
+    REQUIRE(c2.eval() == 2 * -(10 * 3));
+
+    // Testing opPrecedence:
+    REQUIRE_NOTHROW(c2.compile("-10 - 2"));  // (-10) - 2
+    REQUIRE(c2.eval() == -12);
+
+    TokenMap vars;
+    vars["scope_map"] = TokenMap();
+    vars["scope_map"]["my_var"] = 10;
+
+    REQUIRE_NOTHROW(c2.compile("- scope_map . my_var"));  // - (map . key2)
+    REQUIRE(c2.eval(vars) == -10);
+  }
+
+  SECTION("Right unary operators") {
+    myCalc c1;
+
+    // Testing with lower op precedence:
+    REQUIRE_NOTHROW(c1.compile("10~"));
+    REQUIRE(c1.eval() == ~10l);
+
+    REQUIRE_NOTHROW(c1.compile("2 * 10~"));
+    REQUIRE(c1.eval() == ~(2*10l));
+
+    REQUIRE_NOTHROW(c1.compile("2 * 10~ * 3"));
+    REQUIRE(c1.eval() == ~(2*10l) * 3);
+
+    // Testing with higher op precedence:
+    REQUIRE_NOTHROW(c1.compile("10!"));
+    REQUIRE(c1.eval() == ~10l);
+
+    REQUIRE_NOTHROW(c1.compile("2 * 10!"));
+    REQUIRE(c1.eval() == 2 * ~10l);
+
+    REQUIRE_NOTHROW(c1.compile("2 * 10! * 3"));
+    REQUIRE(c1.eval() == 2 * ~10l * 3);
+
+    // Testing inside brackets:
+    REQUIRE_NOTHROW(c1.compile("2 * (10~ * 3)"));
+    REQUIRE(c1.eval() == 2 * ~10l * 3);
+
+    REQUIRE_NOTHROW(c1.compile("(2 * 10~) * 3"));
+    REQUIRE(c1.eval() == ~(2*10l) * 3);
+
+    REQUIRE_NOTHROW(c1.compile("(2 * 10)~ * 3"));
+    REQUIRE(c1.eval() == ~(2*10l) * 3);
+  }
 }
 
 TEST_CASE("Adhoc parsers", "[parser][config]") {
@@ -919,7 +961,7 @@ TEST_CASE("Exception management") {
   emap.erase("a");
   REQUIRE_NOTHROW(ecalc.eval(emap));
 
-  REQUIRE_THROWS(calculator c5("10 + - - 10"));
+  REQUIRE_NOTHROW(calculator c5("10 + - - 10"));
   REQUIRE_THROWS(calculator c5("10 + +"));
   REQUIRE_NOTHROW(calculator c5("10 + -10"));
   REQUIRE_THROWS(calculator c5("c.[10]"));

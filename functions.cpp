@@ -1,3 +1,5 @@
+#include <string>
+
 #include "./shunting-yard.h"
 #include "./functions.h"
 #include "./shunting-yard-exceptions.h"
