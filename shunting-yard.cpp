@@ -14,7 +14,7 @@
 /* * * * * Operation class: * * * * */
 
 // Convert a type into an unique mask for bit wise operations:
-const uint32_t Operation::mask(tokType_t type) {
+uint32_t Operation::mask(tokType_t type) {
   if (type == ANY_TYPE) {
     return 0xFFFF;
   } else {
@@ -23,7 +23,7 @@ const uint32_t Operation::mask(tokType_t type) {
 }
 
 // Build a mask for each pair of operands
-const opID_t Operation::build_mask(tokType_t left, tokType_t right) {
+opID_t Operation::build_mask(tokType_t left, tokType_t right) {
   opID_t result = mask(left);
   return (result << 32) | mask(right);
 }

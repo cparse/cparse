@@ -271,8 +271,8 @@ class Operation {
   struct Reject : public std::exception {};
 
  public:
-  static inline const uint32_t mask(tokType_t type);
-  static const opID_t build_mask(tokType_t left, tokType_t right);
+  static inline uint32_t mask(tokType_t type);
+  static opID_t build_mask(tokType_t left, tokType_t right);
 
  private:
   opID_t _mask;
@@ -283,7 +283,7 @@ class Operation {
            : _mask(build_mask(sig.left, sig.right)), _exec(func) {}
 
  public:
-  const opID_t getMask() const { return _mask; }
+  opID_t getMask() const { return _mask; }
   packToken exec(const packToken& left, const packToken& right,
                  evaluationData* data) const {
     return _exec(left, right, data);

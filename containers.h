@@ -160,7 +160,7 @@ struct TokenList : public Container<TokenList_t>, public Iterable {
   virtual ~TokenList() {}
 
   packToken& operator[](const uint64_t idx) const {
-    if (list().size() <= idx || idx < 0) {
+    if (list().size() <= idx) {
       throw std::out_of_range("List index out of range!");
     }
     return list()[idx];
