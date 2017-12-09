@@ -16,7 +16,7 @@ packToken Function::call(packToken _this, const Function* func,
   TokenList_t::iterator args_it = args->list().begin();
   args_t::const_iterator names_it = arg_names.begin();
 
-  /* * * * * Parse named arguments: * * * * */
+  /* * * * * Parse positional arguments: * * * * */
 
   while (args_it != args->list().end() && names_it != arg_names.end()) {
     // If the positional argument list is over:
@@ -64,12 +64,16 @@ packToken Function::call(packToken _this, const Function* func,
     kwargs[key] = value;
   }
 
-  /* * * * * Set missing arguments to None: * * * * */
+  /* * * * * Set missing positional arguments: * * * * */
 
   for (; names_it != arg_names.end(); ++names_it) {
     // If not set by a keyword argument:
-    if (local.map().count(*names_it) == 0) {
+    auto kw_it = kwargs.map().find(*names_it);
+    if (kw_it == kwargs.map().end()) {
       local[*names_it] = packToken::None();
+    } else {
+      local[*names_it] = kw_it->second;
+      kwargs.map().erase(kw_it);
     }
   }
 

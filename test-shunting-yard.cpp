@@ -516,15 +516,28 @@ TEST_CASE("Multiple argument functions") {
   REQUIRE(vars["total"].asDouble() == 10);
 }
 
-TEST_CASE("Passing keyword arguments to functions") {
+TEST_CASE("Passing keyword arguments to functions", "[function][kwargs]") {
   GlobalScope vars;
-  REQUIRE_NOTHROW(calculator::calculate("my_map = map('a':1,'b':2)", vars));
+  calculator c1;
+  REQUIRE_NOTHROW(c1.compile("my_map = map('a':1,'b':2)", vars));
+  REQUIRE_NOTHROW(c1.eval(vars));
 
   TokenMap map;
   REQUIRE_NOTHROW(map = vars["my_map"].asMap());
 
   REQUIRE(map["a"].asInt() == 1);
   REQUIRE(map["b"].asInt() == 2);
+
+  double result;
+  REQUIRE_NOTHROW(c1.compile("result = pow(2, 'exp': 3)"));
+  REQUIRE_NOTHROW(c1.eval(vars));
+  REQUIRE_NOTHROW(result = vars["result"].asDouble());
+  REQUIRE(result == 8.0);
+
+  REQUIRE_NOTHROW(c1.compile("result = pow('exp': 3, 'number': 2)"));
+  REQUIRE_NOTHROW(c1.eval(vars));
+  REQUIRE_NOTHROW(result = vars["result"].asDouble());
+  REQUIRE(result == 8.0);
 }
 
 TEST_CASE("Default functions") {
