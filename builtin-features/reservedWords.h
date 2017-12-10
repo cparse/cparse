@@ -66,7 +66,9 @@ struct Startup {
     parser.add("//", &LineComment);
     parser.add("/*", &SlashStarComment);
     parser.add(":", &KeywordOperator);
+    parser.add(':', &KeywordOperator);
     parser.add(".", &DotOperator);
+    parser.add('.', &DotOperator);
   }
 } Startup;
 
