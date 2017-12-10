@@ -9,6 +9,7 @@
 #include <list>
 #include <vector>
 #include <set>
+#include <sstream>
 
 /*
  * About tokType enum:
@@ -177,6 +178,25 @@ struct rpnBuilder {
   void handle_token(TokenBase* token);
   void open_bracket(const std::string& bracket);
   void close_bracket(const std::string& bracket);
+
+  // * * * * * Static parsing helpers: * * * * * //
+
+  // Check if a character is the first character of a variable:
+  static inline bool isvarchar(const char c) {
+    return isalpha(c) || c == '_';
+  }
+
+  static inline std::string parseVar(const char* expr, const char** rest = 0) {
+    std::stringstream ss;
+    ss << *expr;
+    ++expr;
+    while (rpnBuilder::isvarchar(*expr) || isdigit(*expr)) {
+      ss << *expr;
+      ++expr;
+    }
+    if (rest) *rest = expr;
+    return ss.str();
+  }
 
  private:
   void handle_opStack(const std::string& op);

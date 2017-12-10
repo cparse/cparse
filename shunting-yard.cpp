@@ -272,7 +272,6 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
 
 /* * * * * calculator class * * * * */
 
-#define isvariablechar(c) (isalpha(c) || c == '_')
 TokenQueue_t calculator::toRPN(const char* expr,
                                TokenMap vars, const char* delim,
                                const char** rest, Config_t config) {
@@ -304,19 +303,12 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       expr = nextChar;
-    } else if (isvariablechar(*expr)) {
+    } else if (rpnBuilder::isvarchar(*expr)) {
       rWordParser_t* parser;
 
       // If the token is a variable, resolve it and
       // add the parsed number to the output queue.
-      std::stringstream ss;
-      ss << *expr;
-      ++expr;
-      while (isvariablechar(*expr) || isdigit(*expr)) {
-        ss << *expr;
-        ++expr;
-      }
-      std::string key = ss.str();
+      std::string key = rpnBuilder::parseVar(expr, &expr);
 
       if (data.lastTokenWasOp == '.') {
         data.handle_token(new Token<std::string>(key, STR));
