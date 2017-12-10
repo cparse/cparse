@@ -12,6 +12,7 @@ all: $(EXE) release
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(DEBUG) $(OBJ) -o $(EXE)
 %.o: %.cpp *.h %/*; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
+%.o: %.cpp *.h; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
 
 release: $(CORE_SRC) builtin-features.cpp;
 	$(CXX) -c -O3 $(CFLAGS) $(CORE_SRC) builtin-features.cpp
