@@ -189,7 +189,7 @@ TEST_CASE("String operations") {
   REQUIRE(calculator::calculate("'foobar'[-3]").asString() == "b");
 }
 
-TEST_CASE("Map access expressions") {
+TEST_CASE("Map access expressions", "[map][map-access]") {
   REQUIRE(calculator::calculate("map[\"key\"]", vars).asString() == "mapped value");
   REQUIRE(calculator::calculate("map[\"key\"+1]", vars).asString() ==
           "second mapped value");
@@ -229,7 +229,7 @@ TEST_CASE("Prototypical inheritance tests") {
   REQUIRE(calculator::calculate("grand_child.a", vars).asDouble() == 12);
 }
 
-TEST_CASE("Map usage expressions", "[map]") {
+TEST_CASE("Map usage expressions", "[map][map-usage]") {
   TokenMap vars;
   vars["my_map"] = TokenMap();
   REQUIRE_NOTHROW(calculator::calculate("my_map['a'] = 1", vars));

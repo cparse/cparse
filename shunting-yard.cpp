@@ -310,9 +310,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       // add the parsed number to the output queue.
       std::string key = rpnBuilder::parseVar(expr, &expr);
 
-      if (data.lastTokenWasOp == '.') {
-        data.handle_token(new Token<std::string>(key, STR));
-      } else if ((parser=config.parserMap.find(key))) {
+      if ((parser=config.parserMap.find(key))) {
         // Parse reserved words:
         try {
           parser(expr, &expr, &data);

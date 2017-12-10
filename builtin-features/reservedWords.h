@@ -41,6 +41,21 @@ void KeywordOperator(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_op(":");
 }
 
+void DotOperator(const char* expr, const char** rest, rpnBuilder* data) {
+  data->handle_op(".");
+
+  while (*expr && isspace(*expr)) ++expr;
+
+  // If it did not find a valid variable name after it:
+  if (!rpnBuilder::isvarchar(*expr)) {
+    throw syntax_error("Expected variable name after '.' operator");
+  }
+
+  // Parse the variable name and save it as a string:
+  std::string key = rpnBuilder::parseVar(expr, rest);
+  data->handle_token(new Token<std::string>(key, STR));
+}
+
 struct Startup {
   Startup() {
     parserMap_t& parser = calculator::Default().parserMap;
@@ -51,6 +66,7 @@ struct Startup {
     parser.add("//", &LineComment);
     parser.add("/*", &SlashStarComment);
     parser.add(":", &KeywordOperator);
+    parser.add(".", &DotOperator);
   }
 } Startup;
 
