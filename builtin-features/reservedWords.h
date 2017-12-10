@@ -33,6 +33,14 @@ void SlashStarComment(const char* expr, const char** rest, rpnBuilder* data) {
   *rest = expr;
 }
 
+void KeywordOperator(const char* expr, const char** rest, rpnBuilder* data) {
+  // Convert any STuple like `a : 10` to `'a': 10`:
+  if (data->rpn.back()->type == VAR) {
+    data->rpn.back()->type = STR;
+  }
+  data->handle_op(":");
+}
+
 struct Startup {
   Startup() {
     parserMap_t& parser = calculator::Default().parserMap;
@@ -42,6 +50,7 @@ struct Startup {
     parser.add("#", &LineComment);
     parser.add("//", &LineComment);
     parser.add("/*", &SlashStarComment);
+    parser.add(":", &KeywordOperator);
   }
 } Startup;
 

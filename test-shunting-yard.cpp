@@ -905,7 +905,7 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
   }
 }
 
-TEST_CASE("Adhoc parsers", "[parser][config]") {
+TEST_CASE("Adhoc reservedWord parsers", "[parser][config]") {
   myCalc c1;
 
   REQUIRE_NOTHROW(c1.compile("2 / 2"));
@@ -919,6 +919,21 @@ TEST_CASE("Adhoc parsers", "[parser][config]") {
 
   REQUIRE_NOTHROW(c1.compile("2 /! 2"));
   REQUIRE(c1.eval().asInt() == 4);
+}
+
+TEST_CASE("Custom parser for operator ':'", "[parser]") {
+  packToken p1;
+  calculator c2;
+
+  REQUIRE_NOTHROW(c2.compile("{ a : 1 }"));
+  REQUIRE_NOTHROW(p1 = c2.eval());
+  REQUIRE(p1["a"] == 1);
+
+  REQUIRE_NOTHROW(c2.compile("map(a : 1, b:2, c: \"c\")"));
+  REQUIRE_NOTHROW(p1 = c2.eval());
+  REQUIRE(p1["a"] == 1);
+  REQUIRE(p1["b"] == 2);
+  REQUIRE(p1["c"] == "c");
 }
 
 TEST_CASE("Resource management") {
