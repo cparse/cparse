@@ -102,6 +102,35 @@ TEST_CASE("String expressions") {
   REQUIRE(calculator::calculate("'foo\\\nar'").asString() == "foo\nar");
 }
 
+TEST_CASE("Testing operator parsing mechanism", "[operator]") {
+  calculator c1;
+
+  // Test if it is detecting operations correctly:
+  REQUIRE_NOTHROW(c1.compile("['list'] == ['list']"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("['list']== ['list']"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("['list'] ==['list']"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("['list']==['list']"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("{a:'list'} == {a:'list'}"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("{a:'list'}== {a:'list'}"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("{a:'list'} =={a:'list'}"));
+  REQUIRE(c1.eval() == true);
+
+  REQUIRE_NOTHROW(c1.compile("{a:'list'}=={a:'list'}"));
+  REQUIRE(c1.eval() == true);
+}
+
 struct Test;
 struct TestData_t {
   Test* t;
