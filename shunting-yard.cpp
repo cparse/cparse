@@ -551,7 +551,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
 
       /* * * * * Resolve Asign Operation * * * * */
 
-      if (!data.op.compare("=")) {
+      if (data.op == "=") {
         delete b_left;
 
         // If the left operand has a variable name:
@@ -596,7 +596,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
       } else if (b_left->type == FUNC && data.op == "()") {
         Function* f_left = static_cast<Function*>(b_left);
 
-        if (!data.op.compare("()")) {
+        if (data.op == "()") {
           // Collect the parameter tuple:
           Tuple right;
           if (b_right->type == TUPLE) {

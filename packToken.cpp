@@ -34,7 +34,7 @@ bool packToken::operator==(const packToken& token) const {
     return false;
   } else {
     // Compare strings to simplify code
-    return token.str().compare(str()) == 0;
+    return token.str() == str();
   }
 }
 
