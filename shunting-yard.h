@@ -316,6 +316,18 @@ struct opMap_t : public std::map<std::string, opList_t> {
   void add(const opSignature_t sig, Operation::opFunc_t func) {
     (*this)[sig.op].push_back(Operation(sig, func));
   }
+
+  std::string str() const {
+    if (this->size() == 0) return "{}";
+
+    std::string result = "{ ";
+    for (const auto& pair : (*this)) {
+      result += "\"" + pair.first + "\", ";
+    }
+    result.pop_back();
+    result.pop_back();
+    return result + " }";
+  }
 };
 
 struct Config_t {
