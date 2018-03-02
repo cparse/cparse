@@ -11,7 +11,7 @@ class Function : public TokenBase {
   static packToken call(packToken _this, const Function* func,
                         TokenList* args, TokenMap scope);
  public:
-  Function() { this->type = FUNC; }
+  Function() : TokenBase(FUNC) {}
   virtual ~Function() {}
 
  public:

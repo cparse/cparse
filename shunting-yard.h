@@ -52,28 +52,32 @@ enum tokType {
 
 struct TokenBase {
   tokType_t type;
+
   virtual ~TokenBase() {}
+  TokenBase() {}
+  TokenBase(tokType_t type) : type(type) {}
+
   virtual TokenBase* clone() const = 0;
 };
 
 template<class T> class Token : public TokenBase {
  public:
   T val;
-  Token(T t, tokType_t type) : val(t) { this->type = type; }
+  Token(T t, tokType_t type) : TokenBase(type), val(t) {}
   virtual TokenBase* clone() const {
-    return new Token(static_cast<const Token&>(*this));
+    return new Token(*this);
   }
 };
 
 struct TokenNone : public TokenBase {
-  TokenNone() { this->type = NONE; }
+  TokenNone() : TokenBase(NONE) {}
   virtual TokenBase* clone() const {
-    return new TokenNone(static_cast<const TokenNone&>(*this));
+    return new TokenNone(*this);
   }
 };
 
 struct TokenUnary : public TokenBase {
-  TokenUnary() { this->type = UNARY; }
+  TokenUnary() : TokenBase(UNARY) {}
   virtual TokenBase* clone() const {
     return new TokenUnary(*this);
   }
@@ -265,9 +269,9 @@ struct RefToken : public TokenBase {
   packToken value;
   packToken source;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
-    key(k), value(v), source(m) { this->type = v->type | REF; }
+    TokenBase(v->type | REF), key(k), value(v), source(m) {}
   RefToken(packToken k, packToken v, packToken m = packToken::None()) :
-    key(k), value(v), source(m) { this->type = v->type | REF; }
+    TokenBase(v->type | REF), key(k), value(v), source(m) {}
 
   virtual TokenBase* clone() const {
     return new RefToken(*this);

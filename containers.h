@@ -28,12 +28,15 @@ class Iterator;
 
 struct Iterable : public TokenBase {
   virtual ~Iterable() {}
+  Iterable() {}
+  Iterable(tokType_t type) : TokenBase(type) {}
+
   virtual Iterator* getIterator() const = 0;
 };
 
 // Iterator super class.
 struct Iterator : public Iterable {
-  Iterator() { this->type = IT; }
+  Iterator() : Iterable(IT) {}
   virtual ~Iterator() {}
   // Return the next position of the iterator.
   // When it reaches the end it should return NULL
@@ -92,7 +95,7 @@ struct TokenMap : public Container<MapData_t>, public Iterable {
 
  public:
   TokenMap(TokenMap* parent = &TokenMap::base_map())
-          : Container(parent) {
+          : Container(parent), Iterable(MAP) {
     // For the TokenBase super class
     this->type = MAP;
   }
