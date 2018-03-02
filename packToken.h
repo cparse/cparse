@@ -54,6 +54,10 @@ class packToken {
   STuple& asSTuple() const;
   Function* asFunc() const;
 
+  // Specialize this template to your types, e.g.:
+  // MyType& m = packToken.as<MyType>();
+  template<typename T> T& as() const;
+
   // The nest argument defines how many times
   // it will recursively print nested structures:
   std::string str(uint32_t nest = 3) const;
