@@ -202,16 +202,27 @@ packToken default_extend(TokenMap scope) {
 
 // Example of replacement function for packToken::str():
 std::string packToken_str(const TokenBase* base, uint32_t nest) {
+  const Function* func;
+
+  // Find the TokenMap with the type specific functions
+  // for the type of the base token:
+  const TokenMap* typeFuncs;
   if (base->type == MAP) {
-    const TokenMap* map = static_cast<const TokenMap*>(base);
-    // Check if this class has a custom stringify function:
-    const packToken* p_func = map->find("__str__");
-    if (p_func && (*p_func)->type == FUNC) {
-      const Function* func = p_func->asFunc();
-      TokenList args;
-      args.push(static_cast<int64_t>(nest));
-      return Function::call(*map, func, &args, TokenMap()).asString();
-    }
+    typeFuncs = static_cast<const TokenMap*>(base);
+  } else {
+    typeFuncs = &calculator::type_attribute_map()[base->type];
+  }
+
+  // Check if this type has a custom stringify function:
+  const packToken* p_func = typeFuncs->find("__str__");
+  if (p_func && (*p_func)->type == FUNC) {
+    // Return the result of this function passing the
+    // nesting level as first (and only) argument:
+    func = p_func->asFunc();
+    packToken _this = packToken(base->clone());
+    TokenList args;
+    args.push(static_cast<int64_t>(nest));
+    return Function::call(_this, func, &args, TokenMap()).asString();
   }
 
   // Return "" to ask for the normal `packToken::str()`
