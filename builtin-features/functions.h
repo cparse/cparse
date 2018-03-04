@@ -1,3 +1,4 @@
+#include <cmath>
 
 namespace builtin_functions {
 
