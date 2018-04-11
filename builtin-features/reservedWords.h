@@ -70,6 +70,6 @@ struct Startup {
     parser.add(".", &DotOperator);
     parser.add('.', &DotOperator);
   }
-} Startup;
+} _Startup;
 
 }  // namespace builtin_reservedWords

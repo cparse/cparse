@@ -320,6 +320,6 @@ struct Startup {
     opMap.add({LIST, ANY_OP, NUM}, &ListOnNumberOperation);
     opMap.add({LIST, ANY_OP, LIST}, &ListOnListOperation);
   }
-} StartUp;
+} _Startup;
 
 }  // namespace builtin_operations
