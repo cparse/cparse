@@ -12,10 +12,10 @@
 
 /* * * * * Built-in Features: * * * * */
 
-#include "./builtin-features/operations.h"
+#include "./builtin-features/operations.inc"
 
-#include "./builtin-features/reservedWords.h"
+#include "./builtin-features/reservedWords.inc"
 
-#include "./builtin-features/functions.h"
+#include "./builtin-features/functions.inc"
 
-#include "./builtin-features/typeSpecificFunctions.h"
+#include "./builtin-features/typeSpecificFunctions.inc"
