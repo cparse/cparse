@@ -257,6 +257,6 @@ struct Startup {
     // Set the custom str function to `packToken_str()`
     packToken::str_custom() = packToken_str;
   }
-} _Startup;
+} __CPARSE_STARTUP;
 
 }  // namespace builtin_functions
