@@ -268,14 +268,18 @@ struct parserMap_t {
   }
 };
 
+// The RefToken keeps information about the context
+// in which a variable was originally evaluated
+// and allow a final value to be correctly resolved
+// afterwards.
 struct RefToken : public TokenBase {
   packToken key;
-  packToken value;
+  packToken original_value;
   packToken origin;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), value(v), origin(m) {}
+    TokenBase(v->type | REF), key(k), original_value(v), origin(m) {}
   RefToken(packToken k = packToken::None(), packToken v = packToken::None(), packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), value(v), origin(m) {}
+    TokenBase(v->type | REF), key(k), original_value(v), origin(m) {}
 
   TokenBase* resolve(TokenMap* localScope = 0) {
     TokenBase* result = 0;
@@ -291,7 +295,7 @@ struct RefToken : public TokenBase {
     }
 
     // In last case return the compilation-time value:
-    return result ? result : value->clone();
+    return result ? result : original_value->clone();
   }
 
   virtual TokenBase* clone() const {

@@ -206,7 +206,7 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
   if (!base) return "undefined";
 
   if (base->type & REF) {
-    base = static_cast<const RefToken*>(base)->value.token();
+    base = static_cast<const RefToken*>(base)->original_value.token();
     name = static_cast<const RefToken*>(base)->key.str();
   }
 
