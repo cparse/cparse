@@ -2,6 +2,50 @@
 
 namespace builtin_operations {
 
+// Assignment operator "="
+packToken Assign(const packToken& left, const packToken& right, evaluationData* data) {
+  packToken& key = data->left->key;
+  packToken& origin = data->left->origin;
+
+  // If the left operand has a name:
+  if (key->type == STR) {
+    std::string& var_name = key.asString();
+
+    // If it is an attribute of a TokenMap:
+    if (origin->type == MAP) {
+      TokenMap& map = origin.asMap();
+      map[var_name] = right;
+
+    // If it is a local variable:
+    } else {
+      // Find the parent map where this variable is stored:
+      TokenMap* map = data->scope.findMap(var_name);
+
+      // Note:
+      // It is not possible to assign directly to
+      // the global scope. It would be easy for the user
+      // to do it by accident, thus:
+      if (!map || *map == TokenMap::default_global()) {
+        data->scope[var_name] = right;
+      } else {
+        (*map)[var_name] = right;
+      }
+    }
+  // If the left operand has an index number:
+  } else if (key->type & NUM) {
+    if (origin->type == LIST) {
+      TokenList& list = origin.asList();
+      size_t index = key.asInt();
+      list[index] = right;
+    } else {
+      throw std::domain_error("Left operand of assignment is not a list!");
+    }
+  } else {
+    throw undefined_operation(data->op, key, right);
+  }
+  return right;
+}
+
 packToken Comma(const packToken& left, const packToken& right, evaluationData* data) {
   if (left->type == TUPLE) {
     left.asTuple().list().push_back(right);
@@ -302,6 +346,7 @@ struct Startup {
 
     // Link operations to respective operators:
     opMap_t& opMap = calculator::Default().opMap;
+    opMap.add({ANY_TYPE, "=", ANY_TYPE}, &Assign);
     opMap.add({ANY_TYPE, ",", ANY_TYPE}, &Comma);
     opMap.add({ANY_TYPE, ":", ANY_TYPE}, &Colon);
     opMap.add({ANY_TYPE, "==", ANY_TYPE}, &Equal);

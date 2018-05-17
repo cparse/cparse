@@ -535,51 +535,9 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         data.left.reset(new RefToken());
       }
 
-      /* * * * * Resolve Assign Operation * * * * */
+      /* * * * * Resolve Function Calls: * * * * */
 
-      if (data.op == "=") {
-        delete l_token;
-
-        // If the left operand has a variable name:
-        if (data.left->key->type == STR) {
-          if (data.left->origin->type == MAP) {
-            TokenMap& map = data.left->origin.asMap();
-            std::string& key = data.left->key.asString();
-            map[key] = packToken(r_token->clone());
-          } else {
-            TokenMap* map = data.scope.findMap(data.left->key.asString());
-            if (!map || *map == TokenMap::default_global()) {
-              // Assign on the local scope.
-              // The user should not be able to implicitly overwrite
-              // variables he did not declare, since it's error prone.
-              data.scope[data.left->key.asString()] = packToken(r_token->clone());
-            } else {
-              (*map)[data.left->key.asString()] = packToken(r_token->clone());
-            }
-          }
-
-          evaluation.push(r_token);
-        // If the left operand has an index number:
-        } else if (data.left->key->type & NUM) {
-          if (data.left->origin->type == LIST) {
-            TokenList& list = data.left->origin.asList();
-            size_t index = data.left->key.asInt();
-            list[index] = packToken(r_token->clone());
-          } else {
-            delete r_token;
-            cleanStack(evaluation);
-            throw std::domain_error("Left operand of assignment is not a list!");
-          }
-
-          evaluation.push(r_token);
-        } else {
-          packToken r_pack(r_token->clone());
-          delete r_token;
-
-          cleanStack(evaluation);
-          throw undefined_operation(data.op, data.left->key, r_pack);
-        }
-      } else if (l_token->type == FUNC && data.op == "()") {
+      if (l_token->type == FUNC && data.op == "()") {
         Function* l_func = static_cast<Function*>(l_token);
 
         // Collect the parameter tuple:
@@ -610,7 +568,11 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
 
         delete l_func;
         evaluation.push(ret->clone());
-      } else {
+      }
+
+      /* * * * * Resolve All Other Operations: * * * * */
+
+      else {
         data.opID = Operation::build_mask(l_token->type, r_token->type);
         packToken l_pack(l_token);
         packToken r_pack(r_token);
