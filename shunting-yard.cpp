@@ -525,89 +525,89 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         cleanStack(evaluation);
         throw std::domain_error("Invalid equation.");
       }
-      TokenBase* b_right = evaluation.top(); evaluation.pop();
-      TokenBase* b_left  = evaluation.top(); evaluation.pop();
+      TokenBase* r_token = evaluation.top(); evaluation.pop();
+      TokenBase* l_token = evaluation.top(); evaluation.pop();
 
-      if (b_right->type == VAR) {
-        std::string var_name = static_cast<Token<std::string>*>(b_right)->val;
-        delete b_right;
-        delete resolve_reference(b_left);
+      if (r_token->type == VAR) {
+        std::string var_name = static_cast<Token<std::string>*>(r_token)->val;
+        delete r_token;
+        delete resolve_reference(l_token);
         cleanStack(evaluation);
         throw std::domain_error("Unable to find the variable '" + var_name + "'.");
       } else {
-        b_right = resolve_reference(b_right, &data.scope);
+        r_token = resolve_reference(r_token, &data.scope);
       }
 
-      packToken r_left;
-      packToken m_left;
-      if (b_left->type & REF) {
-        RefToken* left = static_cast<RefToken*>(b_left);
-        r_left = left->key;
-        m_left = left->source;
-        b_left = resolve_reference(left, &data.scope);
-      } else if (b_left->type == VAR) {
-        r_left = static_cast<Token<std::string>*>(b_left)->val;
+      packToken l_key;
+      packToken l_origin;
+      if (l_token->type & REF) {
+        RefToken* left = static_cast<RefToken*>(l_token);
+        l_key    = left->key;
+        l_origin = left->source;
+        l_token  = resolve_reference(left, &data.scope);
+      } else if (l_token->type == VAR) {
+        l_key = static_cast<Token<std::string>*>(l_token)->val;
       }
 
       /* * * * * Resolve Asign Operation * * * * */
 
       if (data.op == "=") {
-        delete b_left;
+        delete l_token;
 
         // If the left operand has a variable name:
-        if (r_left->type == STR) {
-          if (m_left->type == MAP) {
-            TokenMap& map = m_left.asMap();
-            std::string& key = r_left.asString();
-            map[key] = packToken(b_right->clone());
+        if (l_key->type == STR) {
+          if (l_origin->type == MAP) {
+            TokenMap& map = l_origin.asMap();
+            std::string& key = l_key.asString();
+            map[key] = packToken(r_token->clone());
           } else {
-            TokenMap* map = data.scope.findMap(r_left.asString());
+            TokenMap* map = data.scope.findMap(l_key.asString());
             if (!map || *map == TokenMap::default_global()) {
               // Assign on the local scope.
               // The user should not be able to implicitly overwrite
               // variables he did not declare, since it's error prone.
-              data.scope[r_left.asString()] = packToken(b_right->clone());
+              data.scope[l_key.asString()] = packToken(r_token->clone());
             } else {
-              (*map)[r_left.asString()] = packToken(b_right->clone());
+              (*map)[l_key.asString()] = packToken(r_token->clone());
             }
           }
 
-          evaluation.push(b_right);
+          evaluation.push(r_token);
         // If the left operand has an index number:
-        } else if (r_left->type & NUM) {
-          if (m_left->type == LIST) {
-            TokenList& list = m_left.asList();
-            size_t index = r_left.asInt();
-            list[index] = packToken(b_right->clone());
+        } else if (l_key->type & NUM) {
+          if (l_origin->type == LIST) {
+            TokenList& list = l_origin.asList();
+            size_t index = l_key.asInt();
+            list[index] = packToken(r_token->clone());
           } else {
-            delete b_right;
+            delete r_token;
             cleanStack(evaluation);
             throw std::domain_error("Left operand of assignment is not a list!");
           }
 
-          evaluation.push(b_right);
+          evaluation.push(r_token);
         } else {
-          packToken p_right(b_right->clone());
-          delete b_right;
+          packToken r_pack(r_token->clone());
+          delete r_token;
 
           cleanStack(evaluation);
-          throw undefined_operation(data.op, r_left, p_right);
+          throw undefined_operation(data.op, l_key, r_pack);
         }
-      } else if (b_left->type == FUNC && data.op == "()") {
-        Function* f_left = static_cast<Function*>(b_left);
+      } else if (l_token->type == FUNC && data.op == "()") {
+        Function* l_func = static_cast<Function*>(l_token);
 
         // Collect the parameter tuple:
         Tuple right;
-        if (b_right->type == TUPLE) {
-          right = *static_cast<Tuple*>(b_right);
+        if (r_token->type == TUPLE) {
+          right = *static_cast<Tuple*>(r_token);
         } else {
-          right = Tuple(b_right);
+          right = Tuple(r_token);
         }
-        delete b_right;
+        delete r_token;
 
         packToken _this;
-        if (m_left->type != NONE) {
-          _this = m_left;
+        if (l_origin->type != NONE) {
+          _this = l_origin;
         } else {
           _this = data.scope;
         }
@@ -615,26 +615,26 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         // Execute the function:
         packToken ret;
         try {
-          ret = Function::call(_this, f_left, &right, data.scope);
+          ret = Function::call(_this, l_func, &right, data.scope);
         } catch (...) {
           cleanStack(evaluation);
-          delete f_left;
+          delete l_func;
           throw;
         }
 
-        delete f_left;
+        delete l_func;
         evaluation.push(ret->clone());
       } else {
-        data.opID = Operation::build_mask(b_left->type, b_right->type);
-        packToken p_left(b_left);
-        packToken p_right(b_right);
+        data.opID = Operation::build_mask(l_token->type, r_token->type);
+        packToken l_pack(l_token);
+        packToken r_pack(r_token);
         TokenBase* result = 0;
 
         try {
           // Resolve the operation:
-          result = exec_operation(p_left, p_right, &data, data.op);
+          result = exec_operation(l_pack, r_pack, &data, data.op);
           if (!result) {
-            result = exec_operation(p_left, p_right, &data, ANY_OP);
+            result = exec_operation(l_pack, r_pack, &data, ANY_OP);
           }
         } catch (...) {
           cleanStack(evaluation);
@@ -645,7 +645,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
           evaluation.push(result);
         } else {
           cleanStack(evaluation);
-          throw undefined_operation(data.op, p_left, p_right);
+          throw undefined_operation(data.op, l_pack, r_pack);
         }
       }
     } else if (base->type == VAR) {  // Variable
