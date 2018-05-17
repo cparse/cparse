@@ -535,9 +535,9 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         data.left.reset(new RefToken());
       }
 
-      /* * * * * Resolve Function Calls: * * * * */
-
       if (l_token->type == FUNC && data.op == "()") {
+        // * * * * * Resolve Function Calls: * * * * * //
+
         Function* l_func = static_cast<Function*>(l_token);
 
         // Collect the parameter tuple:
@@ -568,11 +568,9 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
 
         delete l_func;
         evaluation.push(ret->clone());
-      }
+      } else {
+        // * * * * * Resolve All Other Operations: * * * * * //
 
-      /* * * * * Resolve All Other Operations: * * * * */
-
-      else {
         data.opID = Operation::build_mask(l_token->type, r_token->type);
         packToken l_pack(l_token);
         packToken r_pack(r_token);

@@ -998,25 +998,25 @@ TEST_CASE("Adhoc operator parser", "[operator]") {
 }
 
 TEST_CASE("Exception management") {
-  calculator ecalc;
-  ecalc.compile("a+b+del", emap);
+  calculator ecalc1, ecalc2;
+  ecalc1.compile("a+b+del", emap);
   emap["del"] = 30;
 
-  REQUIRE_THROWS(calculator(""));
-  REQUIRE_THROWS(calculator("      "));
+  REQUIRE_THROWS(ecalc2.compile(""));
+  REQUIRE_THROWS(ecalc2.compile("      "));
 
   // Uninitialized calculators should eval to None:
   REQUIRE(calculator().eval().str() == "None");
 
-  REQUIRE_THROWS(ecalc.eval());
-  REQUIRE_NOTHROW(ecalc.eval(emap));
+  REQUIRE_THROWS(ecalc1.eval());
+  REQUIRE_NOTHROW(ecalc1.eval(emap));
 
   emap.erase("del");
-  REQUIRE_THROWS(ecalc.eval(emap));
+  REQUIRE_THROWS(ecalc1.eval(emap));
 
   emap["del"] = 0;
   emap.erase("a");
-  REQUIRE_NOTHROW(ecalc.eval(emap));
+  REQUIRE_NOTHROW(ecalc1.eval(emap));
 
   REQUIRE_NOTHROW(calculator c5("10 + - - 10"));
   REQUIRE_THROWS(calculator c5("10 + +"));
@@ -1032,7 +1032,7 @@ TEST_CASE("Exception management") {
   // To see if it still works run with `make check`
   REQUIRE_THROWS(calculator::calculate("a+2*no_such_variable", vars));
 
-  REQUIRE_THROWS(calculator("print('hello'))"));
-  REQUIRE_THROWS(calculator("map()['hello']]"));
-  REQUIRE_THROWS(calculator("map(['hello']]"));
+  REQUIRE_THROWS(ecalc2.compile("print('hello'))"));
+  REQUIRE_THROWS(ecalc2.compile("map()['hello']]"));
+  REQUIRE_THROWS(ecalc2.compile("map(['hello']]"));
 }
