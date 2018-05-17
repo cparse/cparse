@@ -596,44 +596,34 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
       } else if (b_left->type == FUNC && data.op == "()") {
         Function* f_left = static_cast<Function*>(b_left);
 
-        if (data.op == "()") {
-          // Collect the parameter tuple:
-          Tuple right;
-          if (b_right->type == TUPLE) {
-            right = *static_cast<Tuple*>(b_right);
-          } else {
-            right = Tuple(b_right);
-          }
-          delete b_right;
-
-          packToken _this;
-          if (m_left->type != NONE) {
-            _this = m_left;
-          } else {
-            _this = data.scope;
-          }
-
-          // Execute the function:
-          packToken ret;
-          try {
-            ret = Function::call(_this, f_left, &right, data.scope);
-          } catch (...) {
-            cleanStack(evaluation);
-            delete f_left;
-            throw;
-          }
-
-          delete f_left;
-
-          evaluation.push(ret->clone());
+        // Collect the parameter tuple:
+        Tuple right;
+        if (b_right->type == TUPLE) {
+          right = *static_cast<Tuple*>(b_right);
         } else {
-          packToken p_right(b_right->clone());
-          packToken p_left(b_left->clone());
-          delete b_right;
-
-          cleanStack(evaluation);
-          throw undefined_operation(data.op, p_left, p_right);
+          right = Tuple(b_right);
         }
+        delete b_right;
+
+        packToken _this;
+        if (m_left->type != NONE) {
+          _this = m_left;
+        } else {
+          _this = data.scope;
+        }
+
+        // Execute the function:
+        packToken ret;
+        try {
+          ret = Function::call(_this, f_left, &right, data.scope);
+        } catch (...) {
+          cleanStack(evaluation);
+          delete f_left;
+          throw;
+        }
+
+        delete f_left;
+        evaluation.push(ret->clone());
       } else {
         data.opID = Operation::build_mask(b_left->type, b_right->type);
         packToken p_left(b_left);
