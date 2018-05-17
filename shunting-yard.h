@@ -267,11 +267,11 @@ struct parserMap_t {
 struct RefToken : public TokenBase {
   packToken key;
   packToken value;
-  packToken source;
+  packToken origin;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), value(v), source(m) {}
+    TokenBase(v->type | REF), key(k), value(v), origin(m) {}
   RefToken(packToken k, packToken v, packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), value(v), source(m) {}
+    TokenBase(v->type | REF), key(k), value(v), origin(m) {}
 
   virtual TokenBase* clone() const {
     return new RefToken(*this);

@@ -76,7 +76,7 @@ TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
 
     // If its a local variable,
     // and a local scope is available:
-    if (ref->source->type == NONE && scope) {
+    if (ref->origin->type == NONE && scope) {
       // Try to get the most recent value of the reference:
       packToken* r_value = scope->find(ref->key.asString());
       if (r_value) {
@@ -543,7 +543,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
       if (l_token->type & REF) {
         RefToken* left = static_cast<RefToken*>(l_token);
         l_key    = left->key;
-        l_origin = left->source;
+        l_origin = left->origin;
         l_token  = resolve_reference(left, &data.scope);
       } else if (l_token->type == VAR) {
         l_key = static_cast<Token<std::string>*>(l_token)->val;
