@@ -273,6 +273,23 @@ struct RefToken : public TokenBase {
   RefToken(packToken k, packToken v, packToken m = packToken::None()) :
     TokenBase(v->type | REF), key(k), value(v), origin(m) {}
 
+  TokenBase* resolve(TokenMap* localScope = 0) {
+    TokenBase* result = 0;
+
+    // Local variables have no origin == NONE,
+    // thus, require a localScope to be resolved:
+    if (origin->type == NONE && localScope) {
+      // Get the most recent value from the local scope:
+      packToken* r_value = localScope->find(key.asString());
+      if (r_value) {
+        result = (*r_value)->clone();
+      }
+    }
+
+    // In last case return the compilation-time value:
+    return result ? result : value->clone();
+  }
+
   virtual TokenBase* clone() const {
     return new RefToken(*this);
   }

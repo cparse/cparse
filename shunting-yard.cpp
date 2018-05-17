@@ -68,29 +68,16 @@ inline std::string normalize_op(std::string op) {
 // Please note that it only deletes memory if the token
 // is of type REF.
 TokenBase* resolve_reference(TokenBase* b, TokenMap* scope = 0) {
-  TokenBase* value = 0;
-
   if (b->type & REF) {
-    // Grab the possible values:
+    // Resolve the reference:
     RefToken* ref = static_cast<RefToken*>(b);
+    TokenBase* value = ref->resolve(scope);
 
-    // If its a local variable,
-    // and a local scope is available:
-    if (ref->origin->type == NONE && scope) {
-      // Try to get the most recent value of the reference:
-      packToken* r_value = scope->find(ref->key.asString());
-      if (r_value) {
-        value = (*r_value)->clone();
-      }
-    }
-
-    if (!value) value = std::move(ref->value).release();
     delete ref;
-
     return value;
-  } else {
-    return b;
   }
+
+  return b;
 }
 
 /* * * * * Static containers: * * * * */
