@@ -10,6 +10,7 @@
 #include <vector>
 #include <set>
 #include <sstream>
+#include <memory>
 
 /*
  * About tokType enum:
@@ -209,11 +210,14 @@ struct rpnBuilder {
   void handle_right_unary(const std::string& op);
 };
 
+class RefToken;
 class opMap_t;
 struct evaluationData {
   TokenQueue_t rpn;
   TokenMap scope;
   const opMap_t& opMap;
+
+  std::unique_ptr<RefToken> left;
 
   std::string op;
   opID_t opID;
@@ -270,7 +274,7 @@ struct RefToken : public TokenBase {
   packToken origin;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
     TokenBase(v->type | REF), key(k), value(v), origin(m) {}
-  RefToken(packToken k, packToken v, packToken m = packToken::None()) :
+  RefToken(packToken k = packToken::None(), packToken v = packToken::None(), packToken m = packToken::None()) :
     TokenBase(v->type | REF), key(k), value(v), origin(m) {}
 
   TokenBase* resolve(TokenMap* localScope = 0) {

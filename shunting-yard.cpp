@@ -525,46 +525,45 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         r_token = resolve_reference(r_token, &data.scope);
       }
 
-      packToken l_key;
-      packToken l_origin;
       if (l_token->type & REF) {
-        RefToken* left = static_cast<RefToken*>(l_token);
-        l_key    = left->key;
-        l_origin = left->origin;
-        l_token  = resolve_reference(left, &data.scope);
+        data.left.reset(static_cast<RefToken*>(l_token));
+        l_token  = data.left->resolve(&data.scope);
       } else if (l_token->type == VAR) {
-        l_key = static_cast<Token<std::string>*>(l_token)->val;
+        packToken key = static_cast<Token<std::string>*>(l_token)->val;
+        data.left.reset(new RefToken(key));
+      } else {
+        data.left.reset(new RefToken());
       }
 
-      /* * * * * Resolve Asign Operation * * * * */
+      /* * * * * Resolve Assign Operation * * * * */
 
       if (data.op == "=") {
         delete l_token;
 
         // If the left operand has a variable name:
-        if (l_key->type == STR) {
-          if (l_origin->type == MAP) {
-            TokenMap& map = l_origin.asMap();
-            std::string& key = l_key.asString();
+        if (data.left->key->type == STR) {
+          if (data.left->origin->type == MAP) {
+            TokenMap& map = data.left->origin.asMap();
+            std::string& key = data.left->key.asString();
             map[key] = packToken(r_token->clone());
           } else {
-            TokenMap* map = data.scope.findMap(l_key.asString());
+            TokenMap* map = data.scope.findMap(data.left->key.asString());
             if (!map || *map == TokenMap::default_global()) {
               // Assign on the local scope.
               // The user should not be able to implicitly overwrite
               // variables he did not declare, since it's error prone.
-              data.scope[l_key.asString()] = packToken(r_token->clone());
+              data.scope[data.left->key.asString()] = packToken(r_token->clone());
             } else {
-              (*map)[l_key.asString()] = packToken(r_token->clone());
+              (*map)[data.left->key.asString()] = packToken(r_token->clone());
             }
           }
 
           evaluation.push(r_token);
         // If the left operand has an index number:
-        } else if (l_key->type & NUM) {
-          if (l_origin->type == LIST) {
-            TokenList& list = l_origin.asList();
-            size_t index = l_key.asInt();
+        } else if (data.left->key->type & NUM) {
+          if (data.left->origin->type == LIST) {
+            TokenList& list = data.left->origin.asList();
+            size_t index = data.left->key.asInt();
             list[index] = packToken(r_token->clone());
           } else {
             delete r_token;
@@ -578,7 +577,7 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
           delete r_token;
 
           cleanStack(evaluation);
-          throw undefined_operation(data.op, l_key, r_pack);
+          throw undefined_operation(data.op, data.left->key, r_pack);
         }
       } else if (l_token->type == FUNC && data.op == "()") {
         Function* l_func = static_cast<Function*>(l_token);
@@ -593,8 +592,8 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
         delete r_token;
 
         packToken _this;
-        if (l_origin->type != NONE) {
-          _this = l_origin;
+        if (data.left->origin->type != NONE) {
+          _this = data.left->origin;
         } else {
           _this = data.scope;
         }
