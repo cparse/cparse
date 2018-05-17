@@ -272,16 +272,18 @@ struct parserMap_t {
 // in which a variable was originally evaluated
 // and allow a final value to be correctly resolved
 // afterwards.
-struct RefToken : public TokenBase {
-  packToken key;
+class RefToken : public TokenBase {
   packToken original_value;
+
+ public:
+  packToken key;
   packToken origin;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), original_value(v), origin(m) {}
+    TokenBase(v->type | REF), original_value(v), key(k), origin(m) {}
   RefToken(packToken k = packToken::None(), packToken v = packToken::None(), packToken m = packToken::None()) :
-    TokenBase(v->type | REF), key(k), original_value(v), origin(m) {}
+    TokenBase(v->type | REF), original_value(v), key(k), origin(m) {}
 
-  TokenBase* resolve(TokenMap* localScope = 0) {
+  TokenBase* resolve(TokenMap* localScope = 0) const {
     TokenBase* result = 0;
 
     // Local variables have no origin == NONE,
