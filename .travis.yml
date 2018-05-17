@@ -1,6 +1,7 @@
 language: cpp
 addons:
   apt:
+    update: true
     sources:
     - ubuntu-toolchain-r-test # For gcc 4.8.
     packages:
