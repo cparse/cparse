@@ -811,6 +811,30 @@ packToken eager_increment(const packToken& left, const packToken& right,
   return (*map_p)[var_name] = (*map_p)[var_name].asInt() + 1;
 }
 
+packToken assign_right(const packToken& left, const packToken& right,
+                       evaluationData* data) {
+  std::string var_name = data->right->key.asString();
+
+  TokenMap* map_p = data->scope.findMap(var_name);
+  if (map_p == 0) {
+    map_p = &data->scope;
+  }
+
+  return (*map_p)[var_name] = left;
+}
+
+packToken assign_left(const packToken& left, const packToken& right,
+                      evaluationData* data) {
+  std::string var_name = data->left->key.asString();
+
+  TokenMap* map_p = data->scope.findMap(var_name);
+  if (map_p == 0) {
+    map_p = &data->scope;
+  }
+
+  return (*map_p)[var_name] = right;
+}
+
 void slash(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_op("*");
 
@@ -828,6 +852,7 @@ struct myCalcStartup {
     opp.add(".", 1);
     opp.add("+", 2); opp.add("*", 2);
     opp.add("/", 3);
+    opp.add("<=", 4); opp.add("=>", 4);
 
     // This operator will evaluate from right to left:
     opp.add("-", -3);
@@ -850,6 +875,8 @@ struct myCalcStartup {
     opMap.add({NUM, "!", UNARY}, &not_right_unary_op);
     opMap.add({NUM, "$$", UNARY}, &lazy_increment);
     opMap.add({UNARY, "$$", NUM}, &eager_increment);
+    opMap.add({ANY_TYPE, "=>", REF}, &assign_right);
+    opMap.add({REF, "<=", ANY_TYPE}, &assign_left);
 
     parserMap_t& parser = myCalc::my_config().parserMap;
     parser.add('/', &slash);
@@ -977,6 +1004,16 @@ TEST_CASE("Adhoc reference operations", "[operation][reference][config]") {
   REQUIRE_NOTHROW(c1.compile("a $$"));
   REQUIRE(c1.eval(scope) == 10);
   REQUIRE(scope["a"] == 11);
+
+  scope["a"] = packToken::None();
+  REQUIRE_NOTHROW(c1.compile("a <= 20"));
+  REQUIRE(c1.eval(scope) == 20);
+  REQUIRE(scope["a"] == 20);
+
+  scope["a"] = packToken::None();
+  REQUIRE_NOTHROW(c1.compile("30 => a"));
+  REQUIRE(c1.eval(scope) == 30);
+  REQUIRE(scope["a"] == 30);
 }
 
 TEST_CASE("Adhoc reservedWord parsers", "[parser][config]") {
