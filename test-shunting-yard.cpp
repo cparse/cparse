@@ -785,6 +785,32 @@ packToken not_right_unary_op(const packToken& left, const packToken& right,
   return ~left.asInt();
 }
 
+packToken lazy_increment(const packToken& left, const packToken& right,
+                         evaluationData* data) {
+  std::string var_name = data->left->key.asString();
+
+  TokenMap* map_p = data->scope.findMap(var_name);
+  if (map_p == 0) {
+    map_p = &data->scope;
+  }
+
+  packToken value = (*map_p)[var_name];
+  (*map_p)[var_name] = value.asInt() + 1;
+  return value;
+}
+
+packToken eager_increment(const packToken& left, const packToken& right,
+                          evaluationData* data) {
+  std::string var_name = data->right->key.asString();
+
+  TokenMap* map_p = data->scope.findMap(var_name);
+  if (map_p == 0) {
+    map_p = &data->scope;
+  }
+
+  return (*map_p)[var_name] = (*map_p)[var_name].asInt() + 1;
+}
+
 void slash(const char* expr, const char** rest, rpnBuilder* data) {
   data->handle_op("*");
 
@@ -807,9 +833,11 @@ struct myCalcStartup {
     opp.add("-", -3);
 
     // Unary operators:
+    opp.addUnary("$$", 2);
     opp.addUnary("~", 4);
-    opp.addRightUnary("~", 4);
     opp.addRightUnary("!", 1);
+    opp.addRightUnary("$$", 2);
+    opp.addRightUnary("~", 4);
 
     opMap_t& opMap = myCalc::my_config().opMap;
     opMap.add({STR, "+", TUPLE}, &op1);
@@ -820,6 +848,8 @@ struct myCalcStartup {
     opMap.add({UNARY, "~", NUM}, &not_unary_op);
     opMap.add({NUM, "~", UNARY}, &not_right_unary_op);
     opMap.add({NUM, "!", UNARY}, &not_right_unary_op);
+    opMap.add({NUM, "$$", UNARY}, &lazy_increment);
+    opMap.add({UNARY, "$$", NUM}, &eager_increment);
 
     parserMap_t& parser = myCalc::my_config().parserMap;
     parser.add('/', &slash);
@@ -932,6 +962,21 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
     REQUIRE_NOTHROW(c1.compile("(2 * 10)~ * 3"));
     REQUIRE(c1.eval() == ~(2*10l) * 3);
   }
+}
+
+TEST_CASE("Adhoc reference operations", "[operation][reference][config]") {
+  myCalc c1;
+  TokenMap scope;
+
+  scope["a"] = 10;
+  REQUIRE_NOTHROW(c1.compile("$$ a"));
+  REQUIRE(c1.eval(scope) == 11);
+  REQUIRE(scope["a"] == 11);
+
+  scope["a"] = 10;
+  REQUIRE_NOTHROW(c1.compile("a $$"));
+  REQUIRE(c1.eval(scope) == 10);
+  REQUIRE(scope["a"] == 11);
 }
 
 TEST_CASE("Adhoc reservedWord parsers", "[parser][config]") {
