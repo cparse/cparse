@@ -218,6 +218,7 @@ struct evaluationData {
   const opMap_t& opMap;
 
   std::unique_ptr<RefToken> left;
+  std::unique_ptr<RefToken> right;
 
   std::string op;
   opID_t opID;

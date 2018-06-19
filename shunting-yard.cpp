@@ -515,19 +515,19 @@ TokenBase* calculator::calculate(const TokenQueue_t& rpn, TokenMap scope,
       TokenBase* r_token = evaluation.top(); evaluation.pop();
       TokenBase* l_token = evaluation.top(); evaluation.pop();
 
-      if (r_token->type == VAR) {
-        std::string var_name = static_cast<Token<std::string>*>(r_token)->val;
-        delete r_token;
-        delete resolve_reference(l_token);
-        cleanStack(evaluation);
-        throw std::domain_error("Unable to find the variable '" + var_name + "'.");
+      if (r_token->type & REF) {
+        data.right.reset(static_cast<RefToken*>(r_token));
+        r_token = data.right->resolve(&data.scope);
+      } else if (r_token->type == VAR) {
+        packToken key = static_cast<Token<std::string>*>(r_token)->val;
+        data.right.reset(new RefToken(key));
       } else {
-        r_token = resolve_reference(r_token, &data.scope);
+        data.right.reset(new RefToken());
       }
 
       if (l_token->type & REF) {
         data.left.reset(static_cast<RefToken*>(l_token));
-        l_token  = data.left->resolve(&data.scope);
+        l_token = data.left->resolve(&data.scope);
       } else if (l_token->type == VAR) {
         packToken key = static_cast<Token<std::string>*>(l_token)->val;
         data.left.reset(new RefToken(key));
