@@ -45,7 +45,7 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
     if (match_op_id(data->opID, operation.getMask())) {
       try {
         return operation.exec(left, right, data).release();
-      } catch (Operation::Reject e) {
+      } catch (const Operation::Reject& e) {
         continue;
       }
     }
