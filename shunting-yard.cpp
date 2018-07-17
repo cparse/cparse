@@ -279,7 +279,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   while (*expr && (data.bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
       // If the token is a number, add it to the output queue.
-      int64_t _int = strtol(expr, &nextChar, 10);
+      int64_t _int = strtoll(expr, &nextChar, 10);
 
       // If the number was not a float:
       if (!strchr(".eE", *nextChar)) {
