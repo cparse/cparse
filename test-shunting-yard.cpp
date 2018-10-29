@@ -922,13 +922,13 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
     // * * Using custom unary operators: * * //
 
     REQUIRE_NOTHROW(c1.compile("~10"));
-    REQUIRE(c1.eval() == ~10l);
+    REQUIRE(c1.eval().asInt() == ~10l);
 
     REQUIRE_NOTHROW(c1.compile("2 * ~10"));
-    REQUIRE(c1.eval() == 2 * ~10l);
+    REQUIRE(c1.eval().asInt() == 2 * ~10l);
 
     REQUIRE_NOTHROW(c1.compile("2 * ~10 * 3"));
-    REQUIRE(c1.eval() == 2 * ~(10l*3));
+    REQUIRE(c1.eval().asInt() == 2 * ~(10l*3));
 
     calculator c2;
 
@@ -961,33 +961,33 @@ TEST_CASE("Adhoc unary operations", "[operation][unary][config]") {
 
     // Testing with lower op precedence:
     REQUIRE_NOTHROW(c1.compile("10~"));
-    REQUIRE(c1.eval() == ~10l);
+    REQUIRE(c1.eval().asInt() == ~10l);
 
     REQUIRE_NOTHROW(c1.compile("2 * 10~"));
-    REQUIRE(c1.eval() == ~(2*10l));
+    REQUIRE(c1.eval().asInt() == ~(2*10l));
 
     REQUIRE_NOTHROW(c1.compile("2 * 10~ * 3"));
-    REQUIRE(c1.eval() == ~(2*10l) * 3);
+    REQUIRE(c1.eval().asInt() == ~(2*10l) * 3);
 
     // Testing with higher op precedence:
     REQUIRE_NOTHROW(c1.compile("10!"));
-    REQUIRE(c1.eval() == ~10l);
+    REQUIRE(c1.eval().asInt() == ~10l);
 
     REQUIRE_NOTHROW(c1.compile("2 * 10!"));
-    REQUIRE(c1.eval() == 2 * ~10l);
+    REQUIRE(c1.eval().asInt() == 2 * ~10l);
 
     REQUIRE_NOTHROW(c1.compile("2 * 10! * 3"));
-    REQUIRE(c1.eval() == 2 * ~10l * 3);
+    REQUIRE(c1.eval().asInt() == 2 * ~10l * 3);
 
     // Testing inside brackets:
     REQUIRE_NOTHROW(c1.compile("2 * (10~ * 3)"));
-    REQUIRE(c1.eval() == 2 * ~10l * 3);
+    REQUIRE(c1.eval().asInt() == 2 * ~10l * 3);
 
     REQUIRE_NOTHROW(c1.compile("(2 * 10~) * 3"));
-    REQUIRE(c1.eval() == ~(2*10l) * 3);
+    REQUIRE(c1.eval().asInt() == ~(2*10l) * 3);
 
     REQUIRE_NOTHROW(c1.compile("(2 * 10)~ * 3"));
-    REQUIRE(c1.eval() == ~(2*10l) * 3);
+    REQUIRE(c1.eval().asInt() == ~(2*10l) * 3);
   }
 }
 
