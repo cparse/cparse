@@ -8,15 +8,15 @@ CXX ?= g++
 CFLAGS = -std=c++11 -Wall -pedantic -Wmissing-field-initializers -Wuninitialized
 DEBUG = -g #-DDEBUG
 
+release: $(CORE_SRC:.cpp=.o) builtin-features.cpp;
+	$(CXX) -c -O3 $(CFLAGS) builtin-features.cpp
+	$(LD) -r -O1 $(CORE_SRC:.cpp=.o) -o core-shunting-yard.o
+
 all: $(EXE) release
 
 $(EXE): $(OBJ); $(CXX) $(CFLAGS) $(DEBUG) $(OBJ) -o $(EXE)
 %.o: %.cpp *.h %/*; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
 %.o: %.cpp *.h; $(CXX) $(CFLAGS) $(DEBUG) -c $< -o $@ $(DEBUG)
-
-release: $(CORE_SRC) builtin-features.cpp;
-	$(CXX) -c -O3 $(CFLAGS) builtin-features.cpp
-	$(LD) -r -O1 $(CORE_SRC:.cpp=.o) -o core-shunting-yard.o
 
 again: clean all
 
