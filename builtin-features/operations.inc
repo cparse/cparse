@@ -3,7 +3,7 @@
 namespace builtin_operations {
 
 // Assignment operator "="
-packToken Assign(const packToken& left, const packToken& right, evaluationData* data) {
+packToken Assign(const packToken&, const packToken& right, evaluationData* data) {
   packToken& key = data->left->key;
   packToken& origin = data->left->origin;
 
@@ -25,10 +25,39 @@ packToken Assign(const packToken& left, const packToken& right, evaluationData* 
       // It is not possible to assign directly to
       // the global scope. It would be easy for the user
       // to do it by accident, thus:
-      if (!map || *map == TokenMap::default_global()) {
+      if (!map || *map == TokenMap::default_global()) 
+      {
         data->scope[var_name] = right;
-      } else {
-        (*map)[var_name] = right;
+      }
+      else 
+      {
+          packToken* assignee = map->find(var_name);
+
+          if (assignee)
+          {
+              switch ((*assignee)->type)
+              {
+              case REALREF:
+                 static_cast<Token<std::reference_wrapper<double>>*>(assignee->token())->val.get() = right.asDouble();
+                 break;
+
+              case INTREF:
+                  static_cast<Token<std::reference_wrapper<int64_t>>*>(assignee->token())->val.get() = right.asInt();
+                  break;
+
+              case BOOLREF:
+                  static_cast<Token<std::reference_wrapper<uint8_t>>*>(assignee->token())->val.get() = right.asBool();
+                  break;
+
+              default:
+                  (*map)[var_name] = right;
+                  break;
+              }
+          }
+          else
+          {
+              (*map)[var_name] = right;
+          }
       }
     }
   // If the left operand has an index number:
@@ -46,7 +75,7 @@ packToken Assign(const packToken& left, const packToken& right, evaluationData* 
   return right;
 }
 
-packToken Comma(const packToken& left, const packToken& right, evaluationData* data) {
+packToken Comma(const packToken& left, const packToken& right, evaluationData*) {
   if (left->type == TUPLE) {
     left.asTuple().list().push_back(right);
     return left;
@@ -55,7 +84,7 @@ packToken Comma(const packToken& left, const packToken& right, evaluationData* d
   }
 }
 
-packToken Colon(const packToken& left, const packToken& right, evaluationData* data) {
+packToken Colon(const packToken& left, const packToken& right, evaluationData*) {
   if (left->type == STUPLE) {
     left.asSTuple().list().push_back(right);
     return left;
@@ -174,7 +203,7 @@ packToken NumeralOperation(const packToken& left, const packToken& right, evalua
   }
 }
 
-packToken FormatOperation(const packToken& p_left, const packToken& p_right, evaluationData* data) {
+packToken FormatOperation(const packToken& p_left, const packToken& p_right, evaluationData*) {
   std::string& s_left = p_left.asString();
   const char* left = s_left.c_str();
 

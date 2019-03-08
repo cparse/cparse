@@ -87,6 +87,12 @@ bool packToken::asBool() const {
       return static_cast<Token<int64_t>*>(base)->val != 0;
     case BOOL:
       return static_cast<Token<uint8_t>*>(base)->val != 0;
+    case REALREF:
+        return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get() != 0;
+    case INTREF:
+        return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get() != 0;
+    case BOOLREF:
+        return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get() != 0;
     case STR:
       return static_cast<Token<std::string>*>(base)->val != std::string();
     case MAP:
@@ -110,6 +116,12 @@ double packToken::asDouble() const {
     return static_cast<Token<int64_t>*>(base)->val;
   case BOOL:
     return static_cast<Token<uint8_t>*>(base)->val;
+  case REALREF:
+      return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get();
+  case INTREF:
+      return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+  case BOOLREF:
+      return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
   default:
     if (!(base->type & NUM)) {
       throw bad_cast(
@@ -129,6 +141,12 @@ int64_t packToken::asInt() const {
     return static_cast<Token<int64_t>*>(base)->val;
   case BOOL:
     return static_cast<Token<uint8_t>*>(base)->val;
+  case REALREF:
+      return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get();
+  case INTREF:
+      return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+  case BOOLREF:
+      return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
   default:
     if (!(base->type & NUM)) {
       throw bad_cast(
@@ -238,6 +256,15 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
       return ss.str();
     case BOOL:
       boolval = static_cast<const Token<uint8_t>*>(base)->val;
+      return boolval ? "True" : "False";
+    case REALREF:
+      ss << static_cast<const Token<std::reference_wrapper<double>>*>(base)->val.get();
+      return ss.str();
+    case INTREF:
+      ss << static_cast<const Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+      return ss.str();
+    case BOOLREF:
+      boolval = static_cast<const Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
       return boolval ? "True" : "False";
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";

@@ -103,6 +103,9 @@ packToken default_type(TokenMap scope) {
   case REAL: return "real";
   case INT: return "integer";
   case BOOL: return "boolean";
+  case REALREF: return "reference to real";
+  case INTREF: return "reference to integer";
+  case BOOLREF: return "reference to boolean";
   case STR: return "string";
   case FUNC: return "function";
   case IT: return "iterable";

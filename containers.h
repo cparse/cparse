@@ -53,6 +53,7 @@ typedef std::map<std::string, packToken> TokenMap_t;
 struct MapData_t {
   TokenMap_t map;
   TokenMap* parent;
+  MapData_t();
   MapData_t(TokenMap* p);
   MapData_t(const MapData_t& other);
   ~MapData_t();

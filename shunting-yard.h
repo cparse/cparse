@@ -30,10 +30,13 @@ enum tokType {
   STR, FUNC,
 
   // Numerals:
-  NUM = 0x20,   // Everything with the bit 0x20 set is a number.
-  REAL = 0x21,  // == 0x20 + 0x1 => Real numbers.
-  INT = 0x22,   // == 0x20 + 0x2 => Integral numbers.
-  BOOL = 0x23,  // == 0x20 + 0x3 => Boolean Type.
+  NUM = 0x20,     // Everything with the bit 0x20 set is a number.
+  REAL = 0x21,    // == 0x20 + 0x1 => Real numbers.
+  INT = 0x22,     // == 0x20 + 0x2 => Integral numbers.
+  BOOL = 0x23,    // == 0x20 + 0x3 => Boolean Type.
+  REALREF = 0x24, // == 0x20 + 0x4 => Reference to real numbers.
+  INTREF = 0x25,  // == 0x20 + 0x5 => Reference to integral numbers.
+  BOOLREF = 0x26, // == 0x20 + 0x6 => Reference to boolean Type.
 
   // Complex types:
   IT = 0x40,      // Everything with the bit 0x40 set are iterators.

@@ -45,7 +45,7 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
     if (match_op_id(data->opID, operation.getMask())) {
       try {
         return operation.exec(left, right, data).release();
-      } catch (const Operation::Reject& e) {
+      } catch (const Operation::Reject&) {
         continue;
       }
     }
@@ -249,10 +249,10 @@ struct calculator::RAII_TokenQueue_t : TokenQueue_t {
   RAII_TokenQueue_t(const TokenQueue_t& rpn) : TokenQueue_t(rpn) {}
   ~RAII_TokenQueue_t() { rpnBuilder::cleanRPN(this); }
 
-  RAII_TokenQueue_t(const RAII_TokenQueue_t& rpn) {
+  RAII_TokenQueue_t(const RAII_TokenQueue_t&) {
     throw std::runtime_error("You should not copy this class!");
   }
-  RAII_TokenQueue_t& operator=(const RAII_TokenQueue_t& rpn) {
+  RAII_TokenQueue_t& operator=(const RAII_TokenQueue_t&) {
     throw std::runtime_error("You should not copy this class!");
   }
 };
