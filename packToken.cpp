@@ -90,9 +90,11 @@ bool packToken::asBool() const {
     case REALREF:
         return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get() != 0;
     case INTREF:
-        return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get() != 0;
+        return static_cast<Token<std::reference_wrapper<int>>*>(base)->val.get() != 0;
     case BOOLREF:
         return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get() != 0;
+    case STRREF:
+      return static_cast<Token<std::reference_wrapper<std::string>>*>(base)->val.get() != std::string();
     case STR:
       return static_cast<Token<std::string>*>(base)->val != std::string();
     case MAP:
@@ -119,13 +121,13 @@ double packToken::asDouble() const {
   case REALREF:
       return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get();
   case INTREF:
-      return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+      return static_cast<Token<std::reference_wrapper<int>>*>(base)->val.get();
   case BOOLREF:
       return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
   default:
     if (!(base->type & NUM)) {
       throw bad_cast(
-        "The Token is not a number!");
+        "The Token is neither a number nor a reference to a number!");
     } else {
       throw bad_cast(
         "Unknown numerical type, can't convert it to double!");
@@ -144,13 +146,13 @@ int64_t packToken::asInt() const {
   case REALREF:
       return static_cast<Token<std::reference_wrapper<double>>*>(base)->val.get();
   case INTREF:
-      return static_cast<Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+      return static_cast<Token<std::reference_wrapper<int>>*>(base)->val.get();
   case BOOLREF:
       return static_cast<Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
   default:
     if (!(base->type & NUM)) {
       throw bad_cast(
-        "The Token is not a number!");
+        "The Token is neither a number nor a reference to a number!");
     } else {
       throw bad_cast(
         "Unknown numerical type, can't convert it to integer!");
@@ -159,11 +161,14 @@ int64_t packToken::asInt() const {
 }
 
 std::string& packToken::asString() const {
-  if (base->type != STR && base->type != VAR && base->type != OP) {
+  if (base->type == STR || base->type == VAR || base->type == OP) {
+    return static_cast<Token<std::string>*>(base)->val;
+  } else if (base->type == STRREF) {
+    return static_cast<Token<std::reference_wrapper<std::string>>*>(base)->val.get();
+  } else {
     throw bad_cast(
-      "The Token is not a string!");
+      "The Token is neither a string nor a reference to a string!");
   }
-  return static_cast<Token<std::string>*>(base)->val;
 }
 
 TokenMap& packToken::asMap() const {
@@ -261,11 +266,13 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
       ss << static_cast<const Token<std::reference_wrapper<double>>*>(base)->val.get();
       return ss.str();
     case INTREF:
-      ss << static_cast<const Token<std::reference_wrapper<int64_t>>*>(base)->val.get();
+      ss << static_cast<const Token<std::reference_wrapper<int>>*>(base)->val.get();
       return ss.str();
     case BOOLREF:
       boolval = static_cast<const Token<std::reference_wrapper<uint8_t>>*>(base)->val.get();
       return boolval ? "True" : "False";
+    case STRREF:
+      return "\"" + static_cast<const Token<std::reference_wrapper<std::string>>*>(base)->val.get() + "\"";
     case STR:
       return "\"" + static_cast<const Token<std::string>*>(base)->val + "\"";
     case FUNC:

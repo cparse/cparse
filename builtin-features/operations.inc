@@ -8,7 +8,7 @@ packToken Assign(const packToken&, const packToken& right, evaluationData* data)
   packToken& origin = data->left->origin;
 
   // If the left operand has a name:
-  if (key->type == STR) {
+  if (key->type == STR || key->type == STRREF) {
     std::string& var_name = key.asString();
 
     // If it is an attribute of a TokenMap:
@@ -31,33 +31,30 @@ packToken Assign(const packToken&, const packToken& right, evaluationData* data)
       }
       else 
       {
-          packToken* assignee = map->find(var_name);
+        packToken assignee = (*map)[var_name];
 
-          if (assignee)
-          {
-              switch ((*assignee)->type)
-              {
-              case REALREF:
-                 static_cast<Token<std::reference_wrapper<double>>*>(assignee->token())->val.get() = right.asDouble();
-                 break;
+        switch (assignee->type)
+        {
+        case REALREF:
+            static_cast<Token<std::reference_wrapper<double>>*>(assignee.token())->val.get() = right.asDouble();
+            break;
 
-              case INTREF:
-                  static_cast<Token<std::reference_wrapper<int64_t>>*>(assignee->token())->val.get() = right.asInt();
-                  break;
+        case INTREF:
+            static_cast<Token<std::reference_wrapper<int>>*>(assignee.token())->val.get() = right.asInt();
+            break;
 
-              case BOOLREF:
-                  static_cast<Token<std::reference_wrapper<uint8_t>>*>(assignee->token())->val.get() = right.asBool();
-                  break;
+        case BOOLREF:
+            static_cast<Token<std::reference_wrapper<uint8_t>>*>(assignee.token())->val.get() = right.asBool();
+            break;
 
-              default:
-                  (*map)[var_name] = right;
-                  break;
-              }
-          }
-          else
-          {
-              (*map)[var_name] = right;
-          }
+        case STRREF:
+          static_cast<Token<std::reference_wrapper<std::string>>*>(assignee.token())->val.get() = right.asString();
+          break;
+
+        default:
+            (*map)[var_name] = right;
+            break;
+        }
       }
     }
   // If the left operand has an index number:
@@ -231,7 +228,7 @@ packToken FormatOperation(const packToken& p_left, const packToken& p_right, eva
     }
 
     // Replace it by the token string representation:
-    if (token->type == STR) {
+    if (token->type == STR || token->type == STRREF) {
       // Avoid using packToken::str for strings
       // or it will enclose it quotes `"str"`
       result += token.asString();
@@ -381,16 +378,25 @@ struct Startup {
     opMap.add({ANY_TYPE, "==", ANY_TYPE}, &Equal);
     opMap.add({ANY_TYPE, "!=", ANY_TYPE}, &Different);
     opMap.add({MAP, "[]", STR}, &MapIndex);
+    opMap.add({MAP, "[]", STRREF }, &MapIndex);
     opMap.add({ANY_TYPE, ".", STR}, &TypeSpecificFunction);
+    opMap.add({ANY_TYPE, ".", STRREF }, &TypeSpecificFunction);
     opMap.add({MAP, ".", STR}, &MapIndex);
+    opMap.add({MAP, ".", STRREF }, &MapIndex);
     opMap.add({STR, "%", ANY_TYPE}, &FormatOperation);
+    opMap.add({STRREF, "%", ANY_TYPE }, &FormatOperation);
 
     // Note: The order is important:
     opMap.add({NUM, ANY_OP, NUM}, &NumeralOperation);
     opMap.add({UNARY, ANY_OP, NUM}, &UnaryNumeralOperation);
     opMap.add({STR, ANY_OP, STR}, &StringOnStringOperation);
+    opMap.add({STR, ANY_OP, STRREF}, &StringOnStringOperation);
+    opMap.add({STRREF, ANY_OP, STR}, &StringOnStringOperation);
+    opMap.add({STRREF, ANY_OP, STRREF}, &StringOnStringOperation);
     opMap.add({STR, ANY_OP, NUM}, &StringOnNumberOperation);
+    opMap.add({STRREF, ANY_OP, NUM }, &StringOnNumberOperation);
     opMap.add({NUM, ANY_OP, STR}, &NumberOnStringOperation);
+    opMap.add({NUM, ANY_OP, STRREF}, &NumberOnStringOperation);
     opMap.add({LIST, ANY_OP, NUM}, &ListOnNumberOperation);
     opMap.add({LIST, ANY_OP, LIST}, &ListOnListOperation);
   }

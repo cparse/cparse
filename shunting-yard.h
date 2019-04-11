@@ -26,8 +26,8 @@ enum tokType {
   NONE, OP, UNARY, VAR,
 
   // Base types:
-  // Note: The mask system accepts at most 29 (32-3) different base types.
-  STR, FUNC,
+  // Note: The mask system accepts at most 26 (32-6) different base types.
+  STR, FUNC, STRREF,
 
   // Numerals:
   NUM = 0x20,     // Everything with the bit 0x20 set is a number.

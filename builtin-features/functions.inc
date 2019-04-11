@@ -16,7 +16,7 @@ packToken default_print(TokenMap scope) {
       std::cout << " ";
     }
 
-    if (item->type == STR) {
+    if (item->type == STR || item->type == STRREF) {
       std::cout << item.asString();
     } else {
       std::cout << item.str();
@@ -89,7 +89,7 @@ packToken default_int(TokenMap scope) {
 packToken default_str(TokenMap scope) {
   // Return its string representation:
   packToken tok = scope["value"];
-  if (tok->type == STR) return tok;
+  if (tok->type == STR || tok->type == STRREF) return tok;
   return tok.str();
 }
 
@@ -107,6 +107,7 @@ packToken default_type(TokenMap scope) {
   case INTREF: return "reference to integer";
   case BOOLREF: return "reference to boolean";
   case STR: return "string";
+  case STRREF: return "reference to string";
   case FUNC: return "function";
   case IT: return "iterable";
   case TUPLE: return "tuple";
@@ -114,7 +115,7 @@ packToken default_type(TokenMap scope) {
   case LIST: return "list";
   case MAP:
     p_type = tok.asMap().find("__type__");
-    if (p_type && (*p_type)->type == STR) {
+    if (p_type && ((*p_type)->type == STR || (*p_type)->type == STRREF)) {
       return *p_type;
     } else  {
       return "map";

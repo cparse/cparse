@@ -31,6 +31,7 @@ class packToken {
   packToken(std::reference_wrapper<double> sd) : base(new Token<std::reference_wrapper<double>>(sd, REALREF)) {}
   packToken(std::reference_wrapper<int> si) : base(new Token<std::reference_wrapper<int>>(si, INTREF)) {}
   packToken(std::reference_wrapper<bool> sb) : base(new Token<std::reference_wrapper<bool>>(sb, BOOLREF)) {}
+  packToken(std::reference_wrapper<std::string> ss) : base(new Token<std::reference_wrapper<std::string>>(ss, STRREF)) {}
   packToken(const char* s) : base(new Token<std::string>(s, STR)) {}
   packToken(const std::string& s) : base(new Token<std::string>(s, STR)) {}
   packToken(const TokenMap& map);
