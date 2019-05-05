@@ -11,6 +11,7 @@
 #include <set>
 #include <sstream>
 #include <memory>
+#include <utility>
 
 /*
  * About tokType enum:
@@ -280,9 +281,9 @@ class RefToken : public TokenBase {
   packToken key;
   packToken origin;
   RefToken(packToken k, TokenBase* v, packToken m = packToken::None()) :
-    TokenBase(v->type | REF), original_value(v), key(k), origin(m) {}
+    TokenBase(v->type | REF), original_value(v), key(std::forward<packToken>(k)), origin(std::forward<packToken>(m)) {}
   RefToken(packToken k = packToken::None(), packToken v = packToken::None(), packToken m = packToken::None()) :
-    TokenBase(v->type | REF), original_value(v), key(k), origin(m) {}
+    TokenBase(v->type | REF), original_value(std::forward<packToken>(v)), key(std::forward<packToken>(k)), origin(std::forward<packToken>(m)) {}
 
   TokenBase* resolve(TokenMap* localScope = 0) const {
     TokenBase* result = 0;
