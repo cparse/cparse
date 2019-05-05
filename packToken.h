@@ -76,13 +76,6 @@ class packToken {
  public:
   // Used to recover the original pointer.
   // The intance whose pointer was removed must be an rvalue.
-  TokenBase* release() & {
-    TokenBase* b = base;
-    // Setting base to 0 leaves the class in an invalid state,
-    // except for destruction.
-    base = 0;
-    return b;
-  }
   TokenBase* release() && {
     TokenBase* b = base;
     // Setting base to 0 leaves the class in an invalid state,
