@@ -152,3 +152,8 @@ Please note that a calculator can compile an expression so that it can efficient
 ## More examples
 
  + For more examples and a comprehensible guide please read our [Wiki][wiki]
+ 
+## Contributing
+
+- I would like to keep this library minimal so new features should be very useful to be accepted.
+- If proposed change is not a common use case, I will probably not accept it.
