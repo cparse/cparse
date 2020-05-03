@@ -92,12 +92,14 @@ CppFunction::CppFunction(packToken (*func)(TokenMap), const args_t args,
                          std::string name)
                          : func(func), _args(args) {
   this->_name = name;
+  this->isStdFunc = false;
 }
 
 CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
                          const char** args, std::string name)
                          : func(func) {
   this->_name = name;
+  this->isStdFunc = false;
   // Add all strings to args list:
   for (uint32_t i = 0; i < nargs; ++i) {
     this->_args.push_back(args[i]);
@@ -108,4 +110,31 @@ CppFunction::CppFunction(packToken (*func)(TokenMap), unsigned int nargs,
 CppFunction::CppFunction(packToken (*func)(TokenMap), std::string name)
                          : func(func) {
   this->_name = name;
+  this->isStdFunc = false;
+}
+
+
+CppFunction::CppFunction(std::function<packToken(TokenMap)> func, const args_t args,
+    std::string name)
+    : stdFunc(func), _args(args) {
+    this->_name = name;
+    this->isStdFunc = true;
+}
+
+CppFunction::CppFunction(std::function<packToken(TokenMap)> func, unsigned int nargs,
+    const char** args, std::string name)
+    : stdFunc(func) {
+    this->_name = name;
+    this->isStdFunc = true;
+    // Add all strings to args list:
+    for (uint32_t i = 0; i < nargs; ++i) {
+        this->_args.push_back(args[i]);
+    }
+}
+
+// Build a function with no named args:
+CppFunction::CppFunction(std::function<packToken(TokenMap)> func, std::string name)
+    : stdFunc(func) {
+    this->_name = name;
+    this->isStdFunc = true;
 }
