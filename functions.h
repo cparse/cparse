@@ -30,6 +30,7 @@ class CppFunction : public Function {
   std::function<packToken(TokenMap)> stdFunc;
   bool isStdFunc;
 
+  CppFunction();
   CppFunction(packToken (*func)(TokenMap), const args_t args,
               std::string name = "");
   CppFunction(packToken (*func)(TokenMap), unsigned int nargs,

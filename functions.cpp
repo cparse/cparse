@@ -87,6 +87,11 @@ packToken Function::call(packToken _this, const Function* func,
 }
 
 /* * * * * class CppFunction * * * * */
+CppFunction::CppFunction() {
+    this->_name = "";
+    this->isStdFunc = false;
+    this->func = NULL;
+}
 
 CppFunction::CppFunction(packToken (*func)(TokenMap), const args_t args,
                          std::string name)
