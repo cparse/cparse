@@ -38,6 +38,8 @@ class CppFunction : public Function {
   CppFunction(packToken (*func)(TokenMap), std::string name = "");
   CppFunction(std::function<packToken(TokenMap)> func, const args_t args,
       std::string name = "");
+  CppFunction(const args_t args,std::function<packToken(TokenMap)> func,
+              std::string name = "");
   CppFunction(std::function<packToken(TokenMap)> func, unsigned int nargs,
       const char** args, std::string name = "");
   CppFunction(std::function<packToken(TokenMap)> func, std::string name = "");

@@ -126,6 +126,13 @@ CppFunction::CppFunction(std::function<packToken(TokenMap)> func, const args_t a
     this->isStdFunc = true;
 }
 
+CppFunction::CppFunction(const args_t args,std::function<packToken(TokenMap)> func,
+    std::string name)
+    : stdFunc(func), _args(args) {
+    this->_name = name;
+    this->isStdFunc = true;
+}
+
 CppFunction::CppFunction(std::function<packToken(TokenMap)> func, unsigned int nargs,
     const char** args, std::string name)
     : stdFunc(func) {
