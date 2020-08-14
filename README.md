@@ -47,7 +47,7 @@ make release -C cparse
 ### Link with your project:
 
 ```bash
-g++ cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
+g++ -I cparse -std=c++11 cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
 ```
 
 ## Customizing your Library
@@ -57,8 +57,8 @@ To customize your calculator:
  2. Edit the `builtin-features/*.inc` files as you like.
  3. Then build the project:
     1. Compile the library: `make release -C cparse/`
-    2. Compile your modified features: `g++ -c builtin-features.cpp -o my-features.o`
-    3. Link your project: `g++ my-features.o cparse/core-shunting-yard.o main.cpp -o main`
+    2. Compile your modified features: `g++ -I cparse -std=c++11 -c builtin-features.cpp -o my-features.o`
+    3. Link your project: `g++ -I cparse -std=c++11 my-features.o cparse/core-shunting-yard.o main.cpp -o main`
 
 For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
  
