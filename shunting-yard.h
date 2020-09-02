@@ -211,12 +211,11 @@ struct rpnBuilder {
 
   static inline std::string parseVar(const char* expr, const char** rest = 0) {
     std::stringstream ss;
-    ss << *expr;
-    ++expr;
-    while (rpnBuilder::isvarchar(*expr) || isdigit(*expr)) {
+    do {
       ss << *expr;
       ++expr;
-    }
+    } while (rpnBuilder::isvarchar(*expr) || isdigit(*expr));
+    unicodeCharCounter = 0;
     if (rest) *rest = expr;
     return ss.str();
   }
