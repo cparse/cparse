@@ -159,6 +159,9 @@ class Function;
 // as well as some built-in functions:
 #include "./functions.h"
 
+// Global counter for detecting unicode characters
+static unsigned char unicodeCharCounter = 0;
+
 // This struct was created to expose internal toRPN() variables
 // to custom parsers, in special to the rWordParser_t functions.
 struct rpnBuilder {
@@ -189,7 +192,21 @@ struct rpnBuilder {
 
   // Check if a character is the first character of a variable:
   static inline bool isvarchar(const char c) {
-    return isalpha(c) || c == '_';
+    return  isUTF8char(c) || isalpha(c) || c == '_';
+  }
+
+  static inline bool isUTF8char(const char c) {
+    if(unicodeCharCounter > 0) return --unicodeCharCounter;
+    if(c & 0x80) { // This is the start of a unicode character
+      ++unicodeCharCounter;
+      if(c & 0x40) ++unicodeCharCounter;
+      else return true;
+      if(c & 0x20) ++unicodeCharCounter;
+      else return true;
+      if(c & 0x10) ++unicodeCharCounter;
+      else return true;
+    }
+    return false;
   }
 
   static inline std::string parseVar(const char* expr, const char** rest = 0) {
