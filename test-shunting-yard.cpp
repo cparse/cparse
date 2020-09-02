@@ -1118,3 +1118,34 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(ecalc2.compile("map()['hello']]"));
   REQUIRE_THROWS(ecalc2.compile("map(['hello']]"));
 }
+
+TEST_CASE("Variable UTF8 name support") {
+  TokenMap v1;
+  v1["n_"] = 5; // Normal name
+  v1["a←"] = 5; // Name starting with ascii, but contains UTF8
+  v1["łn"] = 5; // Name starting with UTF8, but also has ascii
+  v1["€"] = 5;  // A single UTF8 character
+  v1["€€æøå€"] = 5; // Multiple UTF8 characters
+  v1["€€€"] = 5; // Multiple UTF8 characters
+  // Simply using calculator::calculate
+  REQUIRE(calculator::calculate("n_ + 5", v1).asInt() == 10);
+  REQUIRE(calculator::calculate("a← + 5", v1).asInt() == 10);
+  REQUIRE(calculator::calculate("łn + 5", v1).asInt() == 10);
+  REQUIRE(calculator::calculate("€ + 5", v1).asInt() == 10);
+  REQUIRE(calculator::calculate("€€æøå€ + 5", v1).asInt() == 10);
+  REQUIRE(calculator::calculate("€€€ + 5", v1).asInt() == 10);
+  // Using calculator.compile() -> .eval()
+  calculator calc;
+  calc.compile("n_ + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+  calc.compile("a← + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+  calc.compile("łn + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+  calc.compile("€ + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+  calc.compile("€€æøå€ + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+  calc.compile("€€€ + 5", v1);
+  REQUIRE(calc.eval().asInt() == 10);
+}
