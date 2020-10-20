@@ -47,7 +47,7 @@ void DotOperator(const char* expr, const char** rest, rpnBuilder* data) {
   while (*expr && isspace(*expr)) ++expr;
 
   // If it did not find a valid variable name after it:
-  if (!rpnBuilder::isvarchar(*expr)) {
+  if (!rpnBuilder::isvarchar(*expr, &expr)) {
     throw syntax_error("Expected variable name after '.' operator");
   }
 

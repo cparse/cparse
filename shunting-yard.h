@@ -159,9 +159,6 @@ class Function;
 // as well as some built-in functions:
 #include "./functions.h"
 
-// Global counter for detecting unicode characters
-static unsigned char unicodeCharCounter = 0;
-
 // This struct was created to expose internal toRPN() variables
 // to custom parsers, in special to the rWordParser_t functions.
 struct rpnBuilder {
@@ -191,19 +188,19 @@ struct rpnBuilder {
   // * * * * * Static parsing helpers: * * * * * //
 
   // Check if a character is the first character of a variable:
-  static inline bool isvarchar(const char c) {
-    return  isUTF8char(c) || isalpha(c) || c == '_';
+  // (rest is needed for UTF8 characters)
+  static inline bool isvarchar(const char c, const char** rest) {
+    return  isUTF8char(c, rest) || isalpha(c) || c == '_';
   }
-
-  static inline bool isUTF8char(const char c) {
-    if(unicodeCharCounter > 0) return --unicodeCharCounter;
+// TODO: Throw exception if not valid encoding
+  static inline bool isUTF8char(const char c, const char** rest) {
     if(c & 0x80) { // This is the start of a unicode character
-      ++unicodeCharCounter;
-      if(c & 0x40) ++unicodeCharCounter;
+      rest++;
+      if(c & 0x40) rest++;
       else return true;
-      if(c & 0x20) ++unicodeCharCounter;
+      if(c & 0x20) rest++;
       else return true;
-      if(c & 0x10) ++unicodeCharCounter;
+      if(c & 0x10) rest++;
       else return true;
     }
     return false;
@@ -214,8 +211,7 @@ struct rpnBuilder {
     do {
       ss << *expr;
       ++expr;
-    } while (rpnBuilder::isvarchar(*expr) || isdigit(*expr));
-    unicodeCharCounter = 0;
+    } while (rpnBuilder::isvarchar(*expr, rest) || isdigit(*expr));
     if (rest) *rest = expr;
     return ss.str();
   }
