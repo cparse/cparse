@@ -188,30 +188,43 @@ struct rpnBuilder {
   // * * * * * Static parsing helpers: * * * * * //
 
   // Check if a character is the first character of a variable:
+  // Returns the byte-length of the character
   // (rest is needed for UTF8 characters)
-  static inline bool isvarchar(const char c, const char** rest) {
-    return  isUTF8char(c, rest) || isalpha(c) || c == '_';
+  static inline unsigned char isvarchar(const char c, const char** rest) {
+    unsigned char utf8charsize = isUTF8char(c, rest);
+    if(utf8charsize == 0) return isalpha(c) || c == '_' ? true : false;
+    return utf8charsize;
   }
-// TODO: Throw exception if not valid encoding
-  static inline bool isUTF8char(const char c, const char** rest) {
-    if(c & 0x80) { // This is the start of a unicode character
-      rest++;
-      if(c & 0x40) rest++;
-      else return true;
-      if(c & 0x20) rest++;
-      else return true;
-      if(c & 0x10) rest++;
-      else return true;
+
+  // Checks if this is the start of a multi-character unicode character
+  // and if it is, will return the byte-size of the character.
+  // returns zero if it is not a multi-character unicode character
+  // throws a domain_error exception if the character is malformed
+  static inline unsigned char isUTF8char(const char c, const char** rest) {
+    unsigned char counter = 0;
+    if(c & 0x80) { // This is the start of a multi-char unicode character
+      counter++;
+      if(c & 0x40) counter++;
+      if(c & 0x20) counter++;
+      if(c & 0x10) counter++;
+      for(int i = 0; i < counter; i++) {
+        if(!((*rest)[i] & 0x80))
+          throw std::domain_error("Subsequent bytes of unicode character have to be of the form \\b10xxxxxx");
+      }
     }
-    return false;
+    return counter;
   }
 
   static inline std::string parseVar(const char* expr, const char** rest = 0) {
     std::stringstream ss;
+    unsigned char charsize;
     do {
-      ss << *expr;
-      ++expr;
-    } while (rpnBuilder::isvarchar(*expr, rest) || isdigit(*expr));
+        charsize = isvarchar(*expr, rest) + isdigit(*expr);
+        for (int i = 0; i < charsize; i++) {
+            ss << *expr++;
+            *rest = expr;
+        }
+    } while(charsize);
     if (rest) *rest = expr;
     return ss.str();
   }
