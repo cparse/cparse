@@ -1156,3 +1156,140 @@ TEST_CASE("Variable UTF8 name support") {
   calc.compile("hello€ð2world€ + 5", v1);
   REQUIRE(calc.eval().asInt() == 10);
 }
+
+// UTF8 tests are based off of: https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+TEST_CASE("mgk25 UTF8") {
+    auto testutf8str = [](const char* str) {
+        rpnBuilder::parseVar(str, &str);
+    };
+    CHECK_THROWS(testutf8str("\x00"));       // 2.1.1  1 byte  (U-00000000) (NULL)
+    CHECK_NOTHROW(testutf8str("\x80"));  // 2.1.2  2 bytes (U-00000080)
+    CHECK_NOTHROW(testutf8str("ࠀ"));       // 2.1.3  3 bytes (U-00000800)
+    CHECK_NOTHROW(testutf8str("𐀀"));       // 2.1.4  4 bytes (U-00010000)
+    CHECK_THROWS(testutf8str("�����"));   // 2.1.5  5 bytes (U-00200000)
+    CHECK_THROWS(testutf8str("������"));  // 2.1.6  6 bytes (U-04000000)
+
+// 2.2  Last possible sequence of a certain length
+
+    CHECK_NOTHROW(testutf8str("")); // 2.2.1  1 byte  (U-0000007F)
+    CHECK_NOTHROW(testutf8str("\xDF\xBF"));     // 2.2.2  2 bytes (U-000007FF)0xDF 0xBF
+    CHECK_NOTHROW(testutf8str("\xEF\xBF\xBF"));     // 2.2.3  3 bytes (U-0000FFFF)
+    CHECK_THROWS(testutf8str("\xd8\x3f\xdf\xff"));    // 2.2.4  4 bytes (U-001FFFFF)
+    CHECK_THROWS(testutf8str("�����"));   // 2.2.5  5 bytes (U-03FFFFFF)
+    CHECK_THROWS(testutf8str("������"));  // 2.2.6  6 bytes (U-7FFFFFFF)
+
+// 2.3  Other boundary conditions
+
+    CHECK_NOTHROW(testutf8str("\xed\x9f\xbf")); // 2.3.1  U-0000D7FF = ed 9f bf
+    CHECK_NOTHROW(testutf8str("")); // 2.3.2  U-008000E000 = ee 80
+    CHECK_NOTHROW(testutf8str("\xef\xbf\xbd")); // 2.3.3  U-0000FFFD = ef bf bd
+    CHECK_NOTHROW(testutf8str("\xf4\x8f\xbf\xbf")); // 2.3.4  U-0010FFFF = f4 8f bf bf =
+    CHECK_THROWS(testutf8str("\xf4\x90\x80\x80")); // 2.3.5  U-00110000 = f4 90 80 80 =
+
+// 3  Malformed sequences
+// 3.1  Unexpected continuation bytes
+// Each unexpected continuation byte should be separately signalled as a
+// malformed sequence of its own.
+
+    CHECK_THROWS(testutf8str("\x80")); // 3.1.1  First continuation byte 0x80
+    CHECK_THROWS(testutf8str("\xbf")); // 3.1.2  Last  continuation byte 0xbf
+
+    CHECK_THROWS(testutf8str("\x80\x80"));    // 3.1.3  2 continuation bytes
+    CHECK_THROWS(testutf8str("\x80\x80\x80"));   // 3.1.4  3 continuation bytes
+    CHECK_THROWS(testutf8str("\x80\x80\x80\x80"));    // 3.1.5  4 continuation bytes
+    CHECK_THROWS(testutf8str("\x80\x80\x80\x80\x80"));   // 3.1.6  5 continuation bytes
+    CHECK_THROWS(testutf8str("\x80\x80\x80\x80\x80\x80"));    // 3.1.7  6 continuation bytes
+    CHECK_THROWS(testutf8str("\x80\x80\x80\x80\x80\x80\x80"));   // 3.1.8  7 continuation bytes
+
+// 3.1.9  Sequence of all 64 possible continuation bytes (0x80-0xbf):
+
+    CHECK_THROWS(testutf8str("����������������������������������������������������������������"));
+
+// 3.2  Lonely start characters
+
+    CHECK_THROWS(testutf8str("� � � � � � � � � � � � � � � �� � � � � � � � � � � � � � � � ")); // 3.2.1  All 32 first bytes of 2-byte sequences (0xc0-0xdf) each followed by a space character:
+    CHECK_THROWS(testutf8str("� � � � � � � � � � � � � � � � ")); // 3.2.2  All 16 first bytes of 3-byte sequences (0xe0-0xef) each followed by a space character
+    CHECK_THROWS(testutf8str("� � � � � � � � ")); // 3.2.3  All 8 first bytes of 4-byte sequences (0xf0-0xf7), each followed by a space character:
+    CHECK_THROWS(testutf8str("� � � � ")); // 3.2.4  All 4 first bytes of 5-byte sequences (0xf8-0xfb), each followed by a space character:
+    CHECK_THROWS(testutf8str("� � ")); // 3.2.5  All 2 first bytes of 6-byte sequences (0xfc-0xfd), each followed by a space character:
+// 3.3  Sequences with last continuation byte missing
+
+    CHECK_THROWS(testutf8str("\xC0")); // 3.3.1  2-byte sequence with last byte missing (U+0000):
+    CHECK_THROWS(testutf8str("��"));  // 3.3.2  3-byte sequence with last byte missing (U+0000):
+    CHECK_THROWS(testutf8str("���"));  // 3.3.3  4-byte sequence with last byte missing (U+0000):
+    CHECK_THROWS(testutf8str("����"));  // 3.3.4  5-byte sequence with last byte missing (U+0000):
+    CHECK_THROWS(testutf8str("�����"));  // 3.3.5  6-byte sequence with last byte missing (U+0000):
+    CHECK_THROWS(testutf8str("�")); // 3.3.6  2-byte sequence with last byte missing (U-000007FF):
+    CHECK_THROWS(testutf8str("�")); // 3.3.7  3-byte sequence with last byte missing (U-0000FFFF):
+    CHECK_THROWS(testutf8str("���"));  // 3.3.8  4-byte sequence with last byte missing (U-001FFFFF):
+    CHECK_THROWS(testutf8str("����"));  // 3.3.9  5-byte sequence with last byte missing (U-03FFFFFF):
+    CHECK_THROWS(testutf8str("�����"));  // 3.3.10 6-byte sequence with last byte missing (U-7FFFFFFF):
+
+// 3.4  Concatenation of incomplete sequences
+
+    CHECK_THROWS(testutf8str("�����������������������������")); // All the 10 sequences of 3.3 concatenated, you should see 10 malformed sequences being signalled:
+
+// 3.5  Impossible bytes
+
+// The following two bytes cannot appear in a correct UTF-8 string
+
+    CHECK_THROWS(testutf8str("\xfe")); // 3.5.1  fe =
+    CHECK_THROWS(testutf8str("\xff")); // 3.5.2  ff =
+    CHECK_THROWS(testutf8str("\xfe\xfe\xff\xff")); // 3.5.3  fe fe ff ff =
+
+// 4  Overlong sequences
+// 4.1  Examples of an overlong ASCII character
+
+    CHECK_THROWS(testutf8str("\xc0\xaf")); // 4.1.1 U+002F = c0 af             =
+    CHECK_THROWS(testutf8str("\xe0\x80\xaf")); // 4.1.2 U+002F = e0 80 af          =
+    CHECK_THROWS(testutf8str("\xf0\x80\x80\xaf")); // 4.1.3 U+002F = f0 80 80 af       =
+    CHECK_THROWS(testutf8str("\xf8\x80\x80\x80\xaf")); // 4.1.4 U+002F = f8 80 80 80 af    =
+    CHECK_THROWS(testutf8str("\xfc\x80\x80\x80\x80\xaf")); // 4.1.5 U+002F = fc 80 80 80 80 af =
+
+// 4.2  Maximum overlong sequences
+
+    CHECK_THROWS(testutf8str("\xc1\xbf")); // 4.2.1  U-0000007F = c1 bf             =
+    CHECK_THROWS(testutf8str("\xe0\x9f\xbf")); // 4.2.2  U-000007FF = e0 9f bf          =
+    CHECK_THROWS(testutf8str("\xf0\x8f\xbf\xbf")); // 4.2.3  U-0000FFFF = f0 8f bf bf       =
+    CHECK_THROWS(testutf8str("\xf8\x87\xbf\xbf\xbf")); // 4.2.4  U-001FFFFF = f8 87 bf bf bf    =
+    CHECK_THROWS(testutf8str("\xfc\x83\xbf\xbf\xbf\xbf")); // 4.2.5  U-03FFFFFF = fc 83 bf bf bf bf =
+
+// 4.3  Overlong representation of the NUL character
+
+    CHECK_THROWS(testutf8str("\xc0\x80")); // 4.3.1  U+0000 = c0 80             =
+    CHECK_THROWS(testutf8str("\xe0\x80\x80")); // 4.3.2  U+0000 = e0 80 80          =
+    CHECK_THROWS(testutf8str("\xf0\x80\x80\x80")); // 4.3.3  U+0000 = f0 80 80 80       =
+    CHECK_THROWS(testutf8str("\xf8\x80\x80\x80\x80")); // 4.3.4  U+0000 = f8 80 80 80 80    =
+    CHECK_THROWS(testutf8str("\xfc\x80\x80\x80\x80\x80")); // 4.3.5  U+0000 = fc 80 80 80 80 80 =
+
+// 5  Illegal code positions
+// 5.1 Single UTF-16 surrogates
+
+    CHECK_THROWS(testutf8str("\xed\xa0\x80")); // 5.1.1  U+D800 = ed a0 80 =
+    CHECK_THROWS(testutf8str("\xed\xad\xbf")); // 5.1.2  U+DB7F = ed ad bf =
+    CHECK_THROWS(testutf8str("\xed\xae\x80")); // 5.1.3  U+DB80 = ed ae 80 =
+    CHECK_THROWS(testutf8str("\xed\xaf\xbf")); // 5.1.4  U+DBFF = ed af bf =
+    CHECK_THROWS(testutf8str("\xed\xb0\x80")); // 5.1.5  U+DC00 = ed b0 80 =
+    CHECK_THROWS(testutf8str("\xed\xbe\x80")); // 5.1.6  U+DF80 = ed be 80 =
+    CHECK_THROWS(testutf8str("\xed\xbf\xbf")); // 5.1.7  U+DFFF = ed bf bf =
+
+// 5.2 Paired UTF-16 surrogates
+
+    CHECK_THROWS(testutf8str("\xed\xa0\x80\xed\xb0\x80")); // 5.2.1  U+D800 U+DC00 = ed a0 80 ed b0 80 =
+    CHECK_THROWS(testutf8str("\xed\xa0\x80\xed\xbf\xbf")); // 5.2.2  U+D800 U+DFFF = ed a0 80 ed bf bf =
+    CHECK_THROWS(testutf8str("\xed\xad\xbf\xed\xb0\x80")); // 5.2.3  U+DB7F U+DC00 = ed ad bf ed b0 80 =
+    CHECK_THROWS(testutf8str("\xed\xad\xbf\xed\xbf\xbf")); // 5.2.4  U+DB7F U+DFFF = ed ad bf ed bf bf =
+    CHECK_THROWS(testutf8str("\xed\xae\x80\xed\xb0\x80")); // 5.2.5  U+DB80 U+DC00 = ed ae 80 ed b0 80 =
+    CHECK_THROWS(testutf8str("\xed\xae\x80\xed\xbf\xbf")); // 5.2.6  U+DB80 U+DFFF = ed ae 80 ed bf bf =
+    CHECK_THROWS(testutf8str("\xed\xaf\xbf\xed\xb0\x80")); // 5.2.7  U+DBFF U+DC00 = ed af bf ed b0 80 =
+    CHECK_THROWS(testutf8str("\xed\xaf\xbf\xed\xbf\xbf")); // 5.2.8  U+DBFF U+DFFF = ed af bf ed bf bf =
+
+// 5.3 Noncharacter code positions (Maybe these should throw)
+    CHECK_NOTHROW(testutf8str("\xef\xbf\xbe")); // 5.3.1  U+FFFE = ef bf be =
+    CHECK_NOTHROW(testutf8str("\xef\xbf\xbf")); // 5.3.2  U+FFFF = ef bf bf =
+// Other noncharacters:
+    CHECK_NOTHROW(testutf8str("﷐﷑﷒﷓﷔﷕﷖﷗﷘﷙﷚﷛﷜﷝﷞﷟﷠﷡﷢﷣﷤﷥﷦﷧﷨﷩﷪﷫﷬﷭﷮﷯")); // 5.3.3  U+FDD0 .. U+FDEF =
+    CHECK_NOTHROW(testutf8str("🿾🿿𯿾𯿿𿿾𿿿񏿾񏿿񟿾񟿿񯿾񯿿񿿾񿿿򏿾򏿿򟿾򟿿򯿾򯿿򿿾򿿿󏿾󏿿󟿾󟿿󯿾󯿿󿿾󿿿􏿾􏿿")); // 5.3.4  U+nFFFE U+nFFFF (for n = 1..10)
+
+}
+  
