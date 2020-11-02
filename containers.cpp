@@ -89,7 +89,7 @@ packToken* TokenList::ListIterator::next() {
 void TokenList::ListIterator::reset() { i = 0; }
 
 /* * * * * MapData_t struct: * * * * */
-MapData_t::MapData_t(){}
+MapData_t::MapData_t() {}
 MapData_t::MapData_t(TokenMap* p) : parent(p ? new TokenMap(*p) : 0) {}
 MapData_t::MapData_t(const MapData_t& other) {
   map = other.map;
