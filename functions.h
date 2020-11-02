@@ -25,9 +25,9 @@ class Function : public TokenBase {
 class CppFunction : public Function {
  public:
   packToken (*func)(TokenMap);
+  std::function<packToken(TokenMap)> stdFunc;
   args_t _args;
   std::string _name;
-  std::function<packToken(TokenMap)> stdFunc;
   bool isStdFunc;
 
   CppFunction();
