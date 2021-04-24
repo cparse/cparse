@@ -278,11 +278,25 @@ TokenQueue_t calculator::toRPN(const char* expr,
   // using Dijkstra's Shunting-yard algorithm.
   while (*expr && (data.bracketLevel || !strchr(delim, *expr))) {
     if (isdigit(*expr)) {
+      int base = 10;
+      // Parse the prefix notation for octal and hex numbers:
+      if (expr[0] == '0') {
+        if (expr[1] == 'x') {
+          // 0x1 == 1 in hex notation
+          base = 16;
+          expr += 2;
+        } else {
+          // 01 == 1 in octal notation
+          base = 8;
+          expr++;
+        }
+      }
+
       // If the token is a number, add it to the output queue.
-      int64_t _int = strtoll(expr, &nextChar, 10);
+      int64_t _int = strtoll(expr, &nextChar, base);
 
       // If the number was not a float:
-      if (!strchr(".eE", *nextChar)) {
+      if (base != 10 || !strchr(".eE", *nextChar)) {
         data.handle_token(new Token<int64_t>(_int, INT));
       } else {
         double digit = strtod(expr, &nextChar);

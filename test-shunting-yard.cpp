@@ -53,6 +53,21 @@ TEST_CASE("calculate::compile() and calculate::eval()", "[compile]") {
   REQUIRE(c3.eval(vars).asDouble() == Approx(4.0));
 }
 
+TEST_CASE("Numerical expressions") {
+  REQUIRE(calculator::calculate("123").asInt() == 123);
+  REQUIRE(calculator::calculate("0x1f").asInt() == 31);
+  REQUIRE(calculator::calculate("010").asInt() == 8);
+
+  REQUIRE(calculator::calculate("1.5").asDouble() == Approx(1.50));
+  REQUIRE(calculator::calculate("2e2").asDouble() == Approx(200));
+  REQUIRE(calculator::calculate("2E2").asDouble() == Approx(200));
+
+  REQUIRE(calculator::calculate("2.5e2").asDouble() == Approx(250));
+  REQUIRE(calculator::calculate("2.5E2").asDouble() == Approx(250));
+
+  REQUIRE_THROWS(calculator::calculate("0x22.5"));
+}
+
 TEST_CASE("Boolean expressions") {
   REQUIRE_FALSE(calculator::calculate("3 < 3").asBool());
   REQUIRE(calculator::calculate("3 <= 3").asBool());
