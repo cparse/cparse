@@ -165,7 +165,7 @@ void rpnBuilder::handle_right_unary(const std::string& unary_op) {
 
 // Find out if op is a binary or unary operator and handle it:
 void rpnBuilder::handle_op(const std::string& op) {
-  // If its a left unary operator:
+  // If it's a left unary operator:
   if (this->lastTokenWasOp) {
     if (opp.exists("L"+op)) {
       handle_left_unary("L"+op);
@@ -202,6 +202,10 @@ void rpnBuilder::handle_op(const std::string& op) {
 }
 
 void rpnBuilder::handle_token(TokenBase* token) {
+  if (lastTokenWasOp == false) {
+    throw syntax_error("Expected an operator or bracket but got " + packToken::str(token));
+  }
+
   rpn.push(token);
   lastTokenWasOp = false;
   lastTokenWasUnary = false;

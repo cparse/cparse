@@ -38,6 +38,9 @@ TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("1+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("1+_b+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("4 * -3", vars).asInt() == -12);
+
+  REQUIRE_THROWS(calculator("5x"));
+  REQUIRE_THROWS(calculator("v1 v2"));
 }
 
 TEST_CASE("calculate::compile() and calculate::eval()", "[compile]") {
@@ -57,6 +60,8 @@ TEST_CASE("Numerical expressions") {
   REQUIRE(calculator::calculate("123").asInt() == 123);
   REQUIRE(calculator::calculate("0x1f").asInt() == 31);
   REQUIRE(calculator::calculate("010").asInt() == 8);
+  REQUIRE(calculator::calculate("0").asInt() == 0);
+  REQUIRE(calculator::calculate("-0").asInt() == 0);
 
   REQUIRE(calculator::calculate("1.5").asDouble() == Approx(1.50));
   REQUIRE(calculator::calculate("2e2").asDouble() == Approx(200));
