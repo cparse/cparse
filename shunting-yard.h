@@ -147,7 +147,7 @@ class OppMap_t {
   bool exists(const std::string& op) const { return pr_map.count(op); }
 };
 
-}
+}  // namespace cparse
 
 namespace cparse {
 
@@ -431,6 +431,6 @@ class calculator {
   calculator& operator=(const calculator& calc);
 };
 
-}
+}  // namespace cparse
 
 #endif  // SHUNTING_YARD_H_

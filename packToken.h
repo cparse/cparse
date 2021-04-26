@@ -88,7 +88,8 @@ class packToken {
 };
 
 // To allow cout to print it:
-std::ostream& operator<<(std::ostream& os, const packToken& t);  
-}
+std::ostream& operator<<(std::ostream& os, const packToken& t);
+
+}  // namespace cparse
 
 #endif  // PACKTOKEN_H_

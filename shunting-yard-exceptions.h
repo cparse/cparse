@@ -39,6 +39,6 @@ struct undefined_operation : public msg_exception {
     : msg_exception("Unexpected operation with operator '" + op + "' and operands: " + left.str() + " and " + right.str() + ".") {}
 };
 
-}
+}  // namespace cparse
 
 #endif  // SHUNTING_YARD_EXCEPTIONS_H_

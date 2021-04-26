@@ -243,6 +243,6 @@ class STuple : public Tuple {
   }
 };
 
-}
+}  // namespace cparse
 
 #endif  // CONTAINERS_H_

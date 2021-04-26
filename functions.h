@@ -55,6 +55,6 @@ class CppFunction : public Function {
   }
 };
 
-}
+}  // namespace cparse
 
 #endif  // FUNCTIONS_H_

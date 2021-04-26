@@ -5,7 +5,11 @@
 #include "./containers.h"
 #include "./functions.h"
 
-using namespace cparse;
+using cparse::TokenMap;
+using cparse::packToken;
+using cparse::Iterator;
+using cparse::TokenList;
+using cparse::MapData_t;
 
 /* * * * * Initialize TokenMap * * * * */
 

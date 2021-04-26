@@ -5,7 +5,36 @@
 
 #include "./shunting-yard.h"
 
-using namespace cparse;
+using cparse::calculator;
+using cparse::packToken;
+using cparse::GlobalScope;
+using cparse::TokenMap;
+using cparse::TokenList;
+using cparse::Iterator;
+using cparse::CppFunction;
+using cparse::Tuple;
+using cparse::STuple;
+using cparse::TUPLE;
+using cparse::STUPLE;
+using cparse::MAP;
+using cparse::LIST;
+using cparse::BOOL;
+using cparse::NONE;
+using cparse::FUNC;
+using cparse::ANY_TYPE;
+using cparse::IT;
+using cparse::STR;
+using cparse::NUM;
+using cparse::UNARY;
+using cparse::REF;
+using cparse::Container;
+using cparse::evaluationData;
+using cparse::Operation;
+using cparse::Config_t;
+using cparse::rpnBuilder;
+using cparse::OppMap_t;
+using cparse::opMap_t;
+using cparse::parserMap_t;
 
 TokenMap vars, emap, tmap, key3;
 

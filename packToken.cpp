@@ -6,7 +6,13 @@
 #include "./packToken.h"
 #include "./shunting-yard-exceptions.h"
 
-using namespace cparse;
+using cparse::packToken;
+using cparse::TokenBase;
+using cparse::TokenMap;
+using cparse::TokenList;
+using cparse::Tuple;
+using cparse::STuple;
+using cparse::Function;
 
 const packToken& packToken::None() {
   static packToken none = packToken(TokenNone());
