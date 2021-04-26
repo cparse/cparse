@@ -5,6 +5,8 @@
 #include <string>
 #include<functional>
 
+namespace cparse {
+
 typedef std::list<std::string> args_t;
 
 class Function : public TokenBase {
@@ -52,5 +54,7 @@ class CppFunction : public Function {
     return new CppFunction(static_cast<const CppFunction&>(*this));
   }
 };
+
+}
 
 #endif  // FUNCTIONS_H_

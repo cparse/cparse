@@ -4,6 +4,8 @@
 #include "./functions.h"
 #include "./shunting-yard-exceptions.h"
 
+using namespace cparse;
+
 /* * * * * class Function * * * * */
 packToken Function::call(packToken _this, const Function* func,
                          TokenList* args, TokenMap scope) {

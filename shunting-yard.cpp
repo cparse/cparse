@@ -11,6 +11,8 @@
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
 
+using namespace cparse;
+
 /* * * * * Operation class: * * * * */
 
 // Convert a type into an unique mask for bit wise operations:

@@ -13,6 +13,8 @@
 #include <memory>
 #include <utility>
 
+namespace cparse {
+
 /*
  * About tokType enum:
  *
@@ -145,11 +147,18 @@ class OppMap_t {
   bool exists(const std::string& op) const { return pr_map.count(op); }
 };
 
+}
+
+namespace cparse {
+
 class TokenMap;
 class TokenList;
 class Tuple;
 class STuple;
 class Function;
+
+}
+
 #include "./packToken.h"
 
 // Define the Tuple, TokenMap and TokenList classes:
@@ -158,6 +167,8 @@ class Function;
 // Define the `Function` class
 // as well as some built-in functions:
 #include "./functions.h"
+
+namespace cparse {
 
 // This struct was created to expose internal toRPN() variables
 // to custom parsers, in special to the rWordParser_t functions.
@@ -419,5 +430,7 @@ class calculator {
   // Operators:
   calculator& operator=(const calculator& calc);
 };
+
+}
 
 #endif  // SHUNTING_YARD_H_

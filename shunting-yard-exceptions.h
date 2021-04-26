@@ -7,6 +7,8 @@
 #include <string>
 #include <stdexcept>
 
+namespace cparse {
+
 class msg_exception : public std::exception {
  protected:
   const std::string msg;
@@ -36,5 +38,7 @@ struct undefined_operation : public msg_exception {
   undefined_operation(const std::string& op, const packToken& left, const packToken& right)
     : msg_exception("Unexpected operation with operator '" + op + "' and operands: " + left.str() + " and " + right.str() + ".") {}
 };
+
+}
 
 #endif  // SHUNTING_YARD_EXCEPTIONS_H_
