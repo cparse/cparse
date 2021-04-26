@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace cparse {
+
 // Encapsulate TokenBase* into a friendlier interface
 class packToken {
   TokenBase* base;
@@ -86,6 +88,7 @@ class packToken {
 };
 
 // To allow cout to print it:
-std::ostream& operator<<(std::ostream& os, const packToken& t);
+std::ostream& operator<<(std::ostream& os, const packToken& t);  
+}
 
 #endif  // PACKTOKEN_H_

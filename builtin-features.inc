@@ -10,6 +10,8 @@
 #include "./shunting-yard.h"
 #include "./shunting-yard-exceptions.h"
 
+using namespace cparse;
+
 /* * * * * Built-in Features: * * * * */
 
 /**

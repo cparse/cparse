@@ -5,6 +5,8 @@
 
 #include "./shunting-yard.h"
 
+using namespace cparse;
+
 TokenMap vars, emap, tmap, key3;
 
 void PREPARE_ENVIRONMENT() {

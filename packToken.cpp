@@ -6,6 +6,8 @@
 #include "./packToken.h"
 #include "./shunting-yard-exceptions.h"
 
+using namespace cparse;
+
 const packToken& packToken::None() {
   static packToken none = packToken(TokenNone());
   return none;
@@ -46,7 +48,7 @@ TokenBase* packToken::operator->() const {
   return base;
 }
 
-std::ostream& operator<<(std::ostream &os, const packToken& t) {
+std::ostream& cparse::operator<<(std::ostream &os, const packToken& t) {
   return os << t.str();
 }
 
