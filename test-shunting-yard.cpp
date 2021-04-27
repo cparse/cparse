@@ -5,6 +5,37 @@
 
 #include "./shunting-yard.h"
 
+using cparse::calculator;
+using cparse::packToken;
+using cparse::GlobalScope;
+using cparse::TokenMap;
+using cparse::TokenList;
+using cparse::Iterator;
+using cparse::CppFunction;
+using cparse::Tuple;
+using cparse::STuple;
+using cparse::TUPLE;
+using cparse::STUPLE;
+using cparse::MAP;
+using cparse::LIST;
+using cparse::BOOL;
+using cparse::NONE;
+using cparse::FUNC;
+using cparse::ANY_TYPE;
+using cparse::IT;
+using cparse::STR;
+using cparse::NUM;
+using cparse::UNARY;
+using cparse::REF;
+using cparse::Container;
+using cparse::evaluationData;
+using cparse::Operation;
+using cparse::Config_t;
+using cparse::rpnBuilder;
+using cparse::OppMap_t;
+using cparse::opMap_t;
+using cparse::parserMap_t;
+
 TokenMap vars, emap, tmap, key3;
 
 void PREPARE_ENVIRONMENT() {
@@ -38,6 +69,9 @@ TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("1+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("1+_b+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("4 * -3", vars).asInt() == -12);
+
+  REQUIRE_THROWS(calculator("5x"));
+  REQUIRE_THROWS(calculator("v1 v2"));
 }
 
 TEST_CASE("calculate::compile() and calculate::eval()", "[compile]") {
@@ -51,6 +85,23 @@ TEST_CASE("calculate::compile() and calculate::eval()", "[compile]") {
 
   calculator c3("pi+b1+b2", vars);
   REQUIRE(c3.eval(vars).asDouble() == Approx(4.0));
+}
+
+TEST_CASE("Numerical expressions") {
+  REQUIRE(calculator::calculate("123").asInt() == 123);
+  REQUIRE(calculator::calculate("0x1f").asInt() == 31);
+  REQUIRE(calculator::calculate("010").asInt() == 8);
+  REQUIRE(calculator::calculate("0").asInt() == 0);
+  REQUIRE(calculator::calculate("-0").asInt() == 0);
+
+  REQUIRE(calculator::calculate("1.5").asDouble() == Approx(1.50));
+  REQUIRE(calculator::calculate("2e2").asDouble() == Approx(200));
+  REQUIRE(calculator::calculate("2E2").asDouble() == Approx(200));
+
+  REQUIRE(calculator::calculate("2.5e2").asDouble() == Approx(250));
+  REQUIRE(calculator::calculate("2.5E2").asDouble() == Approx(250));
+
+  REQUIRE_THROWS(calculator::calculate("0x22.5"));
 }
 
 TEST_CASE("Boolean expressions") {

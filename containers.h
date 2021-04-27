@@ -8,6 +8,8 @@
 #include <string>
 #include <memory>
 
+namespace cparse {
+
 template <typename T>
 class Container {
  protected:
@@ -240,5 +242,7 @@ class STuple : public Tuple {
     return new STuple(*this);
   }
 };
+
+}  // namespace cparse
 
 #endif  // CONTAINERS_H_
