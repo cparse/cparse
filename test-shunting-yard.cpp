@@ -1213,7 +1213,7 @@ TEST_CASE("mgk25 UTF8") {
     auto testutf8str = [](const char* str) {
         rpnBuilder::parseVar(str, &str);
     };
-    // REQUIRE_THROWS(testutf8str("\x00"));       // 2.1.1  1 byte  (U-00000000) (NULL)
+    REQUIRE_THROWS(testutf8str("\x00"));       // 2.1.1  1 byte  (U-00000000) (NULL)
     REQUIRE_NOTHROW(testutf8str("\x80"));  // 2.1.2  2 bytes (U-00000080)
     REQUIRE_NOTHROW(testutf8str("\xe0\xa0\x80"));       // 2.1.3  3 bytes (U-00000800)
     REQUIRE_NOTHROW(testutf8str("𐀀"));       // 2.1.4  4 bytes (U-00010000)
