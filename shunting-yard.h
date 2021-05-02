@@ -199,43 +199,53 @@ struct rpnBuilder {
   // * * * * * Static parsing helpers: * * * * * //
 
   // Check if a character is the first character of a variable:
-  // Returns the byte-length of the character
-  // (rest is needed for UTF8 characters)
-  static inline unsigned char isvarchar(const char c, const char** rest) {
-    unsigned char utf8charsize = isUTF8char(c, rest);
-    if(utf8charsize == 0) return isalpha(c) || c == '_' ? true : false;
-    return utf8charsize;
+  static inline bool isvarchar(const char c) {
+    return  isalpha(c) || c == '_' || isUTF8char(c);
   }
 
-  // Checks if this is the start of a multi-character unicode character
-  // and if it is, will return the byte-size of the character.
-  // returns zero if it is not a multi-character unicode character
+  // Checks if this is the start of a multi-byte utf8 character
+  static bool isUTF8char(const char c) {
+    return c & 0x80;
+  }
+
+  // Parses ascii or multi-byte utf8 characters writing the result
+  // to the input stringstream.
+  //
   // throws a domain_error exception if the character is malformed
-  static inline unsigned char isUTF8char(const char c, const char** rest) {
-    unsigned char counter = 0;
-    if(c & 0x80) { // This is the start of a multi-char unicode character
-      counter++;
-      if(c & 0x40) counter++;
-      if(c & 0x20) counter++;
-      if(c & 0x10) counter++;
-      for(int i = 0; i < counter; i++) {
-        if(!((*rest)[i] & 0x80))
-          throw std::domain_error("Subsequent bytes of unicode character have to be of the form \\b10xxxxxx");
-      }
+  static void parseUTF8(std::stringstream* ss, const char* expr, const char** rest = 0) {
+    const char* str = expr;
+    uint8_t counter = 1;
+    if (*expr & 0x80) {
+      // If its an UTF8 starting character,
+      // then count how many bytes are being used:
+      if (*expr & 0x40) counter++;
+      if (*expr & 0x20) counter++;
+      if (*expr & 0x10) counter++;
     }
-    return counter;
+
+    *ss << *expr;
+    for (int i = 1; i < counter; i++) {
+      if ((expr[i] & 0xc0) != 0x80) {
+        for (const auto& c : std::string(str)) {
+          std::cout << std::hex << (0xFF & c) << std::endl;
+        }
+        throw std::domain_error("Subsequent bytes of unicode character have to be of the form \\b10xxxxxx");
+      }
+      *ss << expr[i];
+    }
+
+    if (rest != 0) *rest = expr+counter;
+    return;
   }
 
   static inline std::string parseVar(const char* expr, const char** rest = 0) {
     std::stringstream ss;
-    unsigned char charsize;
-    do {
-        charsize = isvarchar(*expr, rest) + isdigit(*expr);
-        for (int i = 0; i < charsize; i++) {
-            ss << *expr++;
-            *rest = expr;
-        }
-    } while(charsize);
+
+    parseUTF8(&ss, expr, &expr);
+    while (rpnBuilder::isvarchar(*expr) || isdigit(*expr)) {
+      parseUTF8(&ss, expr, &expr);
+    }
+
     if (rest) *rest = expr;
     return ss.str();
   }

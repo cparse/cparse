@@ -322,7 +322,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       }
 
       expr = nextChar;
-    } else if (rpnBuilder::isvarchar(*expr, &expr)) {
+    } else if (rpnBuilder::isvarchar(*expr)) {
       rWordParser_t* parser;
 
       // If the token is a variable, resolve it and
