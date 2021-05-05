@@ -94,6 +94,7 @@ TEST_CASE("Numerical expressions") {
   REQUIRE(calculator::calculate("0").asInt() == 0);
   REQUIRE(calculator::calculate("-0").asInt() == 0);
 
+  REQUIRE(calculator::calculate("0.5").asDouble() == Approx(0.5));
   REQUIRE(calculator::calculate("1.5").asDouble() == Approx(1.50));
   REQUIRE(calculator::calculate("2e2").asDouble() == Approx(200));
   REQUIRE(calculator::calculate("2E2").asDouble() == Approx(200));

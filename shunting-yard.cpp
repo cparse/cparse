@@ -303,7 +303,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
           // 0x1 == 1 in hex notation
           base = 16;
           expr += 2;
-        } else {
+        } else if (isdigit(expr[1])) {
           // 01 == 1 in octal notation
           base = 8;
           expr++;
