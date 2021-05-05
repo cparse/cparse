@@ -50,6 +50,12 @@ make release -C cparse
 g++ -I cparse -std=c++11 cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
 ```
 
+### Running the tests:
+
+```bash
+make test -C cparse
+```
+
 ## Customizing your Library
 To customize your calculator:
 
