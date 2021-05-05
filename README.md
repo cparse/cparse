@@ -50,7 +50,9 @@ make release -C cparse
 g++ -I cparse -std=c++11 cparse/builtin-features.o cparse/core-shunting-yard.o main.cpp -o main
 ```
 
-### Running the tests:
+### Running the library tests:
+
+If you want to make sure everything is working in your environment:
 
 ```bash
 make test -C cparse
