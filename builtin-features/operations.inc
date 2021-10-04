@@ -128,6 +128,10 @@ packToken UnaryNumeralOperation(const packToken& left, const packToken& right, e
   }
 }
 
+packToken UnaryNotOperation(const packToken& left, const packToken& right, evaluationData* data) {
+  return !right.asBool();
+}
+
 packToken NumeralOperation(const packToken& left, const packToken& right, evaluationData* data) {
   double left_d, right_d;
   int64_t left_i, right_i;
@@ -342,7 +346,7 @@ struct Startup {
     opp.add(",", 16);
 
     // Add unary operators:
-    opp.addUnary("+",  3); opp.addUnary("-", 3);
+    opp.addUnary("+",  3); opp.addUnary("-", 3); opp.addUnary("!", 3);
 
     // Link operations to respective operators:
     opMap_t& opMap = calculator::Default().opMap;
@@ -355,6 +359,7 @@ struct Startup {
     opMap.add({ANY_TYPE, ".", STR}, &TypeSpecificFunction);
     opMap.add({MAP, ".", STR}, &MapIndex);
     opMap.add({STR, "%", ANY_TYPE}, &FormatOperation);
+    opMap.add({UNARY, "!", BOOL}, &UnaryNotOperation);
 
     // Note: The order is important:
     opMap.add({NUM, ANY_OP, NUM}, &NumeralOperation);

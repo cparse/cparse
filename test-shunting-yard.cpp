@@ -127,6 +127,9 @@ TEST_CASE("Boolean expressions") {
   REQUIRE(calculator::calculate("False")->type == BOOL);
   REQUIRE(calculator::calculate("10 == 'str'")->type == BOOL);
   REQUIRE(calculator::calculate("10 == 10")->type == BOOL);
+
+  REQUIRE(calculator::calculate("!False").asBool() == true);
+  REQUIRE(calculator::calculate("!True").asBool() == false);
 }
 
 TEST_CASE("String expressions") {
