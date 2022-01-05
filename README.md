@@ -10,7 +10,7 @@
 [license]: LICENSE.mit
 
 This project provide a C++ library to parse a character sequence
-as an expression using Dijkstra
+as an expression using Dijkstra's
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
 [Jesse Brown's original code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
@@ -24,8 +24,8 @@ If you want to use this library in your project please take a look at our [Wiki]
 [wiki]: https://github.com/cparse/cparse/wiki
 
 ## Builtin Features
- + Unary operator. +, -
- + Binary operator. +, -, /, *, %, <<, >>, ^
+ + Unary operators. +, -
+ + Binary operators. +, -, /, *, %, <<, >>, ^
  + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
  + Functions. sin, cos, tan, abs, print
  + Support for an hierarchy of scopes with local scope, global scope etc.
