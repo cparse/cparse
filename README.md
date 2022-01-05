@@ -10,7 +10,7 @@
 [license]: LICENSE.mit
 
 This project provide a C++ library to parse a character sequence
-as an expression using Dijkstra's
+as an expression using Dijkstra
 [Shunting-yard algorithm](http://en.wikipedia.org/wiki/Shunting-yard_algorithm),
 which modifies
 [Jesse Brown's original code](http://www.daniweb.com/software-development/cpp/code/427500/calculator-using-shunting-yard-algorithm).
