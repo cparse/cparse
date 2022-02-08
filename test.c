@@ -3,7 +3,7 @@ void f1(struct fred_t *p)
 
 
 
-    // dereference p and then check if it's NULL
+    // dereference p and then check if it's NULL undefine
     int x = p->x;
     if (p)
         do_something(x);
