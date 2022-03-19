@@ -151,8 +151,8 @@ class OppMap_t {
 
 namespace cparse {
 
-class TokenMap;
-class TokenList;
+struct TokenMap;
+struct TokenList;
 class Tuple;
 class STuple;
 class Function;
