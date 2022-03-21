@@ -11,7 +11,7 @@
 namespace cparse {
 
 template <typename T>
-class Container {
+struct Container {
  protected:
   std::shared_ptr<T> ref;
 
@@ -26,7 +26,7 @@ class Container {
   }
 };
 
-class Iterator;
+struct Iterator;
 
 struct Iterable : public TokenBase {
   virtual ~Iterable() {}
@@ -49,7 +49,7 @@ struct Iterator : public Iterable {
   Iterator* getIterator() const;
 };
 
-class TokenMap;
+struct TokenMap;
 typedef std::map<std::string, packToken> TokenMap_t;
 
 struct MapData_t {
