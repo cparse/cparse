@@ -259,7 +259,7 @@ std::string packToken::str(const TokenBase* base, uint32_t nest) {
       if (nest == 0) return "[Tuple]";
       ss << "(";
       first = true;
-      for (const packToken token : static_cast<const Tuple*>(base)->list()) {
+      for (const packToken& token : static_cast<const Tuple*>(base)->list()) {
         if (!first) {
           ss << ", ";
         } else {
