@@ -1173,3 +1173,11 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(ecalc2.compile("map()['hello']]"));
   REQUIRE_THROWS(ecalc2.compile("map(['hello']]"));
 }
+
+TEST_CASE("Get variables") {
+  calculator c("a + sin(b) - c**2 / d");
+  auto tmp = c.get_variables();
+  auto vars = std::set<std::string>(tmp.begin(), tmp.end());
+  auto expected = std::set<std::string>{"a", "b", "c", "d"};
+  REQUIRE(vars == expected);
+}

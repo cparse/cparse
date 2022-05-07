@@ -691,6 +691,16 @@ packToken calculator::eval(TokenMap vars, bool keep_refs) const {
   }
 }
 
+std::unordered_set<std::string> calculator::get_variables() const {
+  std::unordered_set<std::string> ret;
+  for (const auto& i: RPN) {
+    if (i->type == tokType::VAR) {
+      ret.insert(static_cast<Token<std::string>*>(i)->val);
+    }
+  }
+  return ret;
+}
+
 calculator& calculator::operator=(const calculator& calc) {
   // Make sure the RPN is empty:
   rpnBuilder::cleanRPN(&this->RPN);

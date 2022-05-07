@@ -12,6 +12,8 @@
 #include <sstream>
 #include <memory>
 #include <utility>
+#include <deque>
+#include <unordered_set>
 
 namespace cparse {
 
@@ -88,7 +90,19 @@ struct TokenUnary : public TokenBase {
 };
 
 class packToken;
-typedef std::queue<TokenBase*> TokenQueue_t;
+
+// Adapt to std::queue<TokenBase*>
+class TokenQueue_t: public std::deque<TokenBase*> {
+public:
+  void push(TokenBase* t) {
+    push_back(t);
+  }
+  void pop() {
+    pop_front();
+  }
+};
+
+
 class OppMap_t {
   // Set of operators that should be evaluated from right to left:
   std::set<std::string> RtoL;
@@ -422,6 +436,7 @@ class calculator {
   void compile(const char* expr, TokenMap vars = &TokenMap::empty,
                const char* delim = 0, const char** rest = 0);
   packToken eval(TokenMap vars = &TokenMap::empty, bool keep_refs = false) const;
+  std::unordered_set<std::string> get_variables() const;
 
   // Serialization:
   std::string str() const;
