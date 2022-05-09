@@ -1176,8 +1176,6 @@ TEST_CASE("Exception management") {
 
 TEST_CASE("Get variables") {
   calculator c("a + sin(b) - c**2 / d");
-  auto tmp = c.get_variables();
-  auto vars = std::set<std::string>(tmp.begin(), tmp.end());
-  auto expected = std::set<std::string>{"a", "b", "c", "d"};
-  REQUIRE(vars == expected);
+  auto expectedVars = std::unordered_set<std::string>{"a", "b", "c", "d"};
+  REQUIRE(c.get_variables() == expectedVars);
 }
