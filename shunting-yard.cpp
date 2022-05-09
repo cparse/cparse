@@ -692,13 +692,13 @@ packToken calculator::eval(TokenMap vars, bool keep_refs) const {
 }
 
 std::unordered_set<std::string> calculator::get_variables() const {
-  std::unordered_set<std::string> ret;
+  std::unordered_set<std::string> vars;
   for (const auto& i: RPN) {
     if (i->type == tokType::VAR) {
-      ret.insert(static_cast<Token<std::string>*>(i)->val);
+      vars.insert(static_cast<Token<std::string>*>(i)->val);
     }
   }
-  return ret;
+  return vars;
 }
 
 calculator& calculator::operator=(const calculator& calc) {
