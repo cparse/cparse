@@ -1173,3 +1173,9 @@ TEST_CASE("Exception management") {
   REQUIRE_THROWS(ecalc2.compile("map()['hello']]"));
   REQUIRE_THROWS(ecalc2.compile("map(['hello']]"));
 }
+
+TEST_CASE("Get variables") {
+  calculator c("a + sin(b) - c**2 / d");
+  auto expectedVars = std::unordered_set<std::string>{"a", "b", "c", "d"};
+  REQUIRE(c.get_variables() == expectedVars);
+}
