@@ -24,15 +24,14 @@ If you want to use this library in your project please take a look at our [Wiki]
 [wiki]: https://github.com/cparse/cparse/wiki
 
 ## Builtin Features
- + Unary operators. +, -
- + Binary operators. +, -, /, *, %, <<, >>, ^
- + Boolean operators. <, >, <=, >=, ==, !=, &&, ||
- + Functions. sin, cos, tan, abs, print
+ + Unary operators. `+`, `-`
+ + Binary operators. `+`, `-`, `/`, `*`, `%`, `<<`, `>>`, `^`
+ + Boolean operators. `<`, `>`, `<=`, `>=`, `==`, `!=`, `&&`, `||`
+ + Functions. `sin`, `cos`, `tan`, `abs`, `print`
  + Support for an hierarchy of scopes with local scope, global scope etc.
  + Easy to add new operators, operations, functions and even new types
  + Easy to implement object-to-object inheritance (with the prototype concept)
  + Built-in garbage collector (does not handle cyclic references yet)
-
 
 ## Setup
 
@@ -69,11 +68,11 @@ To customize your calculator:
     3. Link your project: `g++ -I cparse -std=c++11 my-features.o cparse/core-shunting-yard.o main.cpp -o main`
 
 For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
- 
+
  + [Defining New Functions](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Functions)
  + [Defining New Operations](https://github.com/bamos/cpp-expression-parser/wiki/Defining-New-Operations)
  + [Defining New Reserved Words](https://github.com/bamos/cpp-expression-parser/wiki/Defining-Reserved-Words)
- 
+
 ## Minimal examples
 
 ### As a simple calculator
@@ -160,7 +159,7 @@ Please note that a calculator can compile an expression so that it can efficient
 ## More examples
 
  + For more examples and a comprehensible guide please read our [Wiki][wiki]
- 
+
 ## Contributing
 
 - I would like to keep this library minimal so new features should be very useful to be accepted.
