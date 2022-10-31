@@ -173,6 +173,15 @@ packToken NumeralOperation(const packToken& left, const packToken& right, evalua
     return left_i && right_i;
   } else if (op == "||") {
     return left_i || right_i;
+  // Added 2022-10-20 bignmllc
+  } else if (op == "&") {
+    return left_i & right_i;
+  // Added 2022-10-20 bignmllc
+  } else if (op == "^") {
+    return left_i ^ right_i;
+  // Added 2022-10-20 bignmllc
+  } else if (op == "|") {
+    return left_i | right_i;
   } else {
     throw undefined_operation(op, left, right);
   }
@@ -332,18 +341,25 @@ struct Startup {
     // Create the operator precedence map based on C++ default
     // precedence order as described on cppreference website:
     // http://en.cppreference.com/w/cpp/language/operator_precedence
+    // Updated precedence numbers 2022-10-20 bignmllc
     OppMap_t& opp = calculator::Default().opPrecedence;
     opp.add("[]", 2); opp.add("()", 2); opp.add(".", 2);
     opp.add("**", 3);
     opp.add("*",  5); opp.add("/", 5); opp.add("%", 5);
     opp.add("+",  6); opp.add("-", 6);
     opp.add("<<", 7); opp.add(">>", 7);
-    opp.add("<",  8); opp.add("<=", 8); opp.add(">=", 8); opp.add(">", 8);
-    opp.add("==", 9); opp.add("!=", 9);
-    opp.add("&&", 13);
-    opp.add("||", 14);
-    opp.add("=", 15); opp.add(":", 15);
-    opp.add(",", 16);
+    opp.add("<",  9); opp.add("<=", 9); opp.add(">=", 9); opp.add(">", 9);
+    opp.add("==", 10); opp.add("!=", 10);
+    // Added 2022-10-20 bignmllc
+    opp.add("&", 11);
+    // Added 2022-10-20 bignmllc
+    opp.add("^", 12);
+    // Added 2022-10-20 bignmllc
+    opp.add("|", 13);
+    opp.add("&&", 14);
+    opp.add("||", 15);
+    opp.add("=", 16); opp.add(":", 16);
+    opp.add(",", 17);
 
     // Add unary operators:
     opp.addUnary("+",  3); opp.addUnary("-", 3); opp.addUnary("!", 3);
