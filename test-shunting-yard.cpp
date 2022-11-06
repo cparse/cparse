@@ -69,6 +69,9 @@ TEST_CASE("Static calculate::calculate()", "[calculate]") {
   REQUIRE(calculator::calculate("1+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("1+_b+(-2*3)", vars).asDouble() == Approx(-5));
   REQUIRE(calculator::calculate("4 * -3", vars).asInt() == -12);
+  REQUIRE(calculator::calculate("3 ^ 2", vars).asInt() == 1);
+  REQUIRE(calculator::calculate("3 & 2", vars).asInt() == 2);
+  REQUIRE(calculator::calculate("3 | 2", vars).asInt() == 3);
 
   REQUIRE_THROWS(calculator("5x"));
   REQUIRE_THROWS(calculator("v1 v2"));
