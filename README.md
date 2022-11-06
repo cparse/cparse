@@ -25,7 +25,7 @@ If you want to use this library in your project please take a look at our [Wiki]
 
 ## Builtin Features
  + Unary operators. `+`, `-`
- + Binary operators. `+`, `-`, `/`, `*`, `%`, `<<`, `>>`, `^`
+ + Binary operators. `+`, `-`, `/`, `*`, `%`, `<<`, `>>`, `^`, `&`, `|`, `**`
  + Boolean operators. `<`, `>`, `<=`, `>=`, `==`, `!=`, `&&`, `||`
  + Functions. `sin`, `cos`, `tan`, `abs`, `print`
  + Support for an hierarchy of scopes with local scope, global scope etc.
