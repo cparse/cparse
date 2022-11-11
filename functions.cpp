@@ -15,7 +15,10 @@ packToken Function::call(packToken _this, const Function* func,
                          TokenList* args, TokenMap scope) {
   // Build the local namespace:
   TokenMap kwargs;
-  TokenMap local = scope.getChild();
+  TokenMap local;
+  for (auto& m : scope.map()) {
+    local[m.first] = m.second;
+  }
 
   args_t arg_names = func->args();
 
