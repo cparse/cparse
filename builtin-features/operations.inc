@@ -263,7 +263,7 @@ packToken StringOnNumberOperation(const packToken& p_left, const packToken& p_ri
     ss << left << p_right.asDouble();
     return ss.str();
   } else if (op == "[]") {
-    size_t index = static_cast<size_t>(p_right.asInt());
+    ptrdiff_t index = static_cast<ptrdiff_t>(p_right.asInt());
 
     if (index < 0) {
       // Reverse index, i.e. list[-1] = list[list.size()-1]
@@ -297,14 +297,14 @@ packToken ListOnNumberOperation(const packToken& p_left, const packToken& p_righ
   TokenList left = p_left.asList();
 
   if (data->op == "[]") {
-    size_t index = static_cast<size_t>(p_right.asInt());
+    ptrdiff_t index = static_cast<ptrdiff_t>(p_right.asInt());
 
     if (index < 0) {
       // Reverse index, i.e. list[-1] = list[list.size()-1]
       index += left.list().size();
     }
 
-    if (index < 0 || index >= left.list().size()) {
+    if (index < 0 || static_cast<size_t>(index) >= left.list().size()) {
       throw std::domain_error("List index out of range!");
     }
 
