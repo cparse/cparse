@@ -63,10 +63,10 @@ packToken list_pop(TokenMap scope) {
   TokenList list = scope.find("this")->asList();
   packToken* token = scope.find("pos");
 
-  int64_t pos;
+  size_t pos;
 
   if ((*token)->type & NUM) {
-    pos = token->asInt();
+    pos = static_cast<size_t>(token->asInt());
 
     // So that pop(-1) is the same as pop(last_idx):
     if (pos < 0) pos = list.list().size()-pos;
@@ -113,7 +113,7 @@ packToken string_lower(TokenMap scope) {
   std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
-    out.push_back(tolower(c));
+    out.push_back(static_cast<char>(tolower(c)));
   }
   return out;
 }
@@ -122,7 +122,7 @@ packToken string_upper(TokenMap scope) {
   std::string str = scope["this"].asString();
   std::string out;
   for (char c : str) {
-    out.push_back(toupper(c));
+    out.push_back(static_cast<char>(toupper(c)));
   }
   return out;
 }

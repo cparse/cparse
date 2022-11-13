@@ -59,7 +59,7 @@ TokenBase* exec_operation(const packToken& left, const packToken& right,
     if (match_op_id(data->opID, operation.getMask())) {
       try {
         return operation.exec(left, right, data).release();
-      } catch (const Operation::Reject& e) {
+      } catch (const Operation::Reject&) {
         continue;
       }
     }
@@ -329,7 +329,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
       // add the parsed number to the output queue.
       std::string key = rpnBuilder::parseVar(expr, &expr);
 
-      if ((parser=config.parserMap.find(key))) {
+      if (NULL != (parser = config.parserMap.find(key))) {
         // Parse reserved words:
         try {
           parser(expr, &expr, &data);
@@ -467,7 +467,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
             }
           } else if (data.opp.exists(op)) {
             data.handle_op(op);
-          } else if ((parser=config.parserMap.find(op[0]))) {
+          } else if (NULL != (parser=config.parserMap.find(op[0]))) {
             expr = start+1;
             try {
               parser(expr, &expr, &data);

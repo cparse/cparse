@@ -145,7 +145,7 @@ struct TokenList : public Container<TokenList_t>, public Iterable {
  public:
   struct ListIterator : public Iterator {
     TokenList_t* list;
-    uint64_t i = 0;
+    size_t i = 0;
 
     ListIterator(TokenList_t* list) : list(list) {}
 
@@ -165,7 +165,7 @@ struct TokenList : public Container<TokenList_t>, public Iterable {
   TokenList() { this->type = LIST; }
   virtual ~TokenList() {}
 
-  packToken& operator[](const uint64_t idx) const {
+  packToken& operator[](const size_t idx) const {
     if (list().size() <= idx) {
       throw std::out_of_range("List index out of range!");
     }

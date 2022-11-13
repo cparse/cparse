@@ -115,7 +115,7 @@ double packToken::asDouble() const {
   case REAL:
     return static_cast<Token<double>*>(base)->val;
   case INT:
-    return static_cast<Token<int64_t>*>(base)->val;
+    return static_cast<double>(static_cast<Token<int64_t>*>(base)->val);
   case BOOL:
     return static_cast<Token<uint8_t>*>(base)->val;
   default:
@@ -132,7 +132,7 @@ double packToken::asDouble() const {
 int64_t packToken::asInt() const {
   switch (base->type) {
   case REAL:
-    return static_cast<Token<double>*>(base)->val;
+    return static_cast<int64_t>(static_cast<Token<double>*>(base)->val);
   case INT:
     return static_cast<Token<int64_t>*>(base)->val;
   case BOOL:
