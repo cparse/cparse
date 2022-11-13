@@ -10,6 +10,7 @@
 #include <stack>
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
+#include <cstdlib>  // For strtoll()
 
 using cparse::calculator;
 using cparse::packToken;
@@ -490,7 +491,7 @@ TokenQueue_t calculator::toRPN(const char* expr,
   // Check for syntax errors (excess of operators i.e. 10 + + -1):
   if (data.lastTokenWasUnary) {
     rpnBuilder::cleanRPN(&data.rpn);
-    throw syntax_error("Expected operand after unary operator `" + data.opStack.top() + "`");
+    throw syntax_error("Expected operand after unary operator `" + normalize_op(data.opStack.top()) + "`");
   }
 
   std::string cur_op;
