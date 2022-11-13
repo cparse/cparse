@@ -93,7 +93,7 @@ class packToken;
 
 // Adapt to std::queue<TokenBase*>
 class TokenQueue_t: public std::deque<TokenBase*> {
-public:
+ public:
   void push(TokenBase* t) {
     push_back(t);
   }

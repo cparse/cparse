@@ -10,7 +10,6 @@
 #include <stack>
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
-#include <cstdlib>  // For strtoll()
 
 using cparse::calculator;
 using cparse::packToken;
@@ -694,7 +693,7 @@ packToken calculator::eval(TokenMap vars, bool keep_refs) const {
 
 std::unordered_set<std::string> calculator::get_variables() const {
   std::unordered_set<std::string> vars;
-  for (const auto& i: RPN) {
+  for (const auto& i : RPN) {
     if (i->type == tokType::VAR) {
       vars.insert(static_cast<Token<std::string>*>(i)->val);
     }

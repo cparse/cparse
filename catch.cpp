@@ -1,5 +1,5 @@
 #define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
+#include "./catch.hpp"
 
 // Defined on test-shunting-yard.cpp
 void PREPARE_ENVIRONMENT();

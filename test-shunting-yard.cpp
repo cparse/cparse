@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "catch.hpp"
+#include "./catch.hpp"
 
 #include "./shunting-yard.h"
 #include "./shunting-yard-exceptions.h"
