@@ -311,7 +311,7 @@ packToken ListOnNumberOperation(const packToken& p_left, const packToken& p_righ
 
     packToken& value = left.list()[index];
 
-    return RefToken(index, value, p_left);
+    return RefToken(static_cast<int64_t>(index), value, p_left);
   } else {
     throw undefined_operation(data->op, p_left, p_right);
   }
