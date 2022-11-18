@@ -5,7 +5,7 @@ OBJ = $(SRC:.cpp=.o)
 
 LD ?= ld
 CXX ?= g++
-CFLAGS = -std=c++11 -Wall -pedantic -Wmissing-field-initializers -Wuninitialized
+CFLAGS = -std=c++11 -Wall -pedantic -Wmissing-field-initializers -Wuninitialized -Wsign-compare
 DEBUG = -g #-DDEBUG
 
 ifeq ($(OS),Windows_NT) # is Windows_NT on XP, 2000, 7, Vista, 10...

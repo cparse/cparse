@@ -1,9 +1,10 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "catch.hpp"
+#include "./catch.hpp"
 
 #include "./shunting-yard.h"
+#include "./shunting-yard-exceptions.h"
 
 using cparse::calculator;
 using cparse::packToken;
@@ -1181,4 +1182,9 @@ TEST_CASE("Get variables") {
   calculator c("a + sin(b) - c**2 / d");
   auto expectedVars = std::unordered_set<std::string>{"a", "b", "c", "d"};
   REQUIRE(c.get_variables() == expectedVars);
+}
+
+TEST_CASE("Unary operator error") {
+  calculator ecalc;
+  REQUIRE_THROWS_WITH(ecalc.compile("+"), "Expected operand after unary operator `+`");
 }
