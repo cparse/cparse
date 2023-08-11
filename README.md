@@ -122,7 +122,7 @@ struct codeBlock {
     }
 
     while (*start != '}') {
-      calculator::calculate(start, vars, ";\n}", &start);
+      cparse::calculator::calculate(start, vars, ";\n}", &start);
 
       // Alternatively you could write above:
       // - calculator(start, ";\n}", &start).eval(vars);
@@ -140,7 +140,7 @@ struct codeBlock {
 };
 
 int main() {
-  GlobalScope vars;
+  cparse::GlobalScope vars;
   const char* code =
     "{"
     "  a = 10;"
