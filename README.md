@@ -82,13 +82,13 @@ For a more detailed guide read our [Wiki][wiki] advanced concepts' section:
 #include "shunting-yard.h"
 
 int main() {
-  TokenMap vars;
+  cparse::TokenMap vars;
   vars["pi"] = 3.14;
-  std::cout << calculator::calculate("-pi+1", &vars) << std::endl;
+  std::cout << cparse::calculator::calculate("-pi+1", &vars) << std::endl;
 
   // Or if you want to evaluate an expression
   // several times efficiently:
-  calculator c1("pi-b");
+  cparse::calculator c1("pi-b");
   vars["b"] = 0.14;
   std::cout << c1.eval(vars) << std::endl; // 3
   vars["b"] = 2.14;
@@ -122,7 +122,7 @@ struct codeBlock {
     }
 
     while (*start != '}') {
-      calculator::calculate(start, vars, ";\n}", &start);
+      cparse::calculator::calculate(start, vars, ";\n}", &start);
 
       // Alternatively you could write above:
       // - calculator(start, ";\n}", &start).eval(vars);
@@ -140,7 +140,7 @@ struct codeBlock {
 };
 
 int main() {
-  GlobalScope vars;
+  cparse::GlobalScope vars;
   const char* code =
     "{"
     "  a = 10;"
