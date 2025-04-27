@@ -210,7 +210,12 @@ std::string packToken_str(const TokenBase* base, uint32_t nest) {
   if (base->type == MAP) {
     typeFuncs = static_cast<const TokenMap*>(base);
   } else {
-    typeFuncs = &calculator::type_attribute_map()[base->type];
+    cparse::typeMap_t::iterator it = calculator::type_attribute_map().find(base->type);
+    if (it != calculator::type_attribute_map().end()) {
+      typeFuncs = &(it->second);
+    } else {
+      return "";
+    }
   }
 
   // Check if this type has a custom stringify function:
