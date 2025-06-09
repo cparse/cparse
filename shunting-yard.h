@@ -14,6 +14,7 @@
 #include <utility>
 #include <deque>
 #include <unordered_set>
+#include <stdint.h>
 
 namespace cparse {
 

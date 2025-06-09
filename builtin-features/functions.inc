@@ -204,22 +204,17 @@ packToken default_extend(TokenMap scope) {
 std::string packToken_str(const TokenBase* base, uint32_t nest) {
   const Function* func;
 
-  // Find the TokenMap with the type specific functions
-  // for the type of the base token:
-  const TokenMap* typeFuncs;
+  // Check if this type has a custom stringify function:
+  const packToken* p_func = nullptr;
   if (base->type == MAP) {
-    typeFuncs = static_cast<const TokenMap*>(base);
+    p_func = static_cast<const TokenMap*>(base)->find("__str__");
   } else {
     cparse::typeMap_t::iterator it = calculator::type_attribute_map().find(base->type);
     if (it != calculator::type_attribute_map().end()) {
-      typeFuncs = &(it->second);
-    } else {
-      return "";
+      p_func = it->second.find("__str__");
     }
   }
 
-  // Check if this type has a custom stringify function:
-  const packToken* p_func = typeFuncs->find("__str__");
   if (p_func && (*p_func)->type == FUNC) {
     // Return the result of this function passing the
     // nesting level as first (and only) argument:
