@@ -1,4 +1,7 @@
-# CParser • [![Build Status][travis-image]][travis] [![License][license-image]][license]
+[![CI](https://github.com/cparse/cparse/actions/workflows/ci.yml/badge.svg)](https://github.com/cparse/cparse/actions/workflows/ci.yml)
+[![License][license-image]][license]
+
+# CParser
 
 [travis-image]: https://travis-ci.org/cparse/cparse.png?branch=master
 [travis]: http://travis-ci.org/cparse/cparse
