@@ -10,6 +10,7 @@
 #include <stack>
 #include <utility>  // For std::pair
 #include <cstring>  // For strchr()
+#include <unordered_set>
 
 using cparse::calculator;
 using cparse::packToken;

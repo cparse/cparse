@@ -12,5 +12,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: Check GCC version
         run: gcc --version
+      - name: Install CppCheck
+        run: sudo apt-get install cppcheck
+      - name: Install CppLint
+        run: pipx install cpplint
+      - name: Run Linters
+        run: |
+          cpplint --filter=-whitespace/line_length,-legal/copyright,-runtime/explicit *.cpp *.h
+          cppcheck --suppress='*:catch.hpp' . --force
       - name: Run Tests
         run: make test

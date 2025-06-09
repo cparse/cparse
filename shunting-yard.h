@@ -1,7 +1,8 @@
 #ifndef SHUNTING_YARD_H_
 #define SHUNTING_YARD_H_
-#include <iostream>
 
+#include <stdint.h>
+#include <iostream>
 #include <map>
 #include <stack>
 #include <string>
@@ -14,7 +15,6 @@
 #include <utility>
 #include <deque>
 #include <unordered_set>
-#include <stdint.h>
 
 namespace cparse {
 

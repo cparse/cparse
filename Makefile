@@ -33,6 +33,9 @@ again: clean all
 
 test: $(EXE); ./$(EXE) $(args)
 
+lint:
+	cpplint --filter=-whitespace/line_length,-legal/copyright,-runtime/explicit *.cpp *.h
+
 check: $(EXE); valgrind --leak-check=full ./$(EXE) $(args)
 
 simul: $(EXE); cgdb --args ./$(EXE) $(args)

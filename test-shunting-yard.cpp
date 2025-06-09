@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include "./catch.hpp"
 
 #include "./shunting-yard.h"
