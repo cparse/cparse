@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  push: {}
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check GCC version
+        run: gcc --version
+      - name: Run Tests
+        run: make test
